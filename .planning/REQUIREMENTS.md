@@ -93,36 +93,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ECOS-01 | — | Pending |
-| ECOS-02 | — | Pending |
-| ECOS-03 | — | Pending |
-| ECOS-04 | — | Pending |
-| VOIC-01 | — | Pending |
-| VOIC-02 | — | Pending |
-| VOIC-03 | — | Pending |
-| SKIL-01 | — | Pending |
-| SKIL-02 | — | Pending |
-| SKIL-03 | — | Pending |
-| SKIL-04 | — | Pending |
-| SCRP-01 | — | Pending |
-| SCRP-02 | — | Pending |
-| SCRP-03 | — | Pending |
-| SCRP-04 | — | Pending |
-| SCRP-05 | — | Pending |
-| SCRP-06 | — | Pending |
-| QUAL-01 | — | Pending |
-| QUAL-02 | — | Pending |
-| QUAL-03 | — | Pending |
-| ANLT-01 | — | Pending |
-| ANLT-02 | — | Pending |
-| ANLT-03 | — | Pending |
-| ANLT-04 | — | Pending |
+| ECOS-01 | Phase 1 | Pending |
+| ECOS-02 | Phase 1 | Pending |
+| ECOS-03 | Phase 1 | Pending |
+| ECOS-04 | Phase 1 | Pending |
+| VOIC-01 | Phase 1 | Pending |
+| VOIC-02 | Phase 1 | Pending |
+| VOIC-03 | Phase 1 | Pending |
+| SKIL-01 | Phase 1 | Pending |
+| SKIL-02 | Phase 1 | Pending |
+| SKIL-03 | Phase 1 | Pending |
+| SKIL-04 | Phase 1 | Pending |
+| SCRP-01 | Phase 2 | Pending |
+| SCRP-02 | Phase 2 | Pending |
+| SCRP-03 | Phase 2 | Pending |
+| SCRP-04 | Phase 2 | Pending |
+| SCRP-05 | Phase 2 | Pending |
+| SCRP-06 | Phase 2 | Pending |
+| QUAL-01 | Phase 2 | Pending |
+| QUAL-02 | Phase 2 | Pending |
+| QUAL-03 | Phase 2 | Pending |
+| ANLT-01 | Phase 3 | Pending |
+| ANLT-02 | Phase 3 | Pending |
+| ANLT-03 | Phase 3 | Pending |
+| ANLT-04 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- Mapped to phases: 24
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-03-26 after roadmap creation*
