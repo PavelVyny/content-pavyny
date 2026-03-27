@@ -83,7 +83,7 @@ Pavlo laughs at himself, not others. He's the butt of the joke.
 - "okay... a bit too strong" (#3) -- the physics breaking is funny because it's HIS fault
 - "The process is fun and painful at the same time, like everything in gamedev" (#5)
 
-**Boundaries:** [CONFIRM WITH PAVLO] Humor is always about the work (bugs, physics, mistakes), never about himself as a person. Is this accurate? Are there topics you would NOT joke about?
+**Boundaries:** No fixed limits -- humor is context-dependent and story-dependent. Pavlo is open to anything that fits the video's context. The pattern from transcripts holds: humor naturally gravitates toward the work (bugs, physics, mistakes) because that's what the videos show.
 
 ### Honest about struggles
 No pretending everything works first try. The mess IS the content.
@@ -113,7 +113,7 @@ Technical terms appear but get immediately simplified.
 - "the throw impulse was applied to just one body part, creating rotational chaos" (#6) -- then immediately "So instead of pushing one bone, let's push the whole body"
 - "cut into chunks in the fracture tool" (#3) -- no further explanation needed because the VISUAL shows it
 
-**Technical depth level:** [CONFIRM WITH PAVLO] Video #5 goes deeper into technical explanation (physics assets, ragdoll). Is this the right level, or do you prefer to keep it simpler like in #3 and #6?
+**Technical depth level:** Accessible to everyone, not just developers. Think vedinad-style -- a general audience should understand the content. Video #5's deeper technical explanation is fine as long as the visual shows what's happening and the voiceover keeps it simple. Default to the #3/#6 level (one technical sentence + immediate plain English). The channel is young -- open to experimenting with depth.
 
 ## Sentence Rules
 
@@ -138,9 +138,9 @@ Technical terms appear but get immediately simplified.
 **Connectors:** so, and, but, okay, let's, turns out, finally, next
 **Expressions:** "feels like," "started to feel," "that's the vibe," "the thing is"
 
-### NEVER USE (banned) [CONFIRM WITH PAVLO]
+### NEVER USE (banned)
 
-The following words/phrases appear ZERO times across all 6 transcripts. AI tools commonly generate them.
+The following words/phrases appear ZERO times across all 6 transcripts. AI tools commonly generate them. Pavlo confirmed this list -- no additions needed. Open to moderate experimentation within the brand spirit. This is a living document: update when new patterns emerge.
 
 **AI slop vocabulary:**
 - journey, dive into, deep dive, game-changer, incredible, amazing, awesome
@@ -169,24 +169,24 @@ The following words/phrases appear ZERO times across all 6 transcripts. AI tools
 - "One thing to keep in mind"
 - Multi-clause sentences with semicolons
 
-**Note:** Transcript absence does not mean Pavlo actively avoids these. Some may simply not have come up. The interview (Task 2) will confirm which words Pavlo would genuinely cringe at.
-
 ## Pronunciation Notes
 
-[CONFIRM WITH PAVLO] This section needs interview input. Questions:
-- Are there English sounds or consonant clusters that are hard for you?
-- Do you avoid any words because they are hard to pronounce?
-- Do you prefer shorter words over longer ones when speaking?
-- Any specific words from previous scripts that felt awkward to say out loud?
+**General approach:** Pavlo has pronunciation challenges but cannot pre-identify specific problem words. DON'T pre-restrict vocabulary -- build the ban list organically during recording sessions when stumbles actually occur.
 
-**Observed from transcripts:** Pavlo uses simple, short words. No evidence of avoiding specific sounds, but transcript format masks pronunciation difficulty. Scripts should default to:
+**Pronunciation Watch List** (populated during recording sessions when stumbles occur):
+
+*(empty -- will grow as Pavlo records scripts and flags words that are hard to say)*
+
+**Default preferences** (observed from transcripts):
 - Short words over long (use "fix" not "troubleshoot," "grab" not "apprehend")
 - Common words over rare (use "strong" not "formidable")
 - Contractions over full forms ("I'm" not "I am")
 
 ## Framing Notes
 
-[CONFIRM WITH PAVLO] "I'm new to all of this" (#3) -- is this still accurate? Are you growing past the beginner framing, or does it still feel right? This affects whether scripts can position you as having experience or should maintain the underdog angle.
+**"I'm new to all of this"** -- confirmed as still accurate. This is Pavlo's first game. He's still learning. Scripts should maintain this authentic underdog angle. It's not a gimmick -- it's the truth.
+
+**Brand voice is evolving.** The channel is young (6 videos, 55 subscribers). Pavlo is open to experimenting and finding his voice. Don't treat this document as frozen -- update it as the channel grows and new patterns emerge.
 
 ## On-Brand Example
 
