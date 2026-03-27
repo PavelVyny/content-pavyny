@@ -29,18 +29,18 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Script Generation
 
-- [ ] **SCRP-01**: Generate scripts using 7 proven format templates (The Bug, The Satisfaction, Before/After, The Decision, The Trick, The Fail, The Number)
-- [ ] **SCRP-02**: Scripts output in visual-audio dual-track format (what viewer sees + what Pavlo says)
-- [ ] **SCRP-03**: Hook-first structure applied to every script: Pre-hook visual → Question → Deliver (first 3 seconds)
-- [ ] **SCRP-04**: One-idea-per-script enforcement — structural check prevents cramming multiple topics
-- [ ] **SCRP-05**: Generate 2-3 hook variants (A/B) for each script — different visual + opening line approaches
-- [ ] **SCRP-06**: Generate 3 title options + thumbnail frame concept alongside every script
+- [x] **SCRP-01**: Generate scripts using 7 proven format templates (The Bug, The Satisfaction, Before/After, The Decision, The Trick, The Fail, The Number)
+- [x] **SCRP-02**: Scripts output in visual-audio dual-track format (what viewer sees + what Pavlo says)
+- [x] **SCRP-03**: Hook-first structure applied to every script: Pre-hook visual → Question → Deliver (first 3 seconds)
+- [x] **SCRP-04**: One-idea-per-script enforcement — structural check prevents cramming multiple topics
+- [x] **SCRP-05**: Generate 2-3 hook variants (A/B) for each script — different visual + opening line approaches
+- [x] **SCRP-06**: Generate 3 title options + thumbnail frame concept alongside every script
 
 ### Quality Gates
 
-- [ ] **QUAL-01**: Anti-slop scoring pass on every script (5 dimensions: Directness, Rhythm, Trust, Authenticity, Density) with 35+/50 threshold
-- [ ] **QUAL-02**: Anti-slop rewrite pass — flagged phrases/structures automatically rewritten using brand voice profile, human reviews diff
-- [ ] **QUAL-03**: Anti-slop rules reference file with 60+ banned phrases and structural patterns
+- [x] **QUAL-01**: Anti-slop scoring pass on every script (5 dimensions: Directness, Rhythm, Trust, Authenticity, Density) with 35+/50 threshold
+- [x] **QUAL-02**: Anti-slop rewrite pass — flagged phrases/structures automatically rewritten using brand voice profile, human reviews diff
+- [x] **QUAL-03**: Anti-slop rules reference file with 60+ banned phrases and structural patterns
 
 ### Analytics & Feedback
 
@@ -104,15 +104,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SKIL-02 | Phase 1 | Complete |
 | SKIL-03 | Phase 1 | Complete |
 | SKIL-04 | Phase 1 | Complete |
-| SCRP-01 | Phase 2 | Pending |
-| SCRP-02 | Phase 2 | Pending |
-| SCRP-03 | Phase 2 | Pending |
-| SCRP-04 | Phase 2 | Pending |
-| SCRP-05 | Phase 2 | Pending |
-| SCRP-06 | Phase 2 | Pending |
-| QUAL-01 | Phase 2 | Pending |
-| QUAL-02 | Phase 2 | Pending |
-| QUAL-03 | Phase 2 | Pending |
+| SCRP-01 | Phase 2 | Complete |
+| SCRP-02 | Phase 2 | Complete |
+| SCRP-03 | Phase 2 | Complete |
+| SCRP-04 | Phase 2 | Complete |
+| SCRP-05 | Phase 2 | Complete |
+| SCRP-06 | Phase 2 | Complete |
+| QUAL-01 | Phase 2 | Complete |
+| QUAL-02 | Phase 2 | Complete |
+| QUAL-03 | Phase 2 | Complete |
 | ANLT-01 | Phase 3 | Pending |
 | ANLT-02 | Phase 3 | Pending |
 | ANLT-03 | Phase 3 | Pending |
