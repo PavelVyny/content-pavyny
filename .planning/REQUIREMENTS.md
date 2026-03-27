@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Ecosystem Audit
 
-- [ ] **ECOS-01**: Audit all identified Claude Code skills (stop-slop, humanizer, viral-reel-generator, script-writer, last30days, video-toolkit) — verify which actually work, what's worth integrating, what to discard
-- [ ] **ECOS-02**: Broader ecosystem search for scriptwriting/content skills and MCP servers not yet discovered — 2026 landscape analysis
-- [ ] **ECOS-03**: Evaluate agentic workflow approaches (skill chaining, MCP integrations, automation patterns) for content creation pipelines
+- [x] **ECOS-01**: Audit all identified Claude Code skills (stop-slop, humanizer, viral-reel-generator, script-writer, last30days, video-toolkit) — verify which actually work, what's worth integrating, what to discard
+- [x] **ECOS-02**: Broader ecosystem search for scriptwriting/content skills and MCP servers not yet discovered — 2026 landscape analysis
+- [x] **ECOS-03**: Evaluate agentic workflow approaches (skill chaining, MCP integrations, automation patterns) for content creation pipelines
 - [ ] **ECOS-04**: Integrate best-of-ecosystem components into the custom pipeline — adopt proven patterns, skip reinventing
 
 ### Brand Voice
@@ -93,9 +93,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ECOS-01 | Phase 1 | Pending |
-| ECOS-02 | Phase 1 | Pending |
-| ECOS-03 | Phase 1 | Pending |
+| ECOS-01 | Phase 1 | Complete |
+| ECOS-02 | Phase 1 | Complete |
+| ECOS-03 | Phase 1 | Complete |
 | ECOS-04 | Phase 1 | Pending |
 | VOIC-01 | Phase 1 | Pending |
 | VOIC-02 | Phase 1 | Pending |

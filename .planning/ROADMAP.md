@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Ecosystem audit: clone and review identified skills, broader search, skill chaining assessment
+- [x] 01-01-PLAN.md — Ecosystem audit: clone and review identified skills, broader search, skill chaining assessment
 - [ ] 01-02-PLAN.md — Brand voice extraction: transcript analysis and interview with Pavlo
 - [ ] 01-03-PLAN.md — Skill build: create SKILL.md with reference files, install companions, verify pipeline
 
