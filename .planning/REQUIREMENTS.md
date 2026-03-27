@@ -12,7 +12,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **ECOS-01**: Audit all identified Claude Code skills (stop-slop, humanizer, viral-reel-generator, script-writer, last30days, video-toolkit) — verify which actually work, what's worth integrating, what to discard
 - [x] **ECOS-02**: Broader ecosystem search for scriptwriting/content skills and MCP servers not yet discovered — 2026 landscape analysis
 - [x] **ECOS-03**: Evaluate agentic workflow approaches (skill chaining, MCP integrations, automation patterns) for content creation pipelines
-- [ ] **ECOS-04**: Integrate best-of-ecosystem components into the custom pipeline — adopt proven patterns, skip reinventing
+- [x] **ECOS-04**: Integrate best-of-ecosystem components into the custom pipeline — adopt proven patterns, skip reinventing
 
 ### Brand Voice
 
@@ -22,10 +22,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Skill Setup
 
-- [ ] **SKIL-01**: Create custom devlog-scriptwriter skill in .claude/skills/ with SKILL.md under 500 lines
-- [ ] **SKIL-02**: Install stop-slop companion skill globally in ~/.claude/skills/
-- [ ] **SKIL-03**: Install humanizer companion skill globally in ~/.claude/skills/
-- [ ] **SKIL-04**: Verify skill chaining works (main skill → stop-slop → humanizer) — embed critical anti-slop rules in main skill as fallback
+- [x] **SKIL-01**: Create custom devlog-scriptwriter skill in .claude/skills/ with SKILL.md under 500 lines
+- [x] **SKIL-02**: Install stop-slop companion skill globally in ~/.claude/skills/
+- [x] **SKIL-03**: Install humanizer companion skill globally in ~/.claude/skills/
+- [x] **SKIL-04**: Verify skill chaining works (main skill → stop-slop → humanizer) — embed critical anti-slop rules in main skill as fallback
 
 ### Script Generation
 
@@ -96,14 +96,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ECOS-01 | Phase 1 | Complete |
 | ECOS-02 | Phase 1 | Complete |
 | ECOS-03 | Phase 1 | Complete |
-| ECOS-04 | Phase 1 | Pending |
+| ECOS-04 | Phase 1 | Complete |
 | VOIC-01 | Phase 1 | Complete |
 | VOIC-02 | Phase 1 | Complete |
 | VOIC-03 | Phase 1 | Complete |
-| SKIL-01 | Phase 1 | Pending |
-| SKIL-02 | Phase 1 | Pending |
-| SKIL-03 | Phase 1 | Pending |
-| SKIL-04 | Phase 1 | Pending |
+| SKIL-01 | Phase 1 | Complete |
+| SKIL-02 | Phase 1 | Complete |
+| SKIL-03 | Phase 1 | Complete |
+| SKIL-04 | Phase 1 | Complete |
 | SCRP-01 | Phase 2 | Pending |
 | SCRP-02 | Phase 2 | Pending |
 | SCRP-03 | Phase 2 | Pending |

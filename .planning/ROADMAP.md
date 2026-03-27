@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md — Ecosystem audit: clone and review identified skills, broader search, skill chaining assessment
 - [x] 01-02-PLAN.md — Brand voice extraction: transcript analysis and interview with Pavlo
-- [ ] 01-03-PLAN.md — Skill build: create SKILL.md with reference files, install companions, verify pipeline
+- [x] 01-03-PLAN.md — Skill build: create SKILL.md with reference files, install companions, verify pipeline
 
 ### Phase 2: Script Generation
 **Goal**: Pavlo can generate a publish-ready script for any of the 7 proven formats, with hook variants and anti-slop scoring, and record it without heavy editing
