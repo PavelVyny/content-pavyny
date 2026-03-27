@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 1: Foundation — Plan Visualization</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 2rem;
+    min-height: 100vh;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.8rem;
+    color: #58a6ff;
+    margin-bottom: 0.3rem;
+  }
+  .subtitle {
+    text-align: center;
+    color: #8b949e;
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 0.7rem 1.4rem;
+    text-align: center;
+  }
+  .stat-value { font-size: 1.6rem; font-weight: 700; color: #58a6ff; }
+  .stat-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .timeline {
+    position: relative;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #58a6ff 0%, #3fb950 50%, #d29922 100%);
+    transform: translateX(-50%);
+    border-radius: 2px;
+  }
+
+  .wave-header {
+    position: relative;
+    text-align: center;
+    margin: 2rem 0 1.5rem;
+  }
+  .wave-badge {
+    display: inline-block;
+    background: #161b22;
+    border: 2px solid #58a6ff;
+    border-radius: 20px;
+    padding: 0.4rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #58a6ff;
+    position: relative;
+    z-index: 2;
+  }
+  .wave-badge.wave-2 { border-color: #d29922; color: #d29922; }
+  .wave-parallel {
+    display: inline-block;
+    background: #1c3a1c;
+    border-radius: 12px;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.7rem;
+    color: #3fb950;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .plans-row {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .plan-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 480px;
+    position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .plan-card:hover {
+    border-color: #58a6ff;
+    box-shadow: 0 0 20px rgba(88, 166, 255, 0.1);
+  }
+  .plan-card.wide { width: 700px; }
+
+  .plan-id {
+    display: inline-block;
+    background: #1f2937;
+    border-radius: 6px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #79c0ff;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    margin-bottom: 0.5rem;
+  }
+  .plan-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #f0f6fc;
+    margin-bottom: 0.4rem;
+  }
+  .plan-objective {
+    color: #8b949e;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    border-left: 3px solid #30363d;
+    padding-left: 0.8rem;
+  }
+
+  .reqs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .req-tag {
+    background: #1a2332;
+    border: 1px solid #1f6feb44;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.7rem;
+    font-family: monospace;
+    color: #58a6ff;
+  }
+
+  .tasks-container { margin-top: 0.8rem; }
+  .task {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+  .task:last-child { margin-bottom: 0; }
+  .task-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .task-icon.auto { background: #1c3a1c; color: #3fb950; border: 1px solid #3fb950; }
+  .task-icon.checkpoint { background: #3d2e00; color: #d29922; border: 1px solid #d29922; }
+  .task-body { flex: 1; }
+  .task-name { font-size: 0.82rem; color: #c9d1d9; font-weight: 500; }
+  .task-type {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.2rem;
+  }
+  .task-type.auto-label { color: #3fb950; }
+  .task-type.checkpoint-label { color: #d29922; }
+
+  .artifacts {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #21262d;
+  }
+  .artifact-label {
+    font-size: 0.7rem;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.4rem;
+  }
+  .artifact-file {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: #7ee787;
+    background: #0d1117;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 0.15rem 0.2rem 0.15rem 0;
+  }
+
+  .dependency-arrow {
+    text-align: center;
+    color: #484f58;
+    font-size: 1.5rem;
+    margin: 0.5rem 0;
+    position: relative;
+    z-index: 2;
+  }
+  .dep-label {
+    font-size: 0.7rem;
+    color: #8b949e;
+    display: block;
+  }
+
+  .must-haves {
+    max-width: 800px;
+    margin: 2.5rem auto 0;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .must-haves h3 {
+    color: #3fb950;
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .truth {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+    color: #c9d1d9;
+    line-height: 1.4;
+  }
+  .truth-check {
+    color: #3fb950;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #8b949e;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .legend-dot.auto-dot { background: #1c3a1c; border: 1px solid #3fb950; }
+  .legend-dot.checkpoint-dot { background: #3d2e00; border: 1px solid #d29922; }
+</style>
+</head>
+<body>
+
+<h1>Phase 1: Foundation</h1>
+<p class="subtitle">Audit ecosystem, extract brand voice, build the custom skill</p>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-value">3</div>
+    <div class="stat-label">Plans</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">2</div>
+    <div class="stat-label">Waves</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">7</div>
+    <div class="stat-label">Tasks</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">11</div>
+    <div class="stat-label">Requirements</div>
+  </div>
+</div>
+
+<div class="timeline">
+
+  <!-- WAVE 1 -->
+  <div class="wave-header">
+    <span class="wave-badge">WAVE 1</span>
+    <span class="wave-parallel">&#9654; parallel</span>
+  </div>
+
+  <div class="plans-row">
+    <!-- Plan 01-01 -->
+    <div class="plan-card">
+      <div class="plan-id">01-01</div>
+      <div class="plan-title">Ecosystem Audit</div>
+      <div class="plan-objective">
+        Clone &amp; review all identified skills/tools, search broader 2026 ecosystem, assess skill chaining viability. Output: audit report with per-tool verdicts.
+      </div>
+      <div class="reqs">
+        <span class="req-tag">ECOS-01</span>
+        <span class="req-tag">ECOS-02</span>
+        <span class="req-tag">ECOS-03</span>
+      </div>
+      <div class="tasks-container">
+        <div class="task">
+          <div class="task-icon auto">A</div>
+          <div class="task-body">
+            <div class="task-name">Clone &amp; audit 6+ tools, broader search, chaining assessment</div>
+            <div class="task-type auto-label">autonomous</div>
+          </div>
+        </div>
+        <div class="task">
+          <div class="task-icon checkpoint">P</div>
+          <div class="task-body">
+            <div class="task-name">Pavlo reviews audit report before integration</div>
+            <div class="task-type checkpoint-label">checkpoint &middot; blocking</div>
+          </div>
+        </div>
+      </div>
+      <div class="artifacts">
+        <div class="artifact-label">Output</div>
+        <span class="artifact-file">01-ECOSYSTEM-AUDIT.md</span>
+      </div>
+    </div>
+
+    <!-- Plan 01-02 -->
+    <div class="plan-card">
+      <div class="plan-id">01-02</div>
+      <div class="plan-title">Brand Voice Profile</div>
+      <div class="plan-objective">
+        Analyze all 6 video transcripts across 4 dimensions (Pavlo-isms, tone, rhythm, banned words). Style anchors from videos #3 &amp; #6. Interview Pavlo for confirmation.
+      </div>
+      <div class="reqs">
+        <span class="req-tag">VOIC-01</span>
+        <span class="req-tag">VOIC-02</span>
+        <span class="req-tag">VOIC-03</span>
+      </div>
+      <div class="tasks-container">
+        <div class="task">
+          <div class="task-icon auto">A</div>
+          <div class="task-body">
+            <div class="task-name">Analyze 6 transcripts, draft brand-voice.md with anchors</div>
+            <div class="task-type auto-label">autonomous</div>
+          </div>
+        </div>
+        <div class="task">
+          <div class="task-icon checkpoint">P</div>
+          <div class="task-body">
+            <div class="task-name">Brand voice interview with Pavlo</div>
+            <div class="task-type checkpoint-label">checkpoint &middot; blocking</div>
+          </div>
+        </div>
+      </div>
+      <div class="artifacts">
+        <div class="artifact-label">Output</div>
+        <span class="artifact-file">brand-voice.md</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPENDENCY ARROW -->
+  <div class="dependency-arrow">
+    &#8595; &#8595;
+    <span class="dep-label">audit verdicts + voice profile feed into skill build</span>
+  </div>
+
+  <!-- WAVE 2 -->
+  <div class="wave-header">
+    <span class="wave-badge wave-2">WAVE 2</span>
+  </div>
+
+  <div class="plans-row">
+    <!-- Plan 01-03 -->
+    <div class="plan-card wide">
+      <div class="plan-id">01-03</div>
+      <div class="plan-title">Skill Build + Integration</div>
+      <div class="plan-objective">
+        Build SKILL.md (under 500 lines, 3 modes), create anti-slop rules, video format templates, and metrics log. Install companion skills. Verify pipeline produces output in Pavlo's voice.
+      </div>
+      <div class="reqs">
+        <span class="req-tag">ECOS-04</span>
+        <span class="req-tag">SKIL-01</span>
+        <span class="req-tag">SKIL-02</span>
+        <span class="req-tag">SKIL-03</span>
+        <span class="req-tag">SKIL-04</span>
+      </div>
+      <div class="tasks-container">
+        <div class="task">
+          <div class="task-icon auto">A</div>
+          <div class="task-body">
+            <div class="task-name">Create SKILL.md + anti-slop-rules.md + video-formats.md + metrics-log.md</div>
+            <div class="task-type auto-label">autonomous</div>
+          </div>
+        </div>
+        <div class="task">
+          <div class="task-icon auto">A</div>
+          <div class="task-body">
+            <div class="task-name">Install stop-slop &amp; humanizer companions, test skill chaining</div>
+            <div class="task-type auto-label">autonomous</div>
+          </div>
+        </div>
+        <div class="task">
+          <div class="task-icon checkpoint">P</div>
+          <div class="task-body">
+            <div class="task-name">Pavlo tests skill live — does it sound like him?</div>
+            <div class="task-type checkpoint-label">checkpoint &middot; blocking</div>
+          </div>
+        </div>
+      </div>
+      <div class="artifacts">
+        <div class="artifact-label">Output</div>
+        <span class="artifact-file">SKILL.md</span>
+        <span class="artifact-file">anti-slop-rules.md</span>
+        <span class="artifact-file">video-formats.md</span>
+        <span class="artifact-file">metrics-log.md</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MUST-HAVES -->
+<div class="must-haves">
+  <h3>&#10003; Phase Success Criteria</h3>
+  <div class="truth">
+    <span class="truth-check">&#10003;</span>
+    Every identified skill/tool has a verdict (use/adapt/skip) with rationale
+  </div>
+  <div class="truth">
+    <span class="truth-check">&#10003;</span>
+    brand-voice.md contains Pavlo's speech patterns, vocabulary rules, and style anchors from #3 &amp; #6
+  </div>
+  <div class="truth">
+    <span class="truth-check">&#10003;</span>
+    Custom skill installed with 3 modes (ideation/generation/analysis), under 500 lines
+  </div>
+  <div class="truth">
+    <span class="truth-check">&#10003;</span>
+    Companion skills installed and chaining tested with fallback strategy applied
+  </div>
+  <div class="truth">
+    <span class="truth-check">&#10003;</span>
+    Test generation produces output in Pavlo's voice — not generic AI text
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot auto-dot"></div>
+    <span>Autonomous task (Claude executes)</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot checkpoint-dot"></div>
+    <span>Checkpoint (Pavlo reviews/approves)</span>
+  </div>
+</div>
+
+</body>
+</html>
