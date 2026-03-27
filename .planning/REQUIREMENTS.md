@@ -16,9 +16,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Brand Voice
 
-- [ ] **VOIC-01**: Conduct brand voice interview with Pavlo to extract speech patterns, tone, vocabulary, Pavlo-isms
-- [ ] **VOIC-02**: Create brand-voice.md with persona definition, tone dimensions, vocabulary rules (use/avoid), structural rules, on-brand/off-brand examples
-- [ ] **VOIC-03**: Embed transcript excerpt from best-performing video (#6 "Troll throw people", 75.7% stayed) as style anchor
+- [x] **VOIC-01**: Conduct brand voice interview with Pavlo to extract speech patterns, tone, vocabulary, Pavlo-isms
+- [x] **VOIC-02**: Create brand-voice.md with persona definition, tone dimensions, vocabulary rules (use/avoid), structural rules, on-brand/off-brand examples
+- [x] **VOIC-03**: Embed transcript excerpt from best-performing video (#6 "Troll throw people", 75.7% stayed) as style anchor
 
 ### Skill Setup
 
@@ -97,9 +97,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ECOS-02 | Phase 1 | Complete |
 | ECOS-03 | Phase 1 | Complete |
 | ECOS-04 | Phase 1 | Pending |
-| VOIC-01 | Phase 1 | Pending |
-| VOIC-02 | Phase 1 | Pending |
-| VOIC-03 | Phase 1 | Pending |
+| VOIC-01 | Phase 1 | Complete |
+| VOIC-02 | Phase 1 | Complete |
+| VOIC-03 | Phase 1 | Complete |
 | SKIL-01 | Phase 1 | Pending |
 | SKIL-02 | Phase 1 | Pending |
 | SKIL-03 | Phase 1 | Pending |
