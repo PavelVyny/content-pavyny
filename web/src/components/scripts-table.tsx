@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   updateScriptStatus,
   getVoiceoverText,
@@ -33,6 +32,7 @@ interface ScriptsTableProps {
 
 export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
   const [scripts, setScripts] = useState(initialScripts);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   if (scripts.length === 0) {
     return (
@@ -59,17 +59,21 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
   }
 
   async function handleCopy(scriptId: number) {
-    const result = await getVoiceoverText(scriptId);
-    if (result.success && result.text) {
-      await navigator.clipboard.writeText(result.text);
-      toast.success("Voiceover copied to clipboard");
-    } else {
-      toast.error("Failed to get voiceover text");
+    try {
+      const result = await getVoiceoverText(scriptId);
+      if (result.success && result.text) {
+        await navigator.clipboard.writeText(result.text);
+        setCopiedId(scriptId);
+        setTimeout(() => setCopiedId(null), 2000);
+      }
+    } catch {
+      // clipboard failed silently
     }
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b">
@@ -139,37 +143,21 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
               <td className="py-3 px-2">
                 <button
                   onClick={() => handleCopy(script.id)}
-                  className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-1"
+                  className={`text-xs border rounded px-2 py-1 transition-colors ${
+                    copiedId === script.id
+                      ? "bg-green-600 text-white border-green-600"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                   title="Copy voiceover text"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="inline-block"
-                  >
-                    <rect
-                      width="14"
-                      height="14"
-                      x="8"
-                      y="8"
-                      rx="2"
-                      ry="2"
-                    />
-                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                  </svg>
+                  {copiedId === script.id ? "Copied!" : "Copy"}
                 </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
