@@ -109,7 +109,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 05-01-PLAN.md — Editor page route, server actions, click-to-edit beat cards, and hook variant tabs
+- [x] 05-01-PLAN.md — Editor page route, server actions, click-to-edit beat cards, and hook variant tabs
 - [ ] 05-02-PLAN.md — Beat regeneration, anti-slop rescoring, score panel, and Edit link from generation page
 
 ### Phase 6: Library & Workflow
