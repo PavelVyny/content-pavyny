@@ -1,472 +1,498 @@
-# Architecture Patterns
+# Architecture Research
 
-**Domain:** AI-assisted devlog scriptwriting pipeline (Claude Code skill-based)
+**Domain:** Local web app wrapping AI scriptwriting pipeline
 **Researched:** 2026-03-26
+**Confidence:** HIGH
 
 ## System Overview
 
-This is NOT a web application. It is a **file-based pipeline** orchestrated by Claude Code skills. The "architecture" is about file organization, skill activation flow, reference document structure, and the feedback loop between published videos and future script generation.
-
 ```
-+------------------------------------------------------------------+
-|                        CLAUDE CODE SESSION                        |
-|                                                                   |
-|  +-----------------------+     +-----------------------------+    |
-|  |   SKILL LAYER         |     |   REFERENCE LAYER           |    |
-|  |                       |     |                             |    |
-|  | devlog-scriptwriter/  |---->| brand-voice.md              |    |
-|  |   SKILL.md (main)     |     | anti-slop-rules.md          |    |
-|  |                       |     | metrics-log.md              |    |
-|  | stop-slop/            |     | video-formats.md            |    |
-|  |   SKILL.md            |     +-----------------------------+    |
-|  |                       |              |                         |
-|  | humanizer/            |              v                         |
-|  |   SKILL.md            |     +-----------------------------+    |
-|  +-----------------------+     |   OUTPUT LAYER              |    |
-|           |                    |                             |    |
-|           v                    | scripts/                    |    |
-|  +-----------------------+     |   YYYY-MM-DD-topic.md       |    |
-|  |   CONTEXT LAYER       |     |   (generated scripts)       |    |
-|  |                       |     +-----------------------------+    |
-|  | CLAUDE.md             |              |                         |
-|  | PROJECT.md            |              v                         |
-|  | videos-1-6-           |     +-----------------------------+    |
-|  |   transcription.md    |     |   FEEDBACK LAYER            |    |
-|  | game-scenario.md      |     |                             |    |
-|  +-----------------------+     | metrics-log.md (updated)    |    |
-|                                | pattern-analysis (in skill) |    |
-+------------------------------------------------------------------+
-                                          |
-                                          v
-                              +---------------------+
-                              |  EXTERNAL WORLD     |
-                              |                     |
-                              | Pavlo records video |
-                              | Uploads to YouTube  |
-                              | Reads analytics     |
-                              | Enters metrics      |
-                              +---------------------+
+┌─────────────────────────────────────────────────────────────────┐
+│                     Browser (localhost:3000)                      │
+│  ┌──────────┐  ┌───────────┐  ┌──────────┐  ┌──────────────┐    │
+│  │ Generate │  │  Script   │  │  Script  │  │  Anti-Slop   │    │
+│  │   Form   │  │  Editor   │  │  Library │  │   Display    │    │
+│  └────┬─────┘  └─────┬─────┘  └────┬─────┘  └──────┬───────┘    │
+│       │              │             │               │             │
+├───────┴──────────────┴─────────────┴───────────────┴─────────────┤
+│                     Next.js App Router                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐    │
+│  │ Server       │  │ API Routes   │  │ Reference File       │    │
+│  │ Actions      │  │ (streaming)  │  │ Loader               │    │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘    │
+│         │                │                     │                 │
+├─────────┴────────────────┴─────────────────────┴─────────────────┤
+│                     Service Layer                                 │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────────┐     │
+│  │ AI Service  │  │ Script Store │  │ Reference Manager    │     │
+│  │ (Claude)    │  │ (SQLite)     │  │ (reads .md files)    │     │
+│  └──────┬──────┘  └──────┬───────┘  └──────────┬───────────┘     │
+│         │                │                     │                 │
+├─────────┴────────────────┴─────────────────────┴─────────────────┤
+│                     External / Filesystem                         │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────────┐     │
+│  │ Claude API  │  │ scripts.db   │  │ .claude/skills/      │     │
+│  │ (Anthropic) │  │ (local file) │  │ devlog-scriptwriter/  │     │
+│  └─────────────┘  └──────────────┘  └──────────────────────┘     │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Component Boundaries
+### Component Responsibilities
 
-### 1. Skill Layer (`.claude/skills/`)
+| Component | Responsibility | Typical Implementation |
+|-----------|----------------|------------------------|
+| Generate Form | Collect user input (format, context, dev progress) and trigger script generation | React client component with controlled form + format selector dropdown |
+| Script Editor | Display and edit dual-track scripts (visual | voiceover) as block rows | React client component with contentEditable blocks or textarea per cell |
+| Script Library | List, search, filter, delete saved scripts | Server component for initial load + client search/filter |
+| Anti-Slop Display | Show scoring breakdown (5 dimensions), highlight banned phrases in script text | Pure client component receiving score data from AI response |
+| Server Actions | Handle form submissions (save, delete, update scripts) | Next.js `'use server'` functions in `app/actions/` |
+| API Routes (streaming) | Stream AI-generated scripts token by token to the client | Route handler at `app/api/generate/route.ts` using Vercel AI SDK |
+| Reference File Loader | Read brand-voice.md, anti-slop-rules.md, video-formats.md, metrics-log.md at generation time | Node.js `fs.readFileSync` on server side, content injected into system prompt |
+| AI Service | Build prompts from skill + reference files, call Claude API, parse structured responses | Vercel AI SDK with `@ai-sdk/anthropic` provider |
+| Script Store | Persist scripts with metadata (title, format, score, dates) | SQLite via `better-sqlite3` |
+| Reference Manager | CRUD operations on reference files (edit brand voice, update metrics log) | Direct filesystem read/write with markdown parsing |
 
-The skill layer contains Claude Code skills -- markdown files with YAML frontmatter that Claude loads when relevant. Skills are the "executable logic" of the pipeline.
+## AI Backend: The Critical Decision
 
-| Component | Location | Responsibility | Invocation |
-|-----------|----------|---------------|------------|
-| `devlog-scriptwriter` | `.claude/skills/devlog-scriptwriter/SKILL.md` | Main orchestrator: ideation, script generation, feedback analysis | Both user (`/devlog-scriptwriter`) and Claude (auto) |
-| `stop-slop` | `~/.claude/skills/stop-slop/SKILL.md` | Score text on 5 dimensions (35+/50 threshold), identify violations, rewrite | Claude auto-invokes during script generation |
-| `humanizer` | `~/.claude/skills/humanizer/SKILL.md` | Final pass removing AI writing patterns | Claude auto-invokes after stop-slop |
+The PROJECT.md states: "AI Backend: Requires research -- must work with Claude Max subscription without additional costs."
 
-**Key architectural decision:** The main `devlog-scriptwriter` skill is a **project skill** (committed to repo in `.claude/skills/`). Companion skills (`stop-slop`, `humanizer`) are **personal skills** (in `~/.claude/skills/`) because they are general-purpose and reusable across projects.
+**Finding:** Claude Max subscription does NOT include API access. The Claude API requires separate billing through the Anthropic Console. This is confirmed by Anthropic's help center.
 
-**Confidence:** HIGH -- based on official Claude Code skills documentation.
+**Three options, in order of recommendation:**
 
-### 2. Reference Layer (`.claude/skills/devlog-scriptwriter/references/`)
+### Option 1: Anthropic API with minimal spend (RECOMMENDED)
 
-Reference files are loaded by the main skill on demand -- not at startup. They provide the knowledge base that shapes script output.
+Use `@ai-sdk/anthropic` with a separate API key. Script generation is low-volume (5-10 scripts/week). With Claude 3.5 Haiku for generation:
 
-| File | Purpose | Updated By | Update Frequency |
-|------|---------|-----------|------------------|
-| `brand-voice.md` | Pavlo's speaking patterns, vocabulary, rhythm, personality traits | Human (after interview) | Rarely -- when voice evolves |
-| `anti-slop-rules.md` | 60+ banned phrases, structural rules, scoring rubric | Human + skill refinement | Occasionally -- when new AI patterns emerge |
-| `video-formats.md` | The 7 tested formats (The Bug, The Satisfaction, Before/After, The Decision, The Trick, The Fail, The Number) with templates | Human | When new formats are discovered |
-| `metrics-log.md` | Per-video analytics: views, retention, subs, what worked/didn't | Human (manual entry from YouTube Studio) | After each video publish (+48h) |
+- Input: ~4K tokens (system prompt with reference files + user input)
+- Output: ~1K tokens (script + score)
+- Cost per script: ~$0.005-0.01
+- Monthly cost for 40 scripts: ~$0.20-0.40
 
-**Why separate files, not inline in SKILL.md:** Claude Code loads skill descriptions at startup but only reads full content when invoked. Reference files are loaded on-demand within the skill. This keeps startup context lean. The official docs recommend keeping SKILL.md under 500 lines and moving detailed reference material to separate files.
+This is negligible. Use Haiku for drafts, Sonnet for final polish if needed. Set a $5/month spend limit in Console.
 
-**Confidence:** HIGH -- directly from Claude Code skill architecture docs.
+**Confidence:** HIGH -- based on official Anthropic pricing and SDK documentation.
 
-### 3. Context Layer (project root)
+### Option 2: CLIProxyAPI (Max subscription as API)
 
-Files that provide project context but are NOT part of the skill system. Claude reads these via CLAUDE.md instructions or when exploring the project.
+Open-source proxy that exposes Claude Max subscription as an OpenAI-compatible API endpoint. Uses the OAuth token from Claude Code CLI.
 
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | Project instructions, background, principles |
-| `game-scenario.md` | Full game design document -- source of truth for game details |
-| `videos-1-6-transcription.md` | Existing video transcripts with analytics -- style anchor |
-| `.planning/PROJECT.md` | Project requirements and constraints |
+**Pros:** Zero additional cost if you already pay for Max.
+**Cons:** Terms of Service gray area -- Anthropic has blocked subscription usage outside Claude Code before. Could break at any time. Requires running a separate proxy process. Only confirmed working on Linux/macOS (Pavlo uses Windows primarily).
 
-### 4. Output Layer (`scripts/`)
+**Confidence:** LOW -- relies on unofficial workaround that may violate ToS.
 
-Generated scripts land here. Each script is a standalone markdown file.
+### Option 3: Direct Anthropic SDK without Vercel AI SDK
 
-```
-scripts/
-  2026-03-28-gorilla-sprint.md
-  2026-04-02-interactive-vegetation.md
-  2026-04-09-dragon-reveal.md
-```
+Use `@anthropic-ai/sdk` directly. More control, less abstraction. But you lose the unified streaming helpers and would need to implement streaming manually.
 
-**Script file structure:**
-
-```markdown
-# [Title]
-
-**Format:** The Satisfaction
-**Hook type:** Pre-hook -> Question -> Deliver
-**Anti-slop score:** 42/50
-**Duration target:** 30-45 seconds
-
-## Visual + Voiceover Script
-
-| Timestamp | Visual (what viewer sees) | Voiceover (what Pavlo says) |
-|-----------|--------------------------|----------------------------|
-| 0:00-0:03 | [hook visual]            | [hook line]                |
-| 0:03-0:08 | [context visual]         | [context line]             |
-| ...       | ...                      | ...                        |
-
-## Notes for Recording
-- [pronunciation tips]
-- [specific screen recording instructions]
-- [timing notes]
-```
-
-**Why this format:** Videos #3 and #6 (the best performers at 68.8% and 75.7% retention) both had detailed visual planning alongside voiceover. The two-column format enforces the "visuals drive, voice follows" principle from PROJECT.md.
-
-### 5. Feedback Layer (loop back into Reference Layer)
-
-Not a separate directory -- it is the process of updating `metrics-log.md` and having the skill analyze patterns to adjust future generation.
-
-```
-Publish video -> Wait 48h -> Enter metrics in metrics-log.md
-                                      |
-                                      v
-                    Skill reads metrics-log.md on next ideation
-                                      |
-                                      v
-                    Pattern analysis: which formats/hooks/topics work
-                                      |
-                                      v
-                    Weighted preferences in next script generation
-```
-
-## Data Flow: Ideation to Feedback
-
-### Phase 1: Weekly Ideation
-
-```
-INPUT:  Pavlo describes this week's dev progress (free text)
-      + game-scenario.md (what exists in the game)
-      + metrics-log.md (what performed well/poorly)
-
-SKILL:  devlog-scriptwriter (ideation mode)
-
-OUTPUT: 5-7 topic angles, each tagged with:
-        - Format (The Bug, The Satisfaction, etc.)
-        - Why this angle (based on metrics patterns)
-        - Visual potential (what screen recording would show)
-        - Estimated difficulty (recording complexity)
-```
-
-### Phase 2: Script Generation
-
-```
-INPUT:  Chosen topic angle from ideation
-      + brand-voice.md (how Pavlo talks)
-      + video-formats.md (format template)
-      + anti-slop-rules.md (what to avoid)
-
-SKILL:  devlog-scriptwriter (generation mode)
-
-OUTPUT: Draft script in two-column format
-```
-
-### Phase 3: Quality Pass
-
-```
-INPUT:  Draft script
-
-SKILL:  stop-slop -> score 5 dimensions
-        If score < 35/50: rewrite and re-score
-        humanizer -> final natural language pass
-
-OUTPUT: Polished script with score annotation
-```
-
-### Phase 4: Human Polish
-
-```
-INPUT:  Polished script
-
-ACTOR:  Pavlo (human)
-        - Read aloud for pronunciation check
-        - Adjust phrasing to personal comfort
-        - Mark recording notes
-
-OUTPUT: Final recording-ready script
-```
-
-### Phase 5: Record and Publish
-
-```
-INPUT:  Final script + screen recording
-
-ACTOR:  Pavlo (human)
-        - Record screen in UE5
-        - Record voiceover
-        - Edit and upload to YouTube
-
-OUTPUT: Published YouTube Short
-```
-
-### Phase 6: Metrics Collection (48h post-publish)
-
-```
-INPUT:  YouTube Studio analytics (manual read)
-
-ACTOR:  Pavlo (human)
-        - Open YouTube Studio
-        - Copy key metrics into metrics-log.md
-
-OUTPUT: Updated metrics-log.md with new entry:
-        | Video | Date | Views | Retention | Subs | Format | Hook | Notes |
-```
-
-### Phase 7: Pattern Analysis (feeds back to Phase 1)
-
-```
-INPUT:  metrics-log.md (all entries)
-
-SKILL:  devlog-scriptwriter (analysis mode)
-
-OUTPUT: Insights fed into next ideation:
-        - "The Satisfaction format averages 70% retention vs 45% for showcase"
-        - "Physics/destruction hooks get 3x more views"
-        - "Videos over 40 seconds lose 15% retention vs under 35 seconds"
-```
+**Verdict:** Use Option 1 (Anthropic API + Vercel AI SDK). The cost is effectively zero for this use case. The Vercel AI SDK provides streaming, structured output, and provider abstraction out of the box.
 
 ## Recommended Project Structure
 
 ```
 content-pavyny/
-|
-+-- CLAUDE.md                              # Project instructions for Claude
-+-- game-scenario.md                       # Game design document (context)
-+-- videos-1-6-transcription.md            # Historical transcripts (style anchor)
-|
-+-- .claude/
-|   +-- skills/
-|       +-- devlog-scriptwriter/           # Main skill (PROJECT scope)
-|           +-- SKILL.md                   # Orchestrator: 4 modes
-|           +-- references/
-|               +-- brand-voice.md         # Pavlo's voice profile
-|               +-- anti-slop-rules.md     # Banned phrases + scoring rubric
-|               +-- video-formats.md       # 7 format templates
-|               +-- metrics-log.md         # Per-video analytics journal
-|
-+-- scripts/                               # Generated scripts (output)
-|   +-- 2026-03-28-gorilla-sprint.md
-|   +-- ...
-|
-+-- .planning/                             # GSD planning files
-    +-- PROJECT.md
-    +-- research/
-    +-- roadmap/
+├── .claude/skills/devlog-scriptwriter/    # EXISTING -- skill files (read-only for web app)
+│   ├── SKILL.md
+│   └── references/
+│       ├── anti-slop-rules.md
+│       ├── brand-voice.md
+│       ├── video-formats.md
+│       └── metrics-log.md
+├── scripts/                               # EXISTING -- generated scripts as markdown
+│   └── 007-dead-world-to-living-forest.md
+├── app/                                   # NEW -- Next.js app
+│   ├── layout.tsx                         # Root layout with nav
+│   ├── page.tsx                           # Dashboard / script library
+│   ├── generate/
+│   │   └── page.tsx                       # Script generation form
+│   ├── scripts/
+│   │   └── [id]/
+│   │       └── page.tsx                   # Script editor view
+│   ├── api/
+│   │   └── generate/
+│   │       └── route.ts                   # Streaming AI endpoint
+│   └── actions/
+│       ├── scripts.ts                     # CRUD server actions for scripts
+│       └── references.ts                  # Read/update reference files
+├── components/
+│   ├── generate-form.tsx                  # Format picker + context input
+│   ├── script-editor.tsx                  # Dual-track block editor
+│   ├── script-block.tsx                   # Single visual|voiceover row
+│   ├── script-card.tsx                    # Library list item
+│   ├── anti-slop-panel.tsx                # Score display + phrase highlights
+│   ├── format-selector.tsx                # Video format dropdown with descriptions
+│   └── hook-variants.tsx                  # Display 2-3 hook options
+├── lib/
+│   ├── ai/
+│   │   ├── client.ts                      # Vercel AI SDK setup + anthropic provider
+│   │   ├── prompts.ts                     # System prompt builder (loads reference files)
+│   │   └── parser.ts                      # Parse AI response into Script structure
+│   ├── db/
+│   │   ├── index.ts                       # SQLite connection (better-sqlite3)
+│   │   ├── schema.ts                      # Table definitions
+│   │   └── migrations/                    # Schema migrations
+│   ├── references.ts                      # Read/write .claude/skills/ reference files
+│   ├── anti-slop.ts                       # Client-side banned phrase scanner
+│   └── types.ts                           # Shared TypeScript types
+├── public/
+├── next.config.ts
+├── package.json
+└── tsconfig.json
 ```
 
-**Personal skills (not in repo):**
-```
-~/.claude/skills/
-+-- stop-slop/
-|   +-- SKILL.md                           # Anti-slop scoring
-+-- humanizer/
-    +-- SKILL.md                           # AI pattern removal
-```
+### Structure Rationale
 
-## Patterns to Follow
+- **`app/` stays thin:** Pages are routing shells. Business logic lives in `lib/`, UI in `components/`. This keeps the App Router pages focused on layout and data loading.
+- **`lib/ai/` encapsulates all AI logic:** The prompt builder reads reference files and constructs the system prompt. The parser turns AI text output into typed Script objects. This is the bridge between the existing skill files and the web app.
+- **`lib/references.ts` reads existing files in-place:** Reference files stay in `.claude/skills/devlog-scriptwriter/references/`. The web app reads them directly via filesystem. No duplication. When Pavlo edits brand-voice.md through Claude Code CLI or the web UI, both tools see the same data.
+- **`components/` is flat:** With only 7-8 components, nesting into subfolders adds friction without value.
+- **`scripts/` directory is the source of truth for exported scripts:** The database stores working drafts and metadata. Export writes a markdown file to `scripts/` matching the existing format (see script #7 for the template).
 
-### Pattern 1: Multi-Mode Skill
+## Architectural Patterns
 
-**What:** A single SKILL.md that supports multiple modes (ideation, generation, analysis) via argument passing.
+### Pattern 1: Reference Files as System Prompt Context
 
-**When:** The main devlog-scriptwriter skill needs to do different things at different pipeline stages.
+**What:** At generation time, the server reads all 4 reference markdown files from disk, concatenates them into a structured system prompt, and sends to Claude. This replicates what SKILL.md does in Claude Code -- the skill instructs Claude to "read brand-voice.md" etc. The web app does this reading programmatically.
 
-**How:**
+**When to use:** Every AI generation request.
 
-```yaml
----
-name: devlog-scriptwriter
-description: Generate devlog scripts for YouTube Shorts. Handles ideation (topic angles), script generation, and metrics analysis. Use when writing video scripts, brainstorming video ideas, or analyzing video performance.
----
+**Trade-offs:** Reads files from disk on every request (negligible for local app). Reference files are ~10KB total -- well within Claude's context window. No caching needed for this scale.
 
-# Devlog Scriptwriter
+```typescript
+// lib/ai/prompts.ts
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
-Based on the request, operate in one of these modes:
+const REFS_DIR = join(process.cwd(), '.claude/skills/devlog-scriptwriter/references');
 
-## Mode: Ideation
-When asked for ideas/topics/angles:
-1. Read `references/metrics-log.md` for performance patterns
-2. Ask about this week's dev progress
-3. Generate 5-7 angles using formats from `references/video-formats.md`
+export function buildSystemPrompt(format: string): string {
+  const brandVoice = readFileSync(join(REFS_DIR, 'brand-voice.md'), 'utf-8');
+  const antiSlop = readFileSync(join(REFS_DIR, 'anti-slop-rules.md'), 'utf-8');
+  const videoFormats = readFileSync(join(REFS_DIR, 'video-formats.md'), 'utf-8');
+  const metrics = readFileSync(join(REFS_DIR, 'metrics-log.md'), 'utf-8');
 
-## Mode: Script Generation
-When asked to write a script:
-1. Read `references/brand-voice.md` for voice profile
-2. Read `references/anti-slop-rules.md` for constraints
-3. Generate script in two-column format
-4. Self-score against anti-slop rubric
+  return `You are a devlog scriptwriter for Pavlo's YouTube Shorts channel.
 
-## Mode: Analysis
-When asked to analyze metrics/performance:
-1. Read `references/metrics-log.md`
-2. Identify patterns across format, hook type, topic, duration
-3. Generate recommendations for next cycle
-```
+## Brand Voice
+${brandVoice}
 
-**Confidence:** HIGH -- multi-mode skills are standard Claude Code skill pattern.
+## Anti-Slop Rules
+${antiSlop}
 
-### Pattern 2: Chained Skill Invocation
+## Video Format to Use: ${format}
+${videoFormats}
 
-**What:** The main skill generates a script, then Claude automatically invokes stop-slop and humanizer as quality gates.
+## Performance Metrics (for context)
+${metrics}
 
-**When:** Every script generation must pass quality checks before being considered complete.
-
-**How:** This happens naturally in Claude Code. When the main skill's SKILL.md instructs "after generating a script, score it using the stop-slop methodology," Claude will invoke the stop-slop skill if its description matches. The key is having the main skill reference the quality pass explicitly in its instructions.
-
-**Important caveat:** Claude Code does not guarantee skill chaining order. The main skill should contain the core anti-slop rules inline (or reference them from its own references/) rather than depending on external skills being invoked in sequence. Use companion skills as supplementary quality gates, not as the only quality gate.
-
-**Confidence:** MEDIUM -- skill chaining works in practice but is not a formally guaranteed behavior.
-
-### Pattern 3: Style Anchoring via Transcript
-
-**What:** Include real transcript excerpts in brand-voice.md as concrete examples of the target style.
-
-**When:** Always. Abstract voice descriptions ("casual, short sentences") are insufficient. Real examples anchor the style.
-
-**How:** From `videos-1-6-transcription.md`, extract the best-performing scripts (#3 "I Broke Physics" and #6 "Troll throw people") and embed them in brand-voice.md as reference examples. The skill reads these when generating and mimics the rhythm, vocabulary, and structure.
-
-**Why this matters:** Videos #3 and #6 have distinct qualities -- short punchy sentences, self-deprecating humor, technical terms mixed with casual language, "turns out" transitions. These are Pavlo's actual patterns, not AI-imagined ones.
-
-**Confidence:** HIGH -- this is standard practice in any voice-matching task.
-
-### Pattern 4: Metrics-Driven Preference Weighting
-
-**What:** The metrics-log.md contains structured data that the skill reads to weight future generation preferences.
-
-**When:** During ideation mode, every session.
-
-**How:** The metrics log uses a structured format that enables pattern extraction:
-
-```markdown
-## Video Log
-
-| # | Title | Date | Views | Retention% | Subs | Format | Hook Type | Duration | Notes |
-|---|-------|------|-------|-----------|------|--------|-----------|----------|-------|
-| 1 | Making a Troll Game | 2025-XX | 2980 | 39.4 | +5 | Showcase | Weak | 0:20 | Generic title |
-| 3 | I Broke Physics | 2025-XX | 7740 | 68.8 | +21 | The Bug | Pre-hook+Question | 0:34 | Destruction visual |
-| 6 | Troll throw people | 2025-XX | 8760 | 75.7 | +16 | The Satisfaction | Slow-mo hook | 0:43 | Ragdoll comedy |
+## Output Format
+Return the script as structured JSON matching this schema:
+{
+  "hooks": [{ "variant": "A", "visual": "...", "voiceover": "..." }],
+  "beats": [{ "visual": "...", "voiceover": "..." }],
+  "titles": ["...", "...", "..."],
+  "thumbnail": "...",
+  "duration_estimate": "~42 seconds",
+  "anti_slop_score": {
+    "directness": 8, "rhythm": 7, "trust": 8, "authenticity": 7, "density": 8,
+    "total": 38, "notes": "..."
+  }
+}`;
+}
 ```
 
-The skill reads this and infers: "The Bug and The Satisfaction formats with strong visual hooks average 72% retention vs 42% for Showcase. Prefer these formats. Physics/destruction themes outperform by 3x."
+### Pattern 2: Streaming Generation with Structured Output
 
-**Confidence:** HIGH -- straightforward data analysis pattern.
+**What:** Use Vercel AI SDK's `streamText` for the generation endpoint. The AI streams the response token-by-token to the client, giving immediate visual feedback. After streaming completes, parse the full response into the Script structure.
 
-## Anti-Patterns to Avoid
+**When to use:** The `/api/generate` route handler.
 
-### Anti-Pattern 1: Monolithic SKILL.md
+**Trade-offs:** Streaming gives great UX but structured JSON output can be tricky to parse mid-stream. Two approaches: (a) stream raw text then parse on completion, or (b) use `generateObject` for guaranteed structure but no streaming. Recommend (a) -- stream the text for UX, parse after completion for the editor.
 
-**What:** Putting everything -- anti-slop rules, brand voice, format templates, metrics analysis logic -- in one giant SKILL.md file.
+```typescript
+// app/api/generate/route.ts
+import { streamText } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { buildSystemPrompt } from '@/lib/ai/prompts';
 
-**Why bad:** Claude Code loads full skill content into context when invoked. A 2000-line skill wastes context window and makes the skill slower to load. The official recommendation is under 500 lines for SKILL.md.
+export async function POST(req: Request) {
+  const { format, context } = await req.json();
 
-**Instead:** Keep SKILL.md as an orchestrator (under 500 lines) with references to separate files in `references/`. Claude reads those files on demand.
+  const result = streamText({
+    model: anthropic('claude-3-5-haiku-20241022'),
+    system: buildSystemPrompt(format),
+    prompt: `Write a script in "${format}" format.\n\nDev context: ${context}`,
+  });
 
-### Anti-Pattern 2: Depending on Skill Chain Order
+  return result.toDataStreamResponse();
+}
+```
 
-**What:** Assuming stop-slop will always run after the main skill, or that humanizer will always run last.
+### Pattern 3: Dual-Track Editor as Block Array
 
-**Why bad:** Claude Code skill invocation is not deterministic sequencing. Claude decides when to invoke skills based on context. If the quality gate lives entirely in an external skill, it might not fire.
+**What:** The script editor represents each beat as an editable block with two cells: visual description and voiceover text. The script is an array of blocks. Blocks can be reordered, added, removed, or edited inline.
 
-**Instead:** Embed the critical anti-slop rules (the banned phrases list, the scoring rubric) in the main skill's references. Use companion skills as additional passes, not the only pass.
+**When to use:** The script editing view.
 
-### Anti-Pattern 3: Over-Automating Metrics Collection
+**Trade-offs:** More complex than a single textarea but matches the existing dual-track format perfectly. The existing script format (see script #7) already uses a markdown table with VISUAL | VOICEOVER columns -- this is the same structure, just rendered as editable blocks instead of a table.
 
-**What:** Building YouTube API integration, OAuth flows, MCP servers for automated metrics.
+```typescript
+// lib/types.ts
+interface ScriptBeat {
+  id: string;
+  visual: string;
+  voiceover: string;  // can be empty for visual-only beats
+}
 
-**Why bad:** At 1 video/week cadence, the engineering effort vastly exceeds the time saved. Manual entry takes 2 minutes. API setup takes hours and creates maintenance burden.
+interface Script {
+  id: number;
+  title: string;
+  format: string;         // "The Bug", "The Satisfaction", etc.
+  hooks: HookVariant[];   // 2-3 variants
+  beats: ScriptBeat[];
+  titles: string[];       // 3 title options
+  thumbnail: string;
+  durationEstimate: string;
+  antiSlopScore: AntiSlopScore;
+  status: 'draft' | 'ready' | 'recorded' | 'published';
+  createdAt: string;
+  updatedAt: string;
+}
+```
 
-**Instead:** Simple markdown table in metrics-log.md. Pavlo opens YouTube Studio, reads 5 numbers, types them in. The feedback loop works the same whether data entry is manual or automated.
+## Data Flow
 
-### Anti-Pattern 4: Generic Voice Description Without Anchors
+### Script Generation Flow
 
-**What:** Describing brand voice as "casual, conversational, with humor" without real examples.
+```
+[User fills Generate Form]
+    ↓ (format, dev context, optional notes)
+[POST /api/generate]
+    ↓
+[Server reads reference files from disk]
+    ↓ (brand-voice.md + anti-slop-rules.md + video-formats.md + metrics-log.md)
+[Builds system prompt with all context]
+    ↓
+[Calls Claude via Vercel AI SDK (streaming)]
+    ↓ (tokens stream back)
+[Client displays streaming text]
+    ↓ (on completion)
+[Parser extracts structured Script from response]
+    ↓
+[User reviews: picks hook variant, edits beats]
+    ↓
+[Server Action saves to SQLite]
+    ↓
+[Script appears in library]
+```
 
-**Why bad:** Every AI can write "casual and conversational." Without concrete transcript anchors, the generated voice will be generic-casual, not Pavlo-casual.
+### Script Editing Flow
 
-**Instead:** Include 2-3 real transcript excerpts from best-performing videos as style anchors in brand-voice.md. Let Claude match the specific rhythm, not an abstract description.
+```
+[User opens script from library]
+    ↓
+[Server loads script from SQLite]
+    ↓
+[Editor renders beats as block array]
+    ↓
+[User edits visual/voiceover cells inline]
+    ↓ (on each edit)
+[Client-side anti-slop scanner re-scores voiceover text]
+    ↓ (highlights banned phrases in red)
+[Anti-Slop Panel updates score in real-time]
+    ↓
+[User clicks Save → Server Action updates SQLite]
+```
+
+### Script Export Flow
+
+```
+[User clicks Export on a script]
+    ↓
+[Server Action reads script from SQLite]
+    ↓
+[Formats as markdown matching existing script template]
+    ↓ (# Script #N: {title}\n**Format:**\n## Hook Variants\n## Script (Dual-Track)\n| VISUAL | VOICEOVER |)
+[Writes to scripts/{number}-{slug}.md]
+    ↓
+[File is now readable by Claude Code skill + committed to git]
+```
+
+### Key Data Flows
+
+1. **Reference files are read, not duplicated:** The web app reads `.claude/skills/devlog-scriptwriter/references/*.md` directly from disk. Both Claude Code CLI and the web app operate on the same files. Edits in either tool are immediately visible to the other.
+
+2. **SQLite is the draft workspace:** Generated scripts go into SQLite as drafts. They can be edited, re-scored, and polished. Only when exported do they become markdown files in `scripts/`.
+
+3. **Anti-slop scoring happens twice:** First by Claude during generation (full 5-dimension scoring with notes). Second by the client-side scanner during editing (real-time banned phrase highlighting + approximate re-scoring based on pattern matching).
+
+## Database Schema
+
+```sql
+CREATE TABLE scripts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  format TEXT NOT NULL,                    -- "The Bug", "The Satisfaction", etc.
+  hooks TEXT NOT NULL,                     -- JSON array of hook variants
+  beats TEXT NOT NULL,                     -- JSON array of {visual, voiceover} blocks
+  titles TEXT NOT NULL,                    -- JSON array of 3 title options
+  thumbnail TEXT,                          -- thumbnail concept description
+  duration_estimate TEXT,                  -- "~42 seconds"
+  anti_slop_score TEXT,                    -- JSON: {directness, rhythm, trust, authenticity, density, total, notes}
+  dev_context TEXT,                        -- original input context
+  status TEXT NOT NULL DEFAULT 'draft',    -- draft | ready | recorded | published
+  exported_path TEXT,                      -- path to exported .md file, null if not exported
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+
+**Why SQLite with JSON columns instead of normalized tables:** This is a single-user local app. Scripts are written and read as units. Normalizing beats into a separate table adds join complexity for zero benefit. JSON columns with TypeScript parsing keep the code simple and the schema flat.
+
+**Why `better-sqlite3` over Prisma/Drizzle:** For a single-user local app with one table, an ORM adds dependency weight without value. `better-sqlite3` is synchronous (simpler in server actions), fast, and zero-config. If the schema grows beyond 2-3 tables, reconsider.
+
+## Anti-Slop Integration
+
+The anti-slop system works at two levels:
+
+### Level 1: AI-side scoring (generation time)
+
+The system prompt includes the full anti-slop-rules.md content. Claude scores its own output on 5 dimensions and rewrites if below 35/50. This is the same behavior as SKILL.md's "Anti-Slop Scoring (Mandatory)" section.
+
+### Level 2: Client-side scanning (editing time)
+
+A lightweight TypeScript module scans voiceover text against the banned phrase list. This provides:
+- Real-time highlighting of banned phrases as the user edits
+- Approximate re-scoring after human edits (catches regressions if Pavlo accidentally adds a banned phrase)
+- Visual feedback in the Anti-Slop Panel
+
+```typescript
+// lib/anti-slop.ts
+const BANNED_WORDS = [
+  'journey', 'dive into', 'deep dive', 'game-changer', 'landscape',
+  'realm', 'leverage', 'utilize', 'harness', 'optimize', 'elevate',
+  'empower', 'seamless', 'robust', 'streamline', 'innovative',
+  'cutting-edge', 'delve', 'navigate', 'ecosystem', 'testament',
+  // ... full list extracted from anti-slop-rules.md
+];
+
+export function scanForSlop(text: string): SlopMatch[] {
+  return BANNED_WORDS
+    .map(phrase => {
+      const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
+      const matches = [...text.matchAll(regex)];
+      return matches.map(m => ({
+        phrase,
+        index: m.index!,
+        length: phrase.length,
+      }));
+    })
+    .flat();
+}
+```
+
+## Build Order Implications
+
+Based on dependencies between components:
+
+### Phase 1: Foundation (build first)
+
+1. **Next.js project setup** with App Router, TypeScript, Tailwind
+2. **SQLite database** with `better-sqlite3` -- schema + basic CRUD server actions
+3. **Reference file loader** (`lib/references.ts`) -- reads existing .md files from disk
+4. **Type definitions** (`lib/types.ts`) -- Script, ScriptBeat, AntiSlopScore, etc.
+
+**Rationale:** Everything else depends on the database, types, and file access.
+
+### Phase 2: AI Generation (build second)
+
+5. **AI service** (`lib/ai/`) -- prompt builder, Vercel AI SDK setup with Anthropic provider
+6. **Streaming API route** (`app/api/generate/route.ts`)
+7. **Generate Form page** (`app/generate/page.tsx` + `components/generate-form.tsx`)
+8. **Response parser** (`lib/ai/parser.ts`) -- structured Script from AI text
+
+**Rationale:** This is the core value. Once generation works, scripts flow into the database and everything downstream has data to render.
+
+### Phase 3: Editor + Library (build third)
+
+9. **Script Library page** (`app/page.tsx`) -- list, search, filter scripts
+10. **Script Editor page** (`app/scripts/[id]/page.tsx`) -- dual-track block editor
+11. **Anti-slop client scanner** (`lib/anti-slop.ts`) + Anti-Slop Panel component
+
+**Rationale:** Library and editor are read/write views of data that already exists from Phase 2.
+
+### Phase 4: Polish (build last)
+
+12. **Export to markdown** -- write script to `scripts/` directory in existing format
+13. **Reference file editor** -- edit brand-voice.md, metrics-log.md from the web UI
+14. **Status workflow** -- draft -> ready -> recorded -> published transitions
+
+**Rationale:** These are quality-of-life features that enhance but don't enable the core workflow.
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Duplicating Reference Files into the Database
+
+**What people do:** Copy brand-voice.md, anti-slop-rules.md etc. into database tables, then keep them in sync with the filesystem versions.
+**Why it's wrong:** Creates two sources of truth. The Claude Code CLI skill reads from disk. The web app would read from the database. They drift apart. Edits in one place don't propagate.
+**Do this instead:** Always read reference files from their original location on disk (`.claude/skills/devlog-scriptwriter/references/`). Both tools share the same files.
+
+### Anti-Pattern 2: Building a Full Rich Text Editor
+
+**What people do:** Reach for Slate, TipTap, or ProseMirror to build a "proper" editor.
+**Why it's wrong:** The script format is highly structured (array of visual|voiceover pairs). A rich text editor adds massive complexity for a use case that is essentially "edit cells in a table." The script is NOT a free-form document.
+**Do this instead:** Render beats as a list of paired textareas or contentEditable divs. Each beat is a row with two fields. Simple, predictable, easy to serialize back to the Script type.
+
+### Anti-Pattern 3: Over-engineering the AI Layer
+
+**What people do:** Add LangChain, implement tool use, multi-step chains, RAG pipelines, vector embeddings for reference files.
+**Why it's wrong:** The reference files are 10KB total. They fit trivially in Claude's context window. There is one generation step, not a chain. The skill's logic (read files -> generate script -> score -> rewrite if needed) is a single prompt, not a pipeline.
+**Do this instead:** One system prompt containing all reference file content. One user message with format + context. One API call. Parse the response. Done.
+
+### Anti-Pattern 4: Using CLIProxyAPI to Avoid API Costs
+
+**What people do:** Route web app traffic through CLIProxyAPI to use the Max subscription instead of paying for API access.
+**Why it's wrong:** Anthropic has blocked OAuth token usage outside Claude Code before. The proxy can break without warning. It adds a separate process dependency. And the actual API cost for this use case is under $1/month.
+**Do this instead:** Get an Anthropic API key. Set a $5/month spend limit. Use Claude 3.5 Haiku for generation. The cost is negligible.
 
 ## Integration Points
 
-### Skill-to-Reference Integration
+### External Services
 
-The main skill's SKILL.md must explicitly reference supporting files so Claude knows they exist and when to load them:
+| Service | Integration Pattern | Notes |
+|---------|---------------------|-------|
+| Claude API (Anthropic) | Vercel AI SDK `@ai-sdk/anthropic` provider, streaming via `streamText` | API key in `.env.local`. Use Haiku for cost efficiency. Sonnet available for complex scripts. |
 
-```markdown
-## Additional resources
+### Internal Boundaries
 
-- For Pavlo's voice profile and style examples, see [brand-voice.md](references/brand-voice.md)
-- For banned phrases and scoring rubric, see [anti-slop-rules.md](references/anti-slop-rules.md)
-- For video format templates, see [video-formats.md](references/video-formats.md)
-- For historical performance data, see [metrics-log.md](references/metrics-log.md)
-```
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| Web App <-> Skill Reference Files | Direct filesystem read (`fs.readFileSync`) | Web app reads reference files in-place. Both tools share the same files. |
+| Web App <-> Script Markdown Files | Filesystem write on export | Export creates markdown in `scripts/` matching existing format. Import reads existing scripts on first run. |
+| Client <-> Server | Server Actions (mutations) + Route Handlers (streaming) | Use Server Actions for CRUD. Use Route Handler only for the streaming generation endpoint. |
+| AI Response <-> App Types | JSON parsing in `lib/ai/parser.ts` | The system prompt instructs Claude to return structured JSON. Parser validates and types the response. |
 
-### CLAUDE.md to Skill Integration
+### Existing File Integration Map
 
-CLAUDE.md should reference the skill and its principles but NOT duplicate skill content:
-
-```markdown
-## Scriptwriting
-
-Use the `/devlog-scriptwriter` skill for all script work.
-Key principles (enforced by the skill):
-- Anti-slop score must be 35+/50
-- One Short = one idea
-- Visuals drive, voice follows
-```
-
-### Context Files to Skill Integration
-
-The main skill should instruct Claude to read context files when relevant:
-
-- `game-scenario.md` -- read during ideation to know what game features exist
-- `videos-1-6-transcription.md` -- read during brand voice setup (one-time) and as needed for style reference
-
-## Build Order (Dependencies)
-
-The components have clear dependency relationships that dictate build order:
-
-```
-1. brand-voice.md          (no dependencies -- requires human interview)
-   |
-2. anti-slop-rules.md      (no dependencies -- can be assembled from existing skills)
-   |
-3. video-formats.md        (no dependencies -- based on research already done)
-   |
-4. metrics-log.md          (depends on: existing video data from transcription file)
-   |
-5. SKILL.md (main)         (depends on: all reference files existing so it can reference them)
-   |
-6. Stop-slop install       (no dependency on main skill -- independent)
-   |
-7. Humanizer install       (no dependency on main skill -- independent)
-   |
-8. First script generation (depends on: 1-7 all complete)
-   |
-9. First feedback cycle    (depends on: 8 published + 48h metrics)
-```
-
-**Parallelizable:** Steps 1-4 and steps 6-7 can happen in parallel. Step 5 depends on 1-4 being at least drafted. Steps 6-7 are independent of everything else.
-
-**Critical path:** brand-voice.md (step 1) is the bottleneck because it requires a human interview with Pavlo. Everything else can be pre-built with placeholder content.
+| Existing File | How Web App Uses It | Read/Write |
+|---------------|---------------------|------------|
+| `.claude/skills/devlog-scriptwriter/SKILL.md` | Source of generation logic -- the system prompt replicates its rules | Read-only |
+| `references/brand-voice.md` | Injected into system prompt at generation time. Optionally editable via web UI. | Read + optional Write |
+| `references/anti-slop-rules.md` | Injected into system prompt. Banned phrases extracted for client-side scanner. | Read-only |
+| `references/video-formats.md` | Injected into system prompt. Format names/descriptions populate the format selector dropdown. | Read-only |
+| `references/metrics-log.md` | Injected into system prompt for context. Editable via web UI to log new video metrics. | Read + Write |
+| `scripts/*.md` | Imported on first run to populate the library. Export target for finished scripts. | Read + Write |
 
 ## Sources
 
-- [Claude Code Skills Documentation](https://code.claude.com/docs/en/skills) -- skill structure, frontmatter, supporting files, invocation control
-- [stop-slop skill](https://github.com/drm-collab/stop-slop) -- anti-slop scoring methodology (5 dimensions, 35/50 threshold)
-- [humanizer skill](https://github.com/blader/humanizer) -- AI pattern removal
-- [Claude Code Skills Structure Guide (GitHub Gist)](https://gist.github.com/mellanon/50816550ecb5f3b239aa77eef7b8ed8d) -- best practices for skill development
-- Project context: `videos-1-6-transcription.md` -- real performance data driving architectural decisions
+- [Anthropic Help Center: Max subscription vs API billing](https://support.claude.com/en/articles/9876003)
+- [Vercel AI SDK: Getting Started with Next.js App Router](https://ai-sdk.dev/docs/getting-started/nextjs-app-router)
+- [Vercel AI SDK: Anthropic Provider](https://ai-sdk.dev/providers/ai-sdk-providers/anthropic)
+- [Vercel AI SDK: Stream Text](https://ai-sdk.dev/cookbook/next/stream-text)
+- [CLIProxyAPI GitHub](https://github.com/router-for-me/CLIProxyAPI) -- researched but NOT recommended
+- [Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript)
+
+---
+*Architecture research for: Devlog Scriptwriter Web UI*
+*Researched: 2026-03-26*

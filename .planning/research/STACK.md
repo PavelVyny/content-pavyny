@@ -1,229 +1,295 @@
-# Technology Stack
+# Stack Research
 
-**Project:** Devlog Scriptwriter Pipeline
-**Domain:** AI-assisted content scriptwriting for YouTube Shorts devlogs
-**Researched:** 2026-03-26
-**Overall confidence:** HIGH
+**Domain:** Web UI for AI-assisted scriptwriting pipeline (local app)
+**Researched:** 2026-03-28
+**Confidence:** HIGH
 
 ## Important Context
 
-This is NOT a traditional software application. There is no web server, no database, no deployment. The "stack" is Claude Code skills (SKILL.md files), markdown reference documents, and CLI tools that together form a scriptwriting workflow. Every component below lives in the filesystem and runs through Claude Code.
+This is a SUBSEQUENT MILESTONE. The CLI-based scriptwriting pipeline (custom skill, anti-slop scoring, brand voice) already works. This research covers ONLY what is needed to wrap it in a local web UI. The existing skill files, reference documents, and companion skills remain unchanged.
+
+**The critical question:** How to call Claude AI from a web app using Pavlo's existing Claude Max subscription ($100/month) without additional API costs.
+
+---
+
+## AI Backend Decision: Claude Code Agent SDK
+
+**Verdict:** Use `@anthropic-ai/claude-agent-sdk` -- Anthropic's official TypeScript SDK that spawns Claude Code as a subprocess. It inherits Max subscription auth automatically.
+
+**Confidence:** HIGH -- verified via [official Claude Code docs](https://code.claude.com/docs/en/headless) and [Agent SDK TypeScript reference](https://platform.claude.com/docs/en/agent-sdk/typescript).
+
+### How It Works
+
+The Agent SDK spawns the Claude Code CLI binary as a child process, communicating over stdin/stdout via JSON-lines. When you call `query()`, it starts a Claude Code session that:
+
+1. Uses the same auth as `claude` CLI (Max subscription OAuth -- no API key needed)
+2. Automatically loads CLAUDE.md, skills, MCP servers from the working directory
+3. Streams messages back as an async generator
+4. Supports structured JSON output with schema validation
+
+```typescript
+import { query } from "@anthropic-ai/claude-agent-sdk";
+
+const conversation = query({
+  prompt: "Generate a script using The Bug format about collision detection",
+  options: {
+    cwd: "/path/to/content-pavyny",
+    // Loads devlog-scriptwriter skill, brand-voice.md, anti-slop rules automatically
+    settingSources: ["project"],
+    allowedTools: ["Read"],
+    outputFormat: {
+      type: "json_schema",
+      schema: scriptOutputSchema
+    }
+  }
+});
+
+for await (const message of conversation) {
+  // Stream to the web UI in real-time
+}
+```
+
+### Why NOT Other Approaches
+
+| Approach | Why Rejected |
+|----------|-------------|
+| **Anthropic API (`@anthropic-ai/sdk`)** | Requires separate API key with per-token billing. Max subscription does NOT include API access -- [confirmed by Anthropic](https://support.claude.com/en/articles/9876003). Would cost additional money on top of $100/month Max. |
+| **CLIProxyAPI** | Third-party Go binary that proxies Max subscription OAuth tokens into OpenAI-compatible API format. Clever hack but: (1) unofficial, (2) fragile if Anthropic changes auth flow, (3) unnecessary when official Agent SDK exists. |
+| **Raw `claude -p` subprocess** | Works but you'd be reimplementing what the Agent SDK already provides: process management, streaming, structured output, error handling. The SDK is literally a wrapper around `claude -p`. |
+| **Claude Code Web UI projects (sugyan, vultuk)** | Full terminal emulators for Claude Code in browser. Overkill -- we need script generation, not a general-purpose Claude terminal. |
+
+### Key Agent SDK Options for This Project
+
+| Option | Value | Purpose |
+|--------|-------|---------|
+| `cwd` | Project directory | So Claude finds CLAUDE.md and skills |
+| `settingSources` | `["project"]` | Load CLAUDE.md, skills from project dir |
+| `allowedTools` | `["Read"]` | Auto-approve reading reference files |
+| `outputFormat` | JSON schema | Get structured script output (beats, hooks, scores) |
+| `maxTurns` | `3-5` | Limit agentic loops for predictable response times |
+| `systemPrompt` | `{ type: "preset", preset: "claude_code", append: "..." }` | Use Claude Code's system prompt + scriptwriting instructions |
+
+### Auth Flow
+
+1. Pavlo runs `claude` CLI once to authenticate with Max subscription (already done)
+2. OAuth token is stored in system keychain
+3. Agent SDK spawns `claude` subprocess which reads the same keychain
+4. No API key, no env vars, no additional cost
+
+**CRITICAL:** Do NOT set `ANTHROPIC_API_KEY` environment variable. If present, Claude Code uses API billing instead of Max subscription. The Agent SDK docs confirm: "Bare mode skips OAuth and keychain reads. Anthropic authentication must come from ANTHROPIC_API_KEY or an apiKeyHelper." So in non-bare mode (our case), it uses the keychain OAuth token from Max.
 
 ---
 
 ## Recommended Stack
 
-### Core: Custom Devlog Scriptwriter Skill
+### Core Technologies
 
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| Custom `devlog-scriptwriter` skill | N/A | Central orchestration skill for script generation | No single existing skill covers devlog + anti-slop + feedback loop + brand voice. Combine best patterns from `viral-reel-generator`, `script-writer`, and `stop-slop` into one custom skill. Custom skill matches Pavlo's exact workflow: ideation, format selection (The Bug, The Satisfaction, etc.), hook formula, anti-slop pass, pronunciation check. | HIGH |
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Next.js | 16.x | Full-stack React framework | Current stable release (16.2 as of March 2026). App Router with React Server Components for server-side Claude SDK calls. Server Actions for form submissions (generate script, save edits). Turbopack is now the default bundler -- fast dev server. Pavlo already knows React + TypeScript. |
+| React | 19.x | UI rendering | Ships with Next.js 16. View Transitions for smooth page navigation. |
+| TypeScript | 5.x | Type safety | Already in Pavlo's stack. Type the script schema, beat structure, API responses. |
+| `@anthropic-ai/claude-agent-sdk` | latest | AI backend | Official SDK. Spawns Claude Code as subprocess. Uses Max subscription auth. Streams responses. Structured JSON output. |
+| Drizzle ORM | 0.45.x | Database ORM | Type-safe, SQL-like syntax, zero overhead over raw SQL. Native `better-sqlite3` support with synchronous API matching SQLite's architecture. Schema-as-code with `drizzle-kit` migrations. Much lighter than Prisma (no engine binary, no WASM). |
+| better-sqlite3 | 11.x | SQLite driver | Synchronous API aligns with SQLite's single-writer model. Fastest Node.js SQLite driver. No async overhead. Used by Drizzle as recommended driver. |
+| Tailwind CSS | 4.x | Styling | Ships with Next.js 16 via `create-next-app`. OKLCh color tokens. Pavlo's stack already uses it. |
+| shadcn/ui | v4 (CLI) | UI components | Copy-paste components (not a dependency). Radix UI primitives for accessibility. v4 released March 2026 with full Next.js 16 + React 19 + Tailwind v4 support. Perfect for a local tool -- no design system needed, just grab components. |
 
-**Architecture:** Follow official Anthropic skill architecture (verified via [Claude Code docs](https://code.claude.com/docs/en/skills) and [Skill best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)):
+### Why Next.js 16 Over 15
 
-```
-.claude/skills/devlog-scriptwriter/
-  SKILL.md                    # Process steps only (<500 lines)
-  references/
-    anti-slop-rules.md        # 60+ banned phrases, structural constraints
-    brand-voice.md            # Pavlo's voice profile (filled via interview)
-    metrics-log.md            # Per-video analytics journal
-    video-formats.md          # The Bug, The Satisfaction, Before/After, etc.
-    hook-formulas.md          # Pre-hook -> Question -> Deliver patterns
-    pronunciation-guide.md   # Words/constructions to avoid for non-native speaker
-```
+Next.js 16 was released in early 2026. Key changes from 15:
 
-**Key architectural principle:** Process goes in SKILL.md, context goes in reference files. SKILL.md explicitly names which reference file to load at each step. Keep references one level deep (no references-to-references). This is the official Anthropic recommendation and prevents Claude from partially reading nested files.
+| Change | Impact on This Project |
+|--------|----------------------|
+| Caching is fully opt-in (no more surprising cached responses) | Simpler mental model -- AI responses are never cached by default |
+| `middleware` renamed to `proxy` | Minor naming change, follow the new convention |
+| React 19.2 with View Transitions | Smooth navigation between script list and editor |
+| Turbopack is default bundler (stable for dev + prod) | Faster builds |
+| Async request APIs enforced (no more sync compat) | Use `await cookies()`, `await params` etc. |
 
-### Anti-Slop Layer
+If for some reason Next.js 16 causes issues, Next.js 15.5.x is a safe fallback -- the App Router API is nearly identical.
 
-| Tool | Source | Purpose | Why | Confidence |
-|------|--------|---------|-----|------------|
-| `stop-slop` (drm-collab) | [github.com/drm-collab/stop-slop](https://github.com/drm-collab/stop-slop) | 5-dimension scoring (directness, rhythm, trust, authenticity, density), 35/50 threshold, auto-rewrite | The scoring system is exactly what this project needs: quantifiable quality gate that blocks AI-sounding scripts. Learning capability via `feedback.log` means it improves over time. Based on hardikpandya/stop-slop (MIT). | HIGH |
-| `claude-humanizer` (abnahid) | [github.com/abnahid/claude-humanizer](https://github.com/abnahid/claude-humanizer) | Wikipedia-based AI writing pattern detection, 24 pattern categories | Uses Wikipedia's "Signs of AI writing" guide from WikiProject AI Cleanup -- sourced from thousands of real AI text instances. Catches patterns stop-slop might miss. 1,600+ GitHub stars, actively maintained. | HIGH |
-| Anti-slop rules in custom skill | Embedded in `references/anti-slop-rules.md` | 60+ banned phrases baked into the scriptwriter skill itself | First line of defense. Stop-slop and humanizer are second-pass validators. Having rules in the custom skill prevents slop from being generated in the first place, rather than just detecting it after. | HIGH |
+### Supporting Libraries
 
-**Why TWO anti-slop tools plus embedded rules:** Three layers with different detection approaches:
-1. **Embedded rules** (prevention) -- stop AI patterns from being generated
-2. **stop-slop** (quantitative scoring) -- numeric quality gate with learning
-3. **humanizer** (pattern matching) -- Wikipedia-sourced detection for what slips through
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| `zod` | 3.x | Schema validation | Validate script structure, form inputs, Agent SDK output schemas. Already a dependency of the Agent SDK. |
+| `sonner` | latest | Toast notifications | "Script saved", "Anti-slop score: 42/50", error messages. shadcn/ui uses it. |
+| `lucide-react` | latest | Icons | shadcn/ui's icon library. Consistent with the component set. |
+| `@tanstack/react-table` | latest | Script library table | Sortable, filterable table for browsing saved scripts. Only if script count grows beyond simple list. |
 
-This is not redundant -- each catches different patterns. The 35/50 scoring threshold from stop-slop is the hard gate; humanizer is the final polish pass.
+### Development Tools
 
-### Trend Research (Optional)
-
-| Tool | Source | Purpose | Why | Confidence |
-|------|--------|---------|-----|------------|
-| `last30days` (mvanhorn) | [github.com/mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill) | Research topics across Reddit, X, YouTube, HN for recent 30 days | Discovers trending topics in indie gamedev community. When yt-dlp is installed, automatically searches YouTube and extracts transcripts from top videos -- useful for understanding what devlog formats are currently performing well. Requires SCRAPECREATORS_API_KEY. | MEDIUM |
-
-**Why MEDIUM confidence:** The tool itself is well-built, but its value depends on whether Pavlo actually needs trend research. At 1 video/week with specific game dev content to share, topic ideation from his own dev work may be sufficient. Install it but treat as optional enhancement, not core workflow.
-
-### Metrics and Feedback Loop
-
-| Approach | Format | Purpose | Why | Confidence |
-|----------|--------|---------|-----|------------|
-| Manual entry in `metrics-log.md` | Markdown table | Track per-video analytics: views, retention %, subs gained, hook type, format used | At 1 video/week, manual entry takes 2 minutes and avoids YouTube API setup complexity. The PROJECT.md explicitly scopes out YouTube MCP integration. The feedback loop (analyzing which formats/hooks perform best) is the superpower, not the data collection method. | HIGH |
-
-**Metrics to track per video:**
-
-```markdown
-| # | Title | Format | Hook Type | Views (48h) | Retention % | Subs | Notes |
-|---|-------|--------|-----------|-------------|-------------|------|-------|
-```
-
-**Why NOT YouTube API / MCP integration:**
-- 1 video/week does not justify OAuth2 setup, API key management, and MCP server maintenance
-- YouTube Studio already shows all needed metrics in a browser tab
-- The value is in the analysis pattern, not automation of data entry
-- PROJECT.md explicitly lists this as Out of Scope
-- Can revisit if publishing cadence increases to 3+ videos/week
-
-### Content Scoring System
-
-| Component | Method | Threshold | Confidence |
-|-----------|--------|-----------|------------|
-| stop-slop 5-dimension score | Directness, Rhythm, Trust, Authenticity, Density (1-10 each) | 35/50 minimum | HIGH |
-| slop-radar (optional CLI) | 245 English buzzwords + 14 structural patterns + fuzzy matching | Scores 0-100, flag below 80 | MEDIUM |
-
-**Scoring workflow:**
-1. Generate script via custom skill (anti-slop rules embedded)
-2. Run `/stop-slop` -- score must be 35+/50
-3. If score < 35, automatic rewrite with violations fixed, re-score
-4. Run `/humanizer` for final AI-pattern sweep
-5. Human read-aloud test (Pavlo reads script, marks awkward spots)
-
-**Why stop-slop is the primary scorer:** It has a learning mechanism (`feedback.log`) that accumulates corrections over time. The more Pavlo uses it, the better it gets at matching his preferences. slop-radar is a useful supplementary CLI tool but does not have the same feedback loop.
-
-### Supplementary Tools
-
-| Tool | Source | Purpose | When to Use | Confidence |
-|------|--------|---------|-------------|------------|
-| `slop-radar` | [github.com/renefichtmueller/slop-radar](https://github.com/renefichtmueller/slop-radar) | CLI-based slop detection with 245 buzzwords + 14 structural patterns | Quick spot-checks via `npx slop-radar score`. Useful as independent second opinion alongside stop-slop. | MEDIUM |
-| `anti-slop-writing` (adenaufal) | [github.com/adenaufal/anti-slop-writing](https://github.com/adenaufal/anti-slop-writing) | Universal system prompt for eliminating AI style tells | Consider embedding key rules from this into CLAUDE.md or the custom skill's anti-slop-rules.md. Works across Claude Code, Cursor, and other tools. | MEDIUM |
-| `viral-reel-generator` | [mcpmarket.com](https://mcpmarket.com/tools/skills/viral-reel-generator) | Short-form video script generation with anti-slop rules and visual-audio sync | Reference for hook patterns and visual sync techniques when building custom skill. Do NOT install as primary tool -- too generic for devlog-specific needs. | LOW |
-
----
-
-## Alternatives Considered
-
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| Anti-slop scoring | `stop-slop` (drm-collab) | `stop-slop` (hardikpandya) | drm-collab version adds learning via feedback.log; hardikpandya is the original but lacks feedback loop |
-| Anti-slop scoring | `stop-slop` | `anti-slop-skill` (DataWhisker) | DataWhisker focuses on code quality, not prose/script writing |
-| Humanizer | `claude-humanizer` (abnahid) | `humanizer` (blader) | abnahid has broader Wikipedia-sourced pattern database and more community traction |
-| Humanizer | `claude-humanizer` (abnahid) | `avoid-ai-writing` (conorbronsdon) | conorbronsdon is good but abnahid's Wikipedia basis is more comprehensive |
-| Trend research | `last30days` (mvanhorn) | Manual Reddit/YouTube browsing | last30days automates what would take 30+ minutes of manual browsing; worth the API key setup |
-| Script generation | Custom skill | `viral-reel-generator` (mcpmarket) | mcpmarket skill is generic short-form; custom skill is devlog-specific with brand voice, game context, and feedback loop |
-| Script generation | Custom skill | `youtube-content-creator` (mcpmarket) | Too generic, no anti-slop integration, no feedback loop |
-| Metrics collection | Manual markdown | YouTube Data API v3 MCP | Overkill for 1 video/week; adds OAuth2 complexity without proportional value |
-| Metrics collection | Manual markdown | VidIQ / TubeAnalytics | SaaS tools add cost and are designed for channels with much higher volume |
-
----
-
-## What NOT to Use
-
-| Tool/Approach | Why Avoid |
-|---------------|-----------|
-| **ElevenLabs TTS** | Pavlo records his own voiceover. TTS defeats the authenticity goal. |
-| **Remotion programmatic rendering** | Experimental, adds massive technical complexity. Defer until script pipeline is proven and running. |
-| **FFmpeg subtitle burn-in / auto-cut** | Out of scope per PROJECT.md. Separate initiative from scriptwriting. |
-| **ChatGPT / GPT-4o for scripts** | Claude Code skills provide tighter integration, learning feedback loops, and embedded anti-slop. Switching tools fragments the workflow. |
-| **Jasper / Copy.ai / KoalaWriter** | SaaS script generators are generic, have no feedback loop, no brand voice persistence, and no anti-slop scoring. They solve a different problem (content farms, not authentic devlogs). |
-| **YouTube API MCP servers** | Over-engineered for current cadence. Manual metrics entry is 2 minutes/week. Revisit at 3+ videos/week. |
-| **Multiple SaaS analytics tools** | YouTube Studio's built-in analytics provides everything needed. No need for Sprout Social, Planable, etc. at 55 subscribers. |
-| **n8n / Zapier automation workflows** | Adding automation orchestration is premature. The workflow is: Claude Code generates script -> Pavlo records -> Pavlo enters metrics. No integration points that need automation. |
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| `drizzle-kit` | DB migrations | `npx drizzle-kit push` for dev, `npx drizzle-kit migrate` for schema changes. Schema-as-code. |
+| `eslint` + `@eslint/config` | Linting | Ships with `create-next-app`. |
+| Turbopack | Bundler | Default in Next.js 16. No config needed. |
 
 ---
 
 ## Installation
 
-### Phase 1: Core skill setup
-
 ```bash
-# Create skill directory structure
-mkdir -p ~/.claude/skills/devlog-scriptwriter/references
+# Scaffold Next.js 16 project (in project directory)
+npx create-next-app@latest web --typescript --tailwind --eslint --app --src-dir
 
-# Install anti-slop companion skills
-git clone https://github.com/drm-collab/stop-slop.git ~/.claude/skills/stop-slop
-git clone https://github.com/abnahid/claude-humanizer.git ~/.claude/skills/humanizer
-```
+# Core dependencies
+cd web
+npm install @anthropic-ai/claude-agent-sdk drizzle-orm better-sqlite3 zod
 
-### Phase 2: Optional enhancements
+# Dev dependencies
+npm install -D drizzle-kit @types/better-sqlite3
 
-```bash
-# Trend research (requires SCRAPECREATORS_API_KEY)
-git clone https://github.com/mvanhorn/last30days-skill.git ~/.claude/skills/last30days
-
-# CLI slop detector (run ad-hoc, no installation needed)
-npx slop-radar score "your text here"
-```
-
-### Phase 3: Verify skills load
-
-```bash
-# In Claude Code, check available skills
-# Type / and look for: devlog-scriptwriter, stop-slop, humanizer
-# Ask: "What skills are available?"
+# UI components (copy into project, not an npm dependency)
+npx shadcn@latest init
+npx shadcn@latest add button card input textarea tabs badge dialog sheet table
 ```
 
 ---
 
-## Skill Architecture Reference
+## Database: SQLite via Drizzle ORM + better-sqlite3
 
-Based on [official Anthropic documentation](https://code.claude.com/docs/en/skills) and [best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices):
+### Why SQLite
 
-### SKILL.md Structure
+This is a single-user local app. No server deployment, no concurrent users, no cloud database needed.
 
-```yaml
----
-name: devlog-scriptwriter
-description: Generates natural-sounding YouTube Shorts devlog scripts with anti-slop scoring, brand voice matching, and visual-audio sync. Use when writing scripts, brainstorming video ideas, or analyzing video performance patterns.
-disable-model-invocation: false
----
+| Concern | SQLite Answer |
+|---------|--------------|
+| Concurrent access | Single user -- not an issue |
+| Backup | Copy one `.db` file |
+| Setup | Zero config, file-based |
+| Performance | Sub-millisecond reads for hundreds of scripts |
+| Portability | Works on Windows and macOS (Pavlo uses both) |
 
-# Process steps here (under 500 lines)
-# Each step explicitly names which reference file to load
-# Example: "Read references/brand-voice.md for tone and vocabulary"
+### Why Drizzle Over Prisma
+
+| Factor | Drizzle | Prisma |
+|--------|---------|--------|
+| Bundle size | ~50KB | ~15MB (engine binary) |
+| SQLite sync API | Native `db.select().all()` | Async-only (fights SQLite's architecture) |
+| Schema | TypeScript code | Separate `.prisma` schema file |
+| Migrations | `drizzle-kit push` (dev) / `drizzle-kit migrate` (prod) | `prisma migrate` |
+| Performance | Near-raw SQL speed | [100x slower than better-sqlite3 in benchmarks](https://github.com/prisma/prisma/issues/12785) |
+| Cold start | Instant | Engine initialization delay |
+
+For a local tool with simple data (scripts, beats, scores), Drizzle's lightweight approach is the right choice.
+
+### Example Schema
+
+```typescript
+// src/db/schema.ts
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+
+export const scripts = sqliteTable("scripts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  format: text("format").notNull(),        // "the-bug", "the-satisfaction", etc.
+  hookVariant: text("hook_variant"),
+  status: text("status").default("draft"), // "draft", "recorded", "published"
+  slopScore: real("slop_score"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+export const beats = sqliteTable("beats", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  scriptId: integer("script_id").references(() => scripts.id, { onDelete: "cascade" }),
+  order: integer("order").notNull(),
+  visual: text("visual").notNull(),       // What's on screen
+  voiceover: text("voiceover").notNull(), // What Pavlo says
+  duration: text("duration"),             // "2-3s"
+});
 ```
 
-### Key Architecture Rules
+---
 
-1. **SKILL.md < 500 lines** -- process steps only, no reference content
-2. **Reference files: one purpose per file** -- anti-slop-rules.md is ONLY rules, brand-voice.md is ONLY voice profile
-3. **Explicit file loading** -- each step names the file: "Read references/hook-formulas.md"
-4. **One level deep** -- SKILL.md references files directly, files do not reference other files
-5. **Forward slashes in all paths** -- even on Windows
-6. **Description in third person** -- "Generates scripts..." not "I generate scripts..."
-7. **No time-sensitive content** -- no "as of March 2026" in skill files
+## Alternatives Considered
 
-### Frontmatter Fields That Matter
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| Next.js 16 | Vite + React | If SSR/Server Components are unwanted; but we need server-side SDK calls |
+| Next.js 16 | Remix / React Router 7 | If you prefer loader/action pattern; Next.js is more familiar to Pavlo |
+| Drizzle ORM | Prisma | If you need a visual schema editor (Prisma Studio); accept the performance cost |
+| Drizzle ORM | Raw better-sqlite3 | If schema is truly minimal (2-3 tables); skip ORM overhead entirely |
+| better-sqlite3 | `@libsql/client` | If you later want Turso cloud sync; for local-only, better-sqlite3 is simpler |
+| shadcn/ui | Radix UI directly | If you want full control; shadcn is built on Radix anyway |
+| shadcn/ui | Headless UI (Tailwind Labs) | If you prefer Headless UI patterns; but shadcn has more components and Next.js integration |
 
-| Field | Value | Rationale |
-|-------|-------|-----------|
-| `name` | `devlog-scriptwriter` | Lowercase, hyphens, descriptive |
-| `description` | See above | Includes triggers: "writing scripts", "brainstorming", "video ideas" |
-| `disable-model-invocation` | `false` | Claude should auto-activate when script/video topics come up |
-| `allowed-tools` | (omit) | No special tool restrictions needed |
+---
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `@anthropic-ai/sdk` (API SDK) | Requires API key with per-token billing. Does NOT use Max subscription. Additional cost. | `@anthropic-ai/claude-agent-sdk` (Agent SDK) |
+| MongoDB / PostgreSQL | Over-engineered for single-user local app. Requires running a server process. | SQLite via better-sqlite3 |
+| Prisma | 15MB engine binary, async-only SQLite access, 100x slower than better-sqlite3 | Drizzle ORM |
+| `ANTHROPIC_API_KEY` env var | If set, Claude Code switches to API billing instead of Max subscription | Remove it; rely on OAuth keychain auth |
+| Redux / Zustand for state | App is simple enough for React state + Server Components | React `useState` + Server Actions |
+| tRPC | Adds complexity layer between frontend and backend; Server Actions are sufficient | Next.js Server Actions |
+| Docker | Local dev tool, not a deployed service | Run directly with `npm run dev` |
+| Electron | Adds 100MB+ overhead just for native window; `localhost:3000` in browser works fine | Next.js dev server |
+
+---
+
+## Stack Patterns by Variant
+
+**For script generation (AI calls):**
+- Use Server Actions that call Agent SDK `query()`
+- Stream responses to client via `ReadableStream` + React Suspense
+- Structured JSON output with Zod schema for typed beat/hook data
+
+**For script storage (CRUD):**
+- Drizzle ORM with better-sqlite3 in Server Components
+- No API routes needed -- direct DB calls in Server Components/Actions
+- SQLite file stored in project root: `./data/scripts.db`
+
+**For script editing (interactive UI):**
+- Client Components with `useState` for beat-level editing
+- Save via Server Action on blur/button click
+- Optimistic updates for responsiveness
+
+---
+
+## Version Compatibility
+
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| Next.js 16.x | React 19.x | Ships together |
+| `@anthropic-ai/claude-agent-sdk` | Node.js 18+ | Requires `claude` CLI installed and authenticated |
+| Drizzle ORM 0.45.x | better-sqlite3 11.x | Use `drizzle-orm/better-sqlite3` import |
+| drizzle-kit | Drizzle ORM 0.45.x | Keep versions in sync |
+| shadcn/ui v4 | React 19, Tailwind v4 | Full compatibility as of March 2026 |
+| better-sqlite3 11.x | Node.js 18-22 | Native addon, needs node-gyp on Windows |
+| Tailwind CSS 4.x | Next.js 16.x | Ships with `create-next-app` |
+
+### Windows Note (better-sqlite3)
+
+`better-sqlite3` is a native C++ addon. On Windows, it requires:
+- Python 3.x (for node-gyp)
+- Visual Studio Build Tools or `windows-build-tools`
+
+If this causes issues, prebuild binaries are available and usually work automatically via `npm install`. Pavlo's dev machine likely already has build tools from UE5 development.
 
 ---
 
 ## Sources
 
 ### Official Documentation (HIGH confidence)
-- [Claude Code Skills Documentation](https://code.claude.com/docs/en/skills) -- skill architecture, directory structure, frontmatter reference
-- [Skill Authoring Best Practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) -- progressive disclosure, conciseness, testing guidelines
+- [Claude Code Headless / Agent SDK](https://code.claude.com/docs/en/headless) -- programmatic usage, `-p` flag, streaming, structured output
+- [Agent SDK TypeScript Reference](https://platform.claude.com/docs/en/agent-sdk/typescript) -- `query()` function, Options type, full API
+- [Claude Subscription vs API Pricing](https://support.claude.com/en/articles/9876003) -- confirmed Max subscription and API are separate billing
+- [Next.js 16 Blog Post](https://nextjs.org/blog/next-16) -- release announcement, breaking changes from 15
+- [Next.js App Router Docs](https://nextjs.org/docs/app) -- Server Components, Server Actions, routing
+- [Drizzle ORM SQLite Guide](https://orm.drizzle.team/docs/get-started-sqlite) -- better-sqlite3 integration, sync API
+- [shadcn/ui v4 Changelog](https://ui.shadcn.com/docs/changelog/2026-03-cli-v4) -- March 2026 release, Next.js 16 support
 
-### GitHub Repositories (HIGH confidence)
-- [drm-collab/stop-slop](https://github.com/drm-collab/stop-slop) -- 5-dimension scoring with feedback learning
-- [abnahid/claude-humanizer](https://github.com/abnahid/claude-humanizer) -- Wikipedia-based AI pattern detection (1,600+ stars)
-- [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill) -- Multi-platform trend research
-- [renefichtmueller/slop-radar](https://github.com/renefichtmueller/slop-radar) -- CLI slop detector with 245 buzzwords
-- [adenaufal/anti-slop-writing](https://github.com/adenaufal/anti-slop-writing) -- Universal anti-slop system prompt
+### Verified Community Sources (MEDIUM confidence)
+- [CLIProxyAPI Blog Post](https://rogs.me/2026/02/use-your-claude-max-subscription-as-an-api-with-cliproxyapi/) -- third-party Max proxy (evaluated and rejected)
+- [claude-code-webui](https://github.com/sugyan/claude-code-webui) -- reference implementation for web + Claude Code integration
+- [Prisma SQLite Performance Issue](https://github.com/prisma/prisma/issues/12785) -- 100x slower than better-sqlite3 benchmark
 
-### Community Resources (MEDIUM confidence)
-- [MCPMarket: Viral Reel Generator](https://mcpmarket.com/tools/skills/viral-reel-generator) -- reference for hook patterns
-- [MindStudio: Skills Architecture](https://www.mindstudio.ai/blog/claude-code-skills-architecture-skill-md-reference-files) -- process vs. context separation
-- [Hardik Pandya: Stop Slop](https://hardik.substack.com/p/new-claude-skill-stop-ai-slop-in) -- original stop-slop concept and rationale
-
-### YouTube Analytics (HIGH confidence, not used in stack)
-- [YouTube Analytics API](https://developers.google.com/youtube/analytics) -- verified available but scoped out for current project
+---
+*Stack research for: Devlog Scriptwriter Web UI (v2.0 milestone)*
+*Researched: 2026-03-28*

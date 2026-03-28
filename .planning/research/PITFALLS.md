@@ -1,313 +1,359 @@
-# Domain Pitfalls
+# Pitfalls Research
 
-**Domain:** AI-assisted YouTube Shorts devlog scriptwriting pipeline
+**Domain:** AI-powered scriptwriting web UI (Next.js + Claude API + local DB)
 **Researched:** 2026-03-26
+**Confidence:** HIGH (core pitfalls verified through multiple sources and official policies)
+
+> This document covers pitfalls specific to the v2.0 Web UI milestone.
+> For scriptwriting/content pitfalls (anti-slop, voice drift, feedback loops), see the original project research or the skill documentation.
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, wasted effort, or audience damage.
+### Pitfall 1: Claude Max Subscription Cannot Power the Web App Backend
 
----
+**What goes wrong:**
+Developer assumes the existing Claude Max subscription can be used to make API calls from the Next.js web app. It cannot. Anthropic explicitly bans using OAuth tokens from Max/Pro subscriptions in any third-party tool, app, or automated system. In January 2026, Anthropic deployed client fingerprinting to block unauthorized access. In February 2026, they updated Terms of Service to make this unambiguous. Accounts have been suspended for violations.
 
-### Pitfall 1: AI Slop That Sounds "Professional" But Not Human
+**Why it happens:**
+Pavlo already pays for Claude Max. The assumption "I pay for Claude, I can use it in my local app" feels logical. Community proxy tools (CLIProxyAPI, claude-code-proxy) exist and appear to work, creating a false sense of legitimacy. But Anthropic's Consumer ToS states: accessing the Services through automated or non-human means is prohibited except when using an Anthropic API Key.
 
-**What goes wrong:** The AI generates scripts that are grammatically perfect, use varied vocabulary, and follow proper narrative structure -- but sound nothing like Pavlo. They sound like a tech journalist or corporate explainer. Words like "dive into," "journey," "elevate," "craft," "embark," "leverage" leak in. Sentences become longer and more complex than spoken English. The script reads like writing, not talking.
+**How to avoid:**
+Use the Anthropic API with a paid API key. For this project's scale, costs are negligible:
+- Claude Haiku 4.5: $1 input / $5 output per million tokens
+- Claude Sonnet 4.6: $3 input / $15 output per million tokens
+- A 60-second script is ~120 words / ~200 tokens. With system prompt (~2K tokens), one generation costs ~$0.003 with Haiku
+- With prompt caching (90% discount on repeated system prompts), even cheaper
+- At 1 video/week with 5 generation attempts: ~$0.08/month with Haiku, ~$0.40/month with Sonnet
+- Annual API cost: roughly $1-5. Negligible.
 
-**Why it happens:** LLMs default to the statistical average of their training data, which is predominantly polished written content. Without aggressive anchoring to a specific voice, every generation drifts toward "internet average" -- authoritative, smooth, and generic. The anti-slop word list catches obvious offenders but misses structural slop: overly balanced sentences, rhetorical questions that nobody actually asks, transitions that sound like essay writing.
-
-**Consequences:** Viewers detect AI-generated content within seconds. Consumer trust drops approximately 50% when content is perceived as AI-generated, regardless of actual quality. For a channel at 55 subscribers, losing trust means losing the ability to grow. YouTube's 2025-2026 policies also flag repetitive AI-sounding content for reduced recommendations.
-
-**Warning signs:**
-- Script "feels" polished on first read but awkward when read aloud
-- Sentences average more than 12 words
-- Script uses words Pavlo would never say in conversation
-- Every paragraph has perfect topic-sentence-support-conclusion structure
-- Hook sounds like a clickbait template rather than a person talking
-
-**Prevention:**
-- Brand voice profile (brand-voice.md) must include: banned words, sentence length cap (10-12 words average), mandatory speech patterns ("so I...", "turns out...", "let's..."), and a real transcript as style anchor
-- Anti-slop scoring on EVERY generated script, no exceptions (35+/50 threshold)
-- Read-aloud test before recording: if any sentence makes Pavlo stumble or pause, rewrite it
-- Include 3-5 "Pavlo-isms" that must appear naturally in every script (drawn from transcript analysis)
-
-**Detection:** Compare generated script sentence-by-sentence against Pavlo's actual transcript. If more than 30% of sentences "feel different" -- the voice has drifted.
-
-**Phase mapping:** Must be addressed in Phase 1 (Brand Voice Setup + Skill Installation). Cannot generate scripts without this foundation.
-
----
-
-### Pitfall 2: Mid-Session Voice Drift
-
-**What goes wrong:** The AI starts a script matching Pavlo's voice, but by the middle or end of the script, it reverts to generic AI tone. Opening line sounds like a person; closing line sounds like a press release. This is especially dangerous in iterative sessions where multiple scripts are generated back-to-back -- each generation gets progressively more generic.
-
-**Why it happens:** LLMs generate text sequentially. As the AI writes, its own output becomes part of the context window. Generic phrasing in sentence 3 pulls sentence 4 further toward average. Over a long conversation, the brand voice instructions get diluted by the volume of generated text. This is a well-documented phenomenon called "mid-piece voice drift."
-
-**Consequences:** Scripts have inconsistent tone. The hook sounds authentic but the payoff sounds robotic. Viewer feels a subtle "uncanny valley" effect -- something is off but they can't pinpoint it.
+Alternative: use the Vercel AI SDK which provides a clean abstraction layer over the Anthropic SDK, handles streaming, and makes it trivial to switch models.
 
 **Warning signs:**
-- Last 3 sentences of script sound different from first 3
-- In batch generation, script #4 sounds noticeably different from script #1
-- AI starts using longer sentences toward the end of scripts
+- Plans to shell out to `claude` CLI as a subprocess
+- Searching for "proxy" solutions to route Max subscription through an API
+- Using OAuth tokens anywhere outside claude.ai or Claude Code terminal
+- Considering `claude -p` (print mode) as a backend
 
-**Prevention:**
-- Generate scripts one at a time, not in batches within the same conversation
-- For each script, re-anchor the brand voice by including a transcript snippet in the prompt
-- Keep scripts SHORT (45-60 seconds = 90-120 words). Less room for drift
-- Post-generation pass: read the last sentence first -- does it still sound like Pavlo?
+**Phase to address:**
+Phase 1 (Project Setup) -- API key provisioning is the very first infrastructure decision. Everything depends on it.
 
-**Detection:** Score the first half and second half of each script independently against brand voice criteria. If scores diverge by more than 5 points, the script drifted.
-
-**Phase mapping:** Address in Phase 1 (Skill design). The skill's script generation phase should include re-anchoring instructions.
+**Sources:**
+- [Anthropic clarifies ban on third-party access (The Register)](https://www.theregister.com/2026/02/20/anthropic_clarifies_ban_third_party_claude_access/)
+- [Anthropic bans subscription OAuth (WinBuzzer)](https://winbuzzer.com/2026/02/19/anthropic-bans-claude-subscription-oauth-in-third-party-apps-xcxwbn/)
+- [ToS violation guide (Dev Genius)](https://blog.devgenius.io/you-might-be-breaking-claudes-tos-without-knowing-it-228fcecc168c)
+- [Claude API Pricing (official)](https://platform.claude.com/docs/en/about-claude/pricing)
 
 ---
 
-### Pitfall 3: Feedback Loop That Doesn't Actually Improve Anything
+### Pitfall 2: Streaming Response Buffering in Next.js Route Handlers
 
-**What goes wrong:** Metrics are collected diligently in metrics-log.md after every video. Views, retention, subscribers gained -- all logged. But the data never meaningfully changes what scripts get generated. The "loop" is actually a dead-end archive. Six months later, metrics-log.md has 25 entries and script quality is identical to day one.
+**What goes wrong:**
+User clicks "Generate Script" and sees nothing for 10-30 seconds, then the entire response dumps at once. Or worse: the connection times out entirely for longer generations. The app feels broken even though the AI is working correctly.
 
-**Why it happens:** Three failure modes: (1) Vanity metrics -- tracking views and likes but not retention curve shape or drop-off points, which are the only metrics that tell you what's wrong with the script. (2) No hypothesis testing -- the log records outcomes but never records what was different about each script (format, hook type, topic category, visual style). (3) No actionable rules -- "video #6 got 8.7K views" doesn't tell the AI anything useful. "Videos using The Bug format with physics visuals average 75%+ retention" does.
+**Why it happens:**
+Next.js route handlers buffer the response by default. If you `await` the full Claude API response inside the handler before returning `Response`, Next.js holds everything until the handler finishes. The stream never reaches the client incrementally. Additionally, reverse proxies (NGINX, Cloudflare) buffer SSE streams unless headers explicitly disable it.
 
-**Consequences:** The entire feedback loop -- described as the project's "superpower" -- becomes busywork. Pavlo spends time logging metrics that produce no insight. The pipeline never becomes a "personalized engine" -- it stays a generic tool with a spreadsheet attached.
+Common broken pattern:
+```typescript
+// WRONG: Buffers everything, user waits 15+ seconds seeing nothing
+export async function POST(req: Request) {
+  const result = await anthropic.messages.create({ stream: false, ... });
+  return Response.json(result);
+}
+```
+
+**How to avoid:**
+Return the `Response` with a `ReadableStream` immediately. Async work runs inside the stream's controller:
+
+```typescript
+// CORRECT: Stream chunks to client as they arrive
+export async function POST(req: Request) {
+  const stream = new ReadableStream({
+    async start(controller) {
+      const response = await anthropic.messages.stream({ ... });
+      for await (const event of response) {
+        if (event.type === 'content_block_delta') {
+          controller.enqueue(encoder.encode(event.delta.text));
+        }
+      }
+      controller.close();
+    }
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'X-Accel-Buffering': 'no',
+      'Cache-Control': 'no-cache, no-transform',
+    },
+  });
+}
+```
+
+Or better: use the Vercel AI SDK which handles all of this correctly via `streamText()`.
+
+Required headers to prevent proxy buffering:
+- `Content-Type: text/plain; charset=utf-8` (NOT `application/json`)
+- `X-Accel-Buffering: no` (prevents NGINX buffering)
+- `Cache-Control: no-cache` (prevents edge caching)
 
 **Warning signs:**
-- After 5+ videos, script generation instructions haven't changed
-- Metrics log has numbers but no "what was different" annotations
-- Can't answer: "which hook type works best for this channel?"
-- AI generates the same distribution of formats regardless of past performance
+- Response appears all at once after a long wait
+- Timeout errors on longer generations (extended thinking, complex prompts)
+- Works in development but breaks behind any reverse proxy
+- `Content-Type` set to `application/json` on streaming endpoints
 
-**Prevention:**
-- Every metrics-log.md entry must include: format used (The Bug, The Satisfaction, etc.), hook type, topic category, and what was visually on screen
-- After every 3 videos, run a pattern analysis that produces concrete rules: "The Satisfaction format averages 70%+ retention; The Decision format averages below 50%"
-- Rules get injected into the script generation prompt as constraints
-- Track retention percentage and subscriber conversion, NOT views (views are noise at this scale)
+**Phase to address:**
+Phase 2 (AI Integration) -- streaming must be implemented correctly from the start. Retrofitting streaming into a non-streaming architecture requires rewriting both API routes and all UI components that consume responses.
 
-**Detection:** After 5 logged videos, ask: "What 3 concrete things has the feedback loop changed about how scripts are generated?" If the answer is vague or nothing -- the loop is broken.
-
-**Phase mapping:** Design the metrics schema in Phase 1. But the actual feedback analysis only becomes meaningful after Phase 2 (first 3-5 scripts generated and recorded). Phase 3+ should include periodic "pattern analysis" sessions.
+**Sources:**
+- [Next.js SSE discussion #48427](https://github.com/vercel/next.js/discussions/48427)
+- [Fixing Slow SSE in Next.js (Medium)](https://medium.com/@oyetoketoby80/fixing-slow-sse-server-sent-events-streaming-in-next-js-and-vercel-99f42fbdb996)
+- [Streaming LLM in Next.js without timeouts (Eaures)](https://www.eaures.online/streaming-llm-responses-in-next-js)
+- [Vercel AI SDK streaming guide (LogRocket)](https://blog.logrocket.com/nextjs-vercel-ai-sdk-streaming/)
 
 ---
 
-### Pitfall 4: Over-Engineering the Pipeline Before Proving the Core
+### Pitfall 3: Over-Engineering the Editor with a Block Editor Library
 
-**What goes wrong:** Weeks spent setting up YouTube MCP integrations, auto-subtitle pipelines, Remotion rendering, trend research tools, companion skills -- before generating a single usable script. The pipeline becomes a project in itself. Pavlo is now a pipeline maintainer instead of a game developer who makes videos.
+**What goes wrong:**
+Developer reaches for a full-featured block editor (BlockNote, TipTap, Editor.js, Slate) when the actual data model is fixed and simple: a script is an ordered list of beats, each beat has a visual description and a voiceover line. The block editor adds weeks of integration complexity, introduces hydration errors with Next.js SSR, creates hard-to-debug edge cases, and ties the codebase to a heavy dependency -- all for a problem that doesn't require it.
 
-**Why it happens:** Technical people (especially fullstack developers) are drawn to building systems. Installing tools feels productive. Configuring integrations feels like progress. But none of it produces a video. The real bottleneck -- "can the AI write a script that sounds like Pavlo?" -- gets buried under tooling work.
+**Why it happens:**
+The spec says "block-based editor." This sounds like it needs a block editor library. But the blocks here are not arbitrary rich content -- they are a fixed schema: `{ visual: string, voiceover: string }[]`. A Notion-style editor supports headings, lists, embeds, tables, drag-and-drop of arbitrary types. This project needs none of that. Scripts are spoken aloud -- they don't need bold, italic, links, or rich formatting.
 
-**Consequences:** Weeks of setup with zero videos published. Motivation drops. The channel stalls at 55 subscribers while the "perfect pipeline" is being assembled. By the time it's ready, the momentum is gone.
+**How to avoid:**
+Build a custom component: a sortable list of cards where each card has two textarea fields (visual description + voiceover). Use a lightweight drag-and-drop library (dnd-kit or @hello-pangea/dnd) for reordering. This gives:
+- Full control over the data model (no fighting the library's schema)
+- No hydration issues (simple textarea elements render fine in SSR)
+- No dependency on complex editor libraries (~0 vs ~200KB bundle)
+- Easy to add domain-specific features (anti-slop highlighting per beat, word count, timing estimates)
+- Simpler testing and maintenance
+
+Reserve block editor libraries for if/when the script format genuinely needs rich text. It likely never will.
 
 **Warning signs:**
-- More than 3 days pass between "project started" and "first script generated"
-- Time spent on tooling exceeds time spent on content by 3:1 or more
-- Companion skills installed but brand-voice.md still empty
-- Discussing "what tools to add" instead of "what video to make next"
+- Spending more than a day integrating an editor library
+- Fighting the library's data model to fit the beat structure
+- Customizing rendering for every block type to match the simple beat layout
+- Editor bundle size exceeding 100KB
 
-**Prevention:**
-- Phase 1 scope: brand voice interview + one skill file + generate first script. That's it.
-- YouTube MCP, auto-subtitles, Remotion: explicitly Out of Scope until 5+ videos published using the basic pipeline
-- The PROJECT.md already correctly scopes these out -- enforce this boundary
-- "Working" = "Pavlo recorded a video using an AI-generated script" not "all tools are installed"
-
-**Detection:** Track days-to-first-script. If it exceeds 5 working days, the pipeline is over-engineered.
-
-**Phase mapping:** Phase 1 must be ruthlessly minimal. Tooling expansion belongs in Phase 3+ only after the core script generation is validated.
+**Phase to address:**
+Phase 3 (Script Editor) -- this is an architecture decision that must be made before writing any editor code. Document the decision explicitly: "custom beat-card list, not a library."
 
 ---
 
-### Pitfall 5: Pronunciation-Hostile Scripts for Non-Native Speaker
+### Pitfall 4: Block Editor Hydration Mismatch (If You Use One Anyway)
 
-**What goes wrong:** The AI generates scripts with words and phrases that are difficult for a Ukrainian English learner to pronounce naturally. Tongue-twisters, uncommon consonant clusters, words with silent letters, or phrases that require specific English rhythm patterns. Pavlo stumbles during recording, does multiple takes, and the final voiceover sounds strained rather than natural.
+**What goes wrong:**
+If a block editor library is used, the page crashes on load with "Hydration failed because the initial UI does not match what was rendered on the server." The editor renders blank, shows a flash of unstyled content, or throws React errors.
 
-**Why it happens:** LLMs optimize for written impact, not spoken ease. Words like "thoroughly," "specifically," "simultaneously," "particularly" score well in text but are pronunciation obstacles. English contractions, linking sounds, and stress patterns are invisible in text but critical in speech. The AI has no model of what's hard to pronounce for a Ukrainian speaker.
+**Why it happens:**
+Rich text editors require browser APIs (DOM manipulation, Selection API, contenteditable). They cannot render on the server. Next.js App Router renders components as Server Components by default. If you import a block editor in a Server Component (or in a Client Component without proper lazy loading), SSR produces HTML that doesn't match the client-side editor, triggering hydration errors.
 
-**Consequences:** Recording sessions take 3x longer. Pavlo's delivery sounds forced. The natural, casual tone that makes devlogs engaging is lost. Worse: Pavlo may unconsciously avoid recording because the script feels hard to deliver.
+**How to avoid:**
+1. Mark editor components with `'use client'` directive
+2. Use `dynamic` import with `ssr: false`:
+```typescript
+const ScriptEditor = dynamic(() => import('@/components/ScriptEditor'), {
+  ssr: false,
+  loading: () => <EditorSkeleton />,
+});
+```
+3. Always show a loading skeleton during client-side mount, never a blank space
+4. Keep all editor state management client-side; sync to server via API calls only
 
 **Warning signs:**
-- Pavlo needs more than 2 takes per sentence
-- Script contains words with 4+ syllables that aren't technical terms
-- Script uses idioms that require native-speaker rhythm ("at the end of the day," "the thing is though")
-- Words with 'th', 'w/v' confusion, or complex consonant clusters appear frequently
+- "Hydration mismatch" errors in browser console
+- Editor flickers or flashes on page load
+- Works in development (`next dev`) but breaks in production build
+- Editor component imported directly without dynamic/lazy loading
 
-**Prevention:**
-- Add a pronunciation filter to the skill: flag any word over 3 syllables that isn't a common game dev term
-- Prefer short Anglo-Saxon words over long Latin/Greek derivatives ("use" not "utilize," "fix" not "rectify," "break" not "malfunction")
-- Include a "say it out loud" step in the script generation phase -- explicitly instruct the AI to prefer speakable words
-- Maintain a personal "hard words" list for Pavlo: words he's struggled with in past recordings, banned from future scripts
-- Contractions are mandatory: "I'm" not "I am," "didn't" not "did not" (contractions are easier to pronounce naturally)
-- Keep sentences to one breath: if you can't say the sentence in one breath, it's too long
+**Phase to address:**
+Phase 3 (Script Editor) -- if using a library, `ssr: false` must be the default pattern from the start.
 
-**Detection:** Before recording, Pavlo reads the script aloud once. Any word he stumbles on gets replaced. Track these words in a running list.
-
-**Phase mapping:** Must be built into Phase 1 (Skill design). The pronunciation filter is part of the core script generation, not an add-on.
+**Sources:**
+- [BlockNote Next.js docs](https://www.blocknotejs.org/docs/advanced/nextjs)
+- [Isolated Block Editor Next.js issues](https://github.com/Automattic/isolated-block-editor/issues/257)
 
 ---
 
-## Moderate Pitfalls
+### Pitfall 5: Losing In-Progress Generation on Navigation or Error
 
-### Pitfall 6: Template Fatigue -- Same Format, Different Topic
+**What goes wrong:**
+User triggers script generation (takes 10-20 seconds with streaming). During generation, they accidentally navigate away, close the tab, or the stream errors partway through. The partial result -- which may have been 80% complete and usable -- is lost entirely. User must start over from scratch.
 
-**What goes wrong:** After the first few successful videos using "The Bug" or "The Satisfaction" format, every script starts following the same structure. Open with shock/surprise hook, show the problem, reveal the solution, end with "and that's how I..." wrap-up. Viewers who watch multiple videos notice the repetition. YouTube's algorithm also penalizes repetitive content patterns.
+**Why it happens:**
+Streaming responses are ephemeral. If you only persist the result after the stream completes, any interruption means total loss. Browser navigation kills the fetch connection immediately. Network hiccups close the stream mid-sentence.
 
-**Prevention:**
-- Rotate formats deliberately: track which format was used last and don't repeat the same format for 3 consecutive videos
-- The ideation phase should generate angles across at least 3 different formats
-- Periodically introduce experimental formats not on the original list
-- Study what other successful devlog channels are doing for format inspiration
+**How to avoid:**
+1. Buffer chunks into React state as they arrive (for display) AND into a server-side partial record
+2. Save partial results to the database periodically (every 2 seconds or every 500 characters)
+3. Mark saved results with status: `generating | complete | partial | error`
+4. On page reload, show the last partial result with option to continue or regenerate
+5. Use `beforeunload` event to warn user if generation is in progress
+6. Disable navigation links during active generation, or show confirmation dialog
 
-**Phase mapping:** Phase 2 (script generation) should enforce format rotation. Phase 3+ should review format distribution in metrics analysis.
+Data model implication: the `scripts` table needs a `status` field from day one.
 
----
+**Warning signs:**
+- No "are you sure?" prompt when navigating during generation
+- Database only stores `complete` scripts, never partials
+- User reports having to regenerate after browser hiccups
+- No `status` field in the scripts schema
 
-### Pitfall 7: Ignoring the "One Idea = One Video" Rule Under Pressure
-
-**What goes wrong:** Pavlo has a productive dev week with 3-4 interesting things to show. The script tries to cover all of them in 60 seconds. The result: a rushed montage with no emotional arc, no hook that lands, and viewers who don't remember anything specific.
-
-**Prevention:**
-- Skill must enforce a hard check: does this script contain more than one core idea? If yes, split.
-- Better to have 4 scripts banked for next month than 1 cramped script this week
-- Each script should pass the "what's this video about in 5 words?" test
-
-**Phase mapping:** Built into Phase 1 skill design as a structural rule.
-
----
-
-### Pitfall 8: Visuals-Script Mismatch
-
-**What goes wrong:** The script describes or implies visuals that don't exist in Pavlo's screen recordings. "Watch how the dragon's fire engulfs the bridge" -- but the dragon doesn't have fire effects yet. Or worse: the script is written without knowing what footage is available, so Pavlo has to record new gameplay just to match the script.
-
-**Prevention:**
-- Script generation must start with "what footage exists or can be easily captured?" not "what's a cool story?"
-- Include a "visual inventory" step: before writing, list 3-5 specific moments from recent dev work that are visually interesting
-- Every script line should have a parenthetical [SCREEN: what viewer sees] annotation
-- If the visual doesn't exist, the line gets cut
-
-**Phase mapping:** Phase 1 skill design. The "visuals drive, voice follows" principle from PROJECT.md must be operationalized as a concrete step in the generation workflow.
+**Phase to address:**
+Phase 2 (AI Integration) -- partial result persistence must be part of the data model and streaming handler design from the start.
 
 ---
 
-### Pitfall 9: Optimizing for Algorithm Instead of Audience
+### Pitfall 6: Storing Scripts as Unstructured Text Blobs
 
-**What goes wrong:** Scripts start chasing trending formats, clickbait hooks, and engagement-bait endings ("comment what you think!") because metrics suggest these boost numbers. The channel loses its authentic devlog character and becomes indistinguishable from hundreds of generic "gamedev tips" channels.
+**What goes wrong:**
+Scripts are stored as a single text or markdown field in the database. This makes it impossible to: highlight individual beats with anti-slop issues, calculate per-beat timing, reorder beats without text parsing, show visual/voiceover side by side, or do any structured analysis on script content. Every feature that touches script content requires a fragile text parser.
 
-**Prevention:**
-- Brand voice profile should include "what this channel is NOT" -- explicitly define anti-patterns
-- Metrics analysis should track subscriber conversion rate, not just views. High views + low subs = wrong audience.
-- Pavlo's best-performing videos (#3 and #6) succeeded because of authentic content, not algorithm tricks. Double down on what already works.
+**Why it happens:**
+The AI generates a script as continuous text. The simplest path is to store that text as-is in one column. Parsing it into structured beats feels like premature optimization. "We can always parse it later."
 
-**Phase mapping:** Phase 3+ during feedback analysis. Include an "authenticity check" in pattern analysis sessions.
+**How to avoid:**
+Design the database schema with structure from day one:
+```sql
+scripts (id, title, format, status, slop_score, model, created_at, updated_at)
+beats   (id, script_id, position, visual_description, voiceover_text)
+```
 
----
+Prompt the AI to output JSON directly:
+```json
+{ "beats": [
+  { "visual": "Screen: troll ragdolling off a cliff",
+    "voiceover": "So I added ragdoll physics. Big mistake." }
+]}
+```
 
-## Minor Pitfalls
+Parse AI output into beats immediately after generation. Store structured data. Render to readable format for display.
 
-### Pitfall 10: Neglecting Title and Thumbnail in the Pipeline
+**Warning signs:**
+- Scripts table has a single `content TEXT` column
+- Using regex to extract beats from stored text
+- Unable to edit a single beat without reparsing everything
+- Anti-slop scoring runs on the full blob instead of per-beat
 
-**What goes wrong:** The pipeline focuses entirely on script quality but ignores that title and thumbnail determine whether anyone clicks. A great script with a bad title gets zero views.
-
-**Prevention:**
-- Script generation should output: script + 3 title options + thumbnail concept (what single frame to capture)
-- Titles should follow patterns from best performers: short, personality-driven, specific ("Troll throw people" > "Making a Troll Game")
-
-**Phase mapping:** Add to Phase 2 as part of script output format.
-
----
-
-### Pitfall 11: Not Accounting for YouTube's 30-Day Shorts Decay
-
-**What goes wrong:** Pavlo publishes once a week but expects each video to accumulate views over months. YouTube Shorts older than roughly 30 days receive significantly fewer recommendations. Content effectively expires.
-
-**Prevention:**
-- Accept the decay: each Short is a 30-day asset, not an evergreen investment
-- This reinforces the need for consistent cadence (1/week minimum) rather than perfecting individual videos
-- Don't over-invest in any single script. Good enough and published beats perfect and delayed.
-
-**Phase mapping:** Context for Phase 1 priority-setting. Reinforces "ship fast" over "build perfect pipeline."
+**Phase to address:**
+Phase 1 (Database Schema) -- schema must model beats as separate rows from the start. Migrating from blob to structured data is painful and lossy.
 
 ---
 
-### Pitfall 12: YouTube Monetization Policy Violations with AI Content
+## Technical Debt Patterns
 
-**What goes wrong:** YouTube's updated policies (July 2025) require AI-generated content to be "significantly original, authentic, and transformed." If scripts and delivery feel templated or mass-produced, the channel risks demonetization or reduced recommendations even at small scale.
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Storing scripts as text blobs | Skip parsing, faster to build | Cannot edit beats individually, cannot score per-beat, every feature needs a parser | Never -- structured storage is barely more work upfront |
+| Hardcoding anti-slop rules in frontend JS | Quick to implement | Cannot update rules without redeploy, rules diverge from CLI skill | MVP only -- extract to config/DB within first sprint |
+| No streaming (wait for full response) | Simpler API route, simpler UI | Terrible UX for any generation over 3 seconds | Never -- streaming is table stakes for AI apps in 2026 |
+| Single API route for all AI operations | One file to maintain | Becomes 500+ line god-route as you add ideation, scoring, rewriting, individual beat regeneration | Acceptable for first 2 endpoints, then split by concern |
+| SQLite without WAL mode | Default just works | Readers block writers. Two browser tabs = potential lock conflicts | Never -- `PRAGMA journal_mode=WAL` is one line at connection time |
+| Using localStorage for script data | Zero backend needed | Data loss on browser clear, no search, no cross-device | Never for scripts -- OK for UI preferences (theme, sidebar state) |
 
-**Prevention:**
-- Always record with Pavlo's real voice (never TTS) -- this is already the plan
-- Scripts must be personalized to his actual dev experience, not generic gamedev advice
-- The anti-slop system directly addresses this: authentic scripts pass YouTube's guidelines naturally
-- When the channel grows, be aware of disclosure requirements for AI-assisted content
+## Integration Gotchas
 
-**Phase mapping:** Background consideration for all phases. No specific phase needed since the anti-slop + real voiceover approach inherently complies.
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Anthropic SDK | Using `messages.create()` with `stream: false`, blocking the route | Use `messages.stream()` or Vercel AI SDK's `streamText()` |
+| Anthropic SDK | Sending full system prompt (brand voice + anti-slop rules ~2K tokens) on every request without caching | Use prompt caching: add `cache_control: { type: "ephemeral" }` to system message, saves 90% on repeated prompts |
+| Anthropic SDK | Not setting `max_tokens` -- defaults vary by model and may cut off or over-generate | Set explicit `max_tokens` (512-1024 for a 60-second script) |
+| Anthropic SDK | Trusting the AI to always output valid JSON for beat parsing | Wrap JSON parsing in try/catch. If parse fails, fall back to text storage with `status: 'parse_error'` and let user manually structure |
+| SQLite (better-sqlite3) | Using async SQLite driver in Next.js dev mode -- hot reload creates connection leaks and SQLITE_BUSY errors | Use synchronous better-sqlite3 with a module-level singleton, or use Drizzle ORM for managed connections |
+| SQLite | Forgetting WAL mode | Run `PRAGMA journal_mode=WAL;` on every new connection. Without it, concurrent reads block writes |
+| Next.js App Router | Mixing Server and Client component concerns in the editor page | Editor is fully client-side (`'use client'` + `ssr: false`). Script list/library can be Server Component. Data flows through API routes, not props drilling from server to client |
+| Next.js App Router | Using `getServerSideProps` patterns from Pages Router | App Router uses `async` Server Components, `route.ts` handlers, and `'use client'` directives. Do not mix paradigms |
 
----
+## Performance Traps
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Sending full script history as context to Claude | Slow responses, high token costs, hitting context limits | Only send brand voice + anti-slop rules + current request. Past scripts are irrelevant to new generation | After 20-30 scripts in conversation history |
+| Re-running anti-slop check on every keystroke | UI freezes/jank during typing | Debounce scoring (500ms+ delay), or only score on explicit action (Save/Check button) | Immediately noticeable with 60+ anti-slop rules |
+| Loading all scripts on library page without pagination | Slow initial page load, memory bloat | Paginate (20 per page), implement search server-side with SQL LIKE, virtual scroll only if needed | After 50+ scripts |
+| Not caching the system prompt via Anthropic's prompt caching | Each request sends ~2K tokens of system prompt at full input price | Set `cache_control` on system message. First request pays full price; subsequent requests pay 10% | Adds up after 100+ generations ($0.20 vs $2.00) |
+| Full re-render of beat list on every state change | Editor feels sluggish with 8+ beats | Memoize individual beat card components with `React.memo`, use stable keys, avoid re-creating handler functions | Noticeable at 8+ beats with complex per-beat UI |
+
+## Security Mistakes
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Storing Anthropic API key in `.env.local` that gets committed to git | Key exposed publicly, unauthorized API usage, billing surprise | Add `.env*` to `.gitignore` before first commit. Use `ANTHROPIC_API_KEY` env var only in server-side code (`route.ts`), never import in client components |
+| No rate limiting on generation API route | A bug, browser retry loop, or curious user could trigger hundreds of API calls | Add simple in-memory rate limiter: max 5 generations per minute. Even a basic counter prevents runaway costs |
+| Exposing raw Anthropic error messages to frontend | Error messages may reveal API key prefix, internal model details, or system prompt structure | Catch all errors server-side, return generic `{ error: "Generation failed. Please try again." }` to client |
+| API key accessible via client-side code | Anyone inspecting network requests sees the key | Anthropic SDK must only be instantiated in server-side route handlers. Never `import Anthropic from '@anthropic-ai/sdk'` in a `'use client'` file |
+
+## UX Pitfalls
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| Empty state with just a text input | User (Pavlo) doesn't know what to type or how to start | Show format selector (The Bug, The Satisfaction, Before/After, etc.) + context input (what did you work on?) + example prompts |
+| No visual feedback during generation | User thinks app is broken after 3 seconds of nothing | Stream text as it arrives with a typing cursor animation. Show elapsed time. |
+| Anti-slop score shown as just a number (e.g., "38/50") | Number is meaningless without context -- what's bad? where? | Highlight flagged phrases inline in the editor with red underline. Click to see the rule and a suggested fix. |
+| Regenerate button replaces current script without saving | User loses a version they partially liked | Keep generation history. Each generation is a version. Show version switcher (v1, v2, v3...). Never delete automatically. |
+| No way to edit individual beats | User must accept or reject the whole script | Each beat is independently editable. Option to regenerate a single beat while keeping the rest. |
+| Script generation blocks the entire UI | User can't do anything while waiting for AI | Generate in background. Show progress indicator. Allow user to browse library or edit other scripts while generation runs. |
+| Full-screen modal for generation results | Can't reference previous scripts while reviewing new one | Split or side-panel layout: library/list on left, editor/preview on right. |
 
 ## "Looks Done But Isn't" Checklist
 
-These items appear complete but have hidden failure modes:
-
-| Item | Looks Done When... | Actually Done When... |
-|------|-------------------|----------------------|
-| Brand voice profile | brand-voice.md has content | Profile tested against 3+ generated scripts and Pavlo confirms "that sounds like me" |
-| Anti-slop rules | Word list is installed | Scripts consistently score 35+/50 AND sound natural when read aloud |
-| Feedback loop | Metrics are being logged | Logged metrics have produced at least 2 concrete rule changes to script generation |
-| Skill installation | Files exist in .claude/skills/ | A script generated using the skill passes both anti-slop scoring and Pavlo's read-aloud test |
-| Pronunciation filter | Rule says "use simple words" | Pavlo has recorded 2+ scripts without pronunciation stumbles on AI-chosen words |
-| Format rotation | Multiple formats listed | Last 5 videos used at least 3 different formats |
-
----
+- [ ] **Streaming:** Verify chunks appear word-by-word in the UI, not all at once after a delay -- test with browser DevTools Network tab set to "Slow 3G"
+- [ ] **Anti-slop scoring:** Verify it catches phrases from the ACTUAL 90+ rules list (not a hardcoded subset) -- test with a script containing 5 known-bad phrases
+- [ ] **Script persistence:** Verify scripts survive: page reload, browser restart, and `next dev` restart -- test by killing the dev server mid-session
+- [ ] **Partial generation:** Verify that closing the browser tab mid-generation saves a partial script -- test by navigating away at 50% progress
+- [ ] **Beat editing:** Verify editing one beat doesn't reset others, and changes persist after navigation -- test editing the middle beat then going to library and back
+- [ ] **Error handling:** Verify behavior when Anthropic API returns 429 (rate limit), 500 (server error), or network disconnects mid-stream -- test by temporarily using an invalid API key
+- [ ] **Format selection:** Verify all 7 script formats actually produce meaningfully different outputs -- generate same topic in 3 different formats and compare
+- [ ] **SQLite concurrent access:** Verify opening the app in two browser tabs doesn't cause SQLITE_BUSY errors -- test by loading library in one tab while generating in another
+- [ ] **JSON parsing:** Verify the app handles malformed AI JSON output gracefully -- test by prompting the AI to output a script, then manually corrupting the response handler to simulate bad JSON
 
 ## Recovery Strategies
 
-### If scripts sound too AI-generated (Pitfalls 1, 2)
-1. Stop generating new scripts
-2. Take Pavlo's best video transcript and use it as the ONLY style reference
-3. Generate one 5-sentence script and compare line-by-line with transcript
-4. Adjust brand voice profile based on specific differences found
-5. Regenerate and repeat until Pavlo says "that sounds like me"
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Used Max subscription via proxy (ToS violation) | LOW | Switch to API key. No data migration needed. Just change auth config in route handler. Cost: ~$0.08/month. |
+| Stored scripts as text blobs | MEDIUM | Write migration: parse existing blobs into beats using AI (prompt Claude to split them). Some may lose structure. ~1 day effort. |
+| Built with complex block editor library | HIGH | Extract data model first (export all scripts as JSON). Rebuild editor UI as custom component. Keep data layer. ~3-5 day effort. |
+| No streaming implemented | MEDIUM | Rewrite API route to return ReadableStream. Rewrite frontend fetch to use reader. If using Vercel AI SDK, much easier (~few hours). |
+| Editor hydration errors | LOW | Add `dynamic(() => import(...), { ssr: false })`. Add loading skeleton. ~1 hour fix. |
+| No partial result saving | MEDIUM | Add `status` column to scripts table. Modify stream handler to save periodically. Add beforeunload handler. ~1 day effort. |
+| API key exposed in git history | HIGH | Immediately rotate the API key in Anthropic console. Scrub git history with `git filter-branch` or BFG Repo-Cleaner. Verify no unauthorized usage in billing dashboard. |
 
-### If the feedback loop is dead (Pitfall 3)
-1. Review all logged metrics and annotate: what format, what hook type, what visual content
-2. Sort by retention percentage (ignore views)
-3. Write 3 concrete rules: "Format X works. Format Y doesn't. Hook type Z gets best retention."
-4. Inject these rules into the script generation prompt
-5. Generate next script using the rules and see if output changes
+## Pitfall-to-Phase Mapping
 
-### If the pipeline is over-engineered (Pitfall 4)
-1. Stop installing tools
-2. Open brand-voice.md. Is it filled out? If not, do that first.
-3. Generate ONE script using just the core skill
-4. Have Pavlo record it
-5. Publish. Collect metrics. Only then consider adding tools.
-
-### If pronunciation is blocking recording (Pitfall 5)
-1. Pavlo reads the problem script aloud and marks every stumble word
-2. Add all stumble words to the "hard words" ban list
-3. Regenerate the script with the updated ban list
-4. If systemic: add a rule to the skill -- "maximum 2-syllable words unless it's a game dev term"
-
----
-
-## Phase-Specific Warnings
-
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Brand Voice Setup | Profile is too generic/aspirational instead of grounded in real speech | Use actual transcript excerpts, not descriptions of desired tone |
-| Skill Installation | Installing companion skills before core skill works | Install core skill only. Validate with one script. Then add companions. |
-| First Script Generation | Generating 5 scripts instead of 1, optimizing before validating | Generate 1 script. Record it. Publish it. Learn from it. Then batch. |
-| Metrics Collection | Logging views instead of retention and sub conversion | Define the 3 metrics that matter BEFORE first publish. Ignore everything else initially. |
-| Feedback Analysis | Drawing conclusions from fewer than 5 data points | Wait for 5+ videos before changing strategy. Note patterns but don't act on sample size < 5. |
-| Format Expansion | Adding new formats before validating existing ones work | Master 2-3 formats that work before experimenting with new ones |
-| Pipeline Scaling | Adding automation (MCP, auto-subtitles) to a pipeline that produces 1 video/week | At 1 video/week, manual processes are fine. Automate only when cadence exceeds 3/week. |
-
----
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Claude Max as API (ToS) | Phase 1: Setup | API key in `.env.local`, test API call succeeds with key auth, `.env*` in `.gitignore` |
+| Script storage as blobs | Phase 1: Database Schema | Schema has `beats` table with `script_id` FK, AI outputs JSON, parser tested |
+| SQLite WAL mode | Phase 1: Database Schema | `PRAGMA journal_mode` returns `wal` on app startup |
+| Streaming buffering | Phase 2: AI Integration | Tokens appear word-by-word in browser with DevTools Network showing chunked transfer |
+| Partial result loss | Phase 2: AI Integration | Kill browser mid-gen, reload, see partial script with `status: 'partial'` |
+| Rate limiting | Phase 2: AI Integration | Clicking generate 10 times fast only triggers 1-2 actual API calls |
+| Prompt caching | Phase 2: AI Integration | Anthropic dashboard shows cache hits on system prompt after first request |
+| Over-engineered editor | Phase 3: Script Editor | Editor is custom component (<500 LOC), not a library. Decision documented. |
+| Editor hydration (if library) | Phase 3: Script Editor | No console errors on production build page load |
+| Empty state UX | Phase 3: Script Editor | New session shows format picker + context input, not a blank page |
+| Anti-slop as number only | Phase 4: Anti-slop UI | Flagged phrases highlighted inline with red underline and tooltip explanation |
+| No generation history | Phase 4: Polish | Each generation creates a version; user can browse and compare versions |
 
 ## Sources
 
-- [YouTube's AI Slop Problem (Search Engine Journal)](https://www.searchenginejournal.com/youtubes-ai-slop-problem-and-how-marketers-can-compete/567297/)
-- [YouTube Demonetization Policy 2026 (ShortVids)](https://shortvids.co/youtube-ai-content-demonetization-policy/)
-- [YouTube AI Monetisation Policy 2026 (Boss Wallah)](https://bosswallah.com/blog/creator-hub/youtube-ai-monetisation-policy-2026-what-changes-whats-allowed-and-whats-banned/)
-- [YouTube's AI Problem Is Worse Than You Think (AdwaitX)](https://www.adwaitx.com/youtube-shorts-ai-generated-content-problem/)
-- [How to Maintain Brand Voice with AI Content (Stridec)](https://www.stridec.com/blog/brand-voice-consistency-ai-content-strategic-framework/)
-- [AI Brand Voice Guidelines (Oxford College of Marketing)](https://blog.oxfordcollegeofmarketing.com/2025/08/04/ai-brand-voice-guidelines-keep-your-content-on-brand-at-scale/)
-- [You Can't Automate Brand Voice (MarTech)](https://martech.org/you-cant-automate-brand-voice-but-you-can-train-ai-to-respect-it/)
-- [Content Marketing ROI 2026: Only 19% Track AI KPIs (Digital Applied)](https://www.digitalapplied.com/blog/content-marketing-roi-2026-19-percent-track-ai-kpis/)
-- [Indie Games Go-to-Market Playbook 2025 (Medium)](https://medium.com/design-bootcamp/entering-indie-games-in-2025-a-senior-engineers-go-to-market-playbook-cdc507f3bf0f)
-- [YouTube Algorithm Updates 2026 (OutlierKit)](https://outlierkit.com/resources/youtube-algorithm-updates/)
-- [How to Make YouTube Videos in English as Non-Native Speaker (Gold Jetto)](https://goldjetto.com/youtube-videos-english-non-native/)
+- [Anthropic bans third-party subscription OAuth (The Register, Feb 2026)](https://www.theregister.com/2026/02/20/anthropic_clarifies_ban_third_party_claude_access/) -- HIGH confidence
+- [Anthropic bans subscription OAuth (WinBuzzer, Feb 2026)](https://winbuzzer.com/2026/02/19/anthropic-bans-claude-subscription-oauth-in-third-party-apps-xcxwbn/) -- HIGH confidence
+- [Claude API Pricing (official)](https://platform.claude.com/docs/en/about-claude/pricing) -- HIGH confidence
+- [CLIProxyAPI blog (demonstrates what NOT to do)](https://rogs.me/2026/02/use-your-claude-max-subscription-as-an-api-with-cliproxyapi/) -- HIGH confidence
+- [Next.js SSE discussion #48427](https://github.com/vercel/next.js/discussions/48427) -- HIGH confidence
+- [Fixing Slow SSE in Next.js](https://medium.com/@oyetoketoby80/fixing-slow-sse-server-sent-events-streaming-in-next-js-and-vercel-99f42fbdb996) -- MEDIUM confidence
+- [Streaming LLM in Next.js (Eaures)](https://www.eaures.online/streaming-llm-responses-in-next-js) -- MEDIUM confidence
+- [BlockNote Next.js docs](https://www.blocknotejs.org/docs/advanced/nextjs) -- HIGH confidence
+- [Claude streaming stall issues #18028](https://github.com/anthropics/claude-code/issues/18028) -- MEDIUM confidence
+- [10 Common AI Product UX Mistakes (UZER)](https://uzer.co/en/mistakes-designing-ai-products-ux-tips/) -- MEDIUM confidence
+- [Vercel AI SDK streaming (LogRocket)](https://blog.logrocket.com/nextjs-vercel-ai-sdk-streaming/) -- MEDIUM confidence
+- [Agent SDK Max plan billing issue #559](https://github.com/anthropics/claude-agent-sdk-python/issues/559) -- HIGH confidence
+
+---
+*Pitfalls research for: AI-powered scriptwriting web UI (Next.js + Claude API + local DB)*
+*Researched: 2026-03-26*
