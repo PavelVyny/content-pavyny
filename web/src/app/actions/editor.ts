@@ -3,8 +3,8 @@
 import { getDb } from "@/lib/db";
 import { beats, scripts } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { regenerateBeatText, rescoreScriptText } from "@/lib/agent";
-import type { AntiSlopScore } from "@/lib/types";
+import { regenerateBeatText, regenerateHookText, rescoreScriptText } from "@/lib/agent";
+import type { AntiSlopScore, HookVariant } from "@/lib/types";
 
 export async function updateBeat(
   beatId: number,
@@ -71,6 +71,41 @@ export async function selectTitle(
     .where(eq(scripts.id, scriptId))
     .run();
   return { success: true };
+}
+
+export async function regenerateHook(
+  scriptId: number,
+  variant: string
+): Promise<{ success: boolean; visual?: string; voiceover?: string; error?: string }> {
+  const db = getDb();
+  const script = db.select().from(scripts).where(eq(scripts.id, scriptId)).get();
+  if (!script) return { success: false, error: "Script not found" };
+
+  const scriptBeats = db.select().from(beats).where(eq(beats.scriptId, scriptId)).orderBy(asc(beats.order)).all();
+  const hooks = (script.hooks as HookVariant[] | null) ?? [];
+
+  try {
+    const result = await regenerateHookText(
+      script.format,
+      script.devContext ?? "",
+      scriptBeats.map((b) => ({ order: b.order, visual: b.visual, voiceover: b.voiceover })),
+      hooks.map((h) => ({ variant: h.variant, visual: h.visual, voiceover: h.voiceover })),
+      variant
+    );
+
+    const updatedHooks = hooks.map((h) =>
+      h.variant === variant ? { ...h, visual: result.visual, voiceover: result.voiceover } : h
+    );
+
+    db.update(scripts)
+      .set({ hooks: updatedHooks as never, updatedAt: new Date() })
+      .where(eq(scripts.id, scriptId))
+      .run();
+
+    return { success: true, visual: result.visual, voiceover: result.voiceover };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Hook regeneration failed" };
+  }
 }
 
 export async function regenerateBeat(

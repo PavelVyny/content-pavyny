@@ -386,6 +386,69 @@ Respond with ONLY a JSON object: { "visual": "...", "voiceover": "..." }`;
 }
 
 /**
+ * Regenerate a single hook variant with fresh phrasing.
+ */
+export async function regenerateHookText(
+  format: string,
+  devContext: string,
+  allBeats: { order: number; visual: string; voiceover: string }[],
+  hooks: { variant: string; visual: string; voiceover: string }[],
+  targetVariant: string
+): Promise<{ visual: string; voiceover: string }> {
+  const brandVoice = loadRef("brand-voice.md");
+  const antiSlop = loadRef("anti-slop-rules.md");
+
+  const beatsContext = allBeats
+    .map((b) => `Beat #${b.order}:\n  Visual: ${b.visual}\n  Voiceover: ${b.voiceover}`)
+    .join("\n\n");
+
+  const hooksContext = hooks
+    .map((h) => `Hook ${h.variant}:\n  Visual: ${h.visual}\n  Voiceover: ${h.voiceover}`)
+    .join("\n\n");
+
+  const prompt = `You are the devlog-scriptwriter for Pavlo's YouTube Shorts game devlog.
+
+Your task: regenerate ONLY hook variant ${targetVariant} with a fresh angle. This is the first 3 seconds of the video — it must grab attention instantly.
+
+=== FORMAT ===
+${format}
+
+=== DEV CONTEXT ===
+${devContext}
+
+=== ALL HOOK VARIANTS ===
+${hooksContext}
+
+=== SCRIPT BEATS (for context) ===
+${beatsContext}
+
+=== BRAND VOICE PROFILE ===
+${brandVoice}
+
+=== ANTI-SLOP RULES ===
+${antiSlop}
+
+=== INSTRUCTIONS ===
+- Regenerate hook variant ${targetVariant} ONLY
+- This is the HOOK — first 3 seconds. Must be punchy, surprising, or funny
+- Don't repeat approaches from other hook variants
+- Visual: concrete on-screen action that grabs attention
+- Voiceover: short, punchy opening line
+- Follow all brand voice rules
+
+Respond with ONLY a JSON object: { "visual": "...", "voiceover": "..." }`;
+
+  const result = await queryForJson<{ visual: string; voiceover: string }>(prompt);
+
+  if (!result.visual || !result.voiceover) {
+    throw new Error("Hook regeneration result missing visual or voiceover");
+  }
+
+  console.log(`[agent] Regenerated hook variant ${targetVariant}`);
+  return { visual: result.visual, voiceover: result.voiceover };
+}
+
+/**
  * Re-score a script's text on the 5 anti-slop dimensions.
  * Returns a full AntiSlopScore object.
  */
