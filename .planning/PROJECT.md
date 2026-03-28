@@ -12,42 +12,47 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 
 ### Validated
 
-- ✓ Custom scriptwriting skill installed and operational — Phase 1
-- ✓ Brand voice profile created through interview (brand-voice.md) — Phase 1
-- ✓ Anti-slop rules integrated (90+ banned phrases from 4 sources) — Phase 1
-- ✓ Script generation produces ready-to-record scripts in 7 tested formats — Phase 2
-- ✓ Scripts follow "one Short = one idea" principle — Phase 2
-- ✓ Scripts follow "visuals drive, voice follows" principle — Phase 2
-- ✓ Hook formula applied with 2-3 variants — Phase 2
-- ✓ Anti-slop scoring pass on every script (35+/50) with auto-rewrite — Phase 2
-- ✓ Companion skills (stop-slop, humanizer) installed — Phase 1
+- ✓ Custom scriptwriting skill installed and operational — v1.0
+- ✓ Brand voice profile created through interview (brand-voice.md) — v1.0
+- ✓ Anti-slop rules integrated (90+ banned phrases from 4 sources) — v1.0
+- ✓ Script generation produces ready-to-record scripts in 7 tested formats — v1.0
+- ✓ Scripts follow "one Short = one idea" principle — v1.0
+- ✓ Scripts follow "visuals drive, voice follows" principle — v1.0
+- ✓ Hook formula applied with 2-3 variants — v1.0
+- ✓ Anti-slop scoring pass on every script (35+/50) with auto-rewrite — v1.0
+- ✓ Companion skills (stop-slop, humanizer) installed — v1.0
+- ✓ Web-based script generation (format selection, context input, structured output) — v2.0
+- ✓ Dual-track beat editor with click-to-edit and save-on-blur — v2.0
+- ✓ Hook variant switching (A/B/C tabs) — v2.0
+- ✓ Per-beat AI regeneration with full script context — v2.0
+- ✓ Anti-slop score panel with stale indicator and manual rescore — v2.0
+- ✓ Script library with status workflow (draft/ready/recorded) — v2.0
+- ✓ Voiceover-only clipboard copy for recording sessions — v2.0
 
 ### Active
 
 - [ ] Metrics log captures per-video analytics after publish (Phase 3 — paused, needs 3+ videos)
 - [ ] Feedback loop: metrics patterns feed back into generation (Phase 3 — paused)
 
-## Current Milestone: v2.0 Web UI for Scriptwriting
+## Shipped: v2.0 Web UI
 
-**Goal:** Local web application for the scriptwriting workflow with visual script editor and library.
+**Delivered:** Local Next.js web application wrapping the CLI scriptwriting pipeline with visual editor, script library, and anti-slop scoring.
 
-**Target features:**
-- Script generation via web interface (format selection, context input → ready script)
-- Visual script editor — beats split into blocks (visual | voiceover), each editable inline
-- Script library — store, browse, search generated scripts
-- Anti-slop scoring integrated in UI (show score, highlight problems)
-
-**Stack:** Next.js (React + TypeScript), simple local database
-**AI Backend:** Requires research — must work with Claude Max subscription without additional costs
+**Stack:** Next.js 16, TypeScript, Tailwind CSS, shadcn/ui v4, SQLite (better-sqlite3), Drizzle ORM, Claude Agent SDK
+**Code:** 32 files, ~3,100 LOC TypeScript
 
 ### Out of Scope
 
-- YouTube MCP integration for auto-metrics — adds complexity, manual entry sufficient for 1 video/week
-- AI video editing (subtitles, overlay, auto-cut) — separate initiative, not core to scriptwriting
-- Remotion programmatic rendering — experimental, defer until scripts pipeline proven
+- YouTube MCP integration for auto-metrics — manual entry sufficient for 1 video/week
+- AI video editing (subtitles, overlay, auto-cut) — separate initiative
+- Remotion programmatic rendering — deferred
 - ElevenLabs TTS — Pavlo records voiceover himself
 - Multi-language scripts — English only
 - Automated publishing — Pavlo uploads manually
+- Streaming AI response — deferred to v2.1
+- Anti-slop inline highlighting — deferred, high complexity
+- Beat drag & drop reordering — numbered beats sufficient
+- Mobile responsive — desktop-only local tool
 
 ## Context
 
@@ -101,14 +106,18 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Custom skill over existing skills | No single skill covers devlog + anti-slop + feedback loop; combine best of all | — Pending |
-| Manual metrics over YouTube MCP | 1 video/week doesn't justify API setup; manual entry in metrics-log.md sufficient | — Pending |
-| English scripts only | Target audience is global gamedev community; Pavlo records English voiceover | — Pending |
+| Custom skill over existing skills | No single skill covers devlog + anti-slop + feedback loop; combine best of all | ✓ Good |
+| Manual metrics over YouTube MCP | 1 video/week doesn't justify API setup; manual entry in metrics-log.md sufficient | ✓ Good |
+| English scripts only | Target audience is global gamedev community; Pavlo records English voiceover | ✓ Good |
 | Brand voice via interview (not transcript) | No ready transcripts to extract style from; interview establishes voice profile | ✓ Good |
 | Merge anti-slop from 4 sources | stop-slop + humanizer + slop-radar + anti-slop-writing = 90+ patterns | ✓ Good |
 | Skill chaining unreliable — embed rules | Auto-chaining is probabilistic; critical rules embedded in main skill | ✓ Good |
-| Phase 3 paused until 3 videos | Feedback loop needs data; skip to Web UI milestone | — Pending |
-| Web UI as milestone v2 | CLI pipeline works; web interface for better workflow experience | — Pending |
+| Phase 3 paused until 3 videos | Feedback loop needs data; skip to Web UI milestone | ✓ Good |
+| Web UI as milestone v2 | CLI pipeline works; web interface for better workflow experience | ✓ Good |
+| Claude Agent SDK over Anthropic API | Uses Max subscription auth, zero API cost, auto-loads skills | ✓ Good |
+| SQLite with separate beats table | Structured beats (not blob) enable per-beat editing and regeneration | ✓ Good |
+| Click-to-edit over always-editable | Notion-style clean UI, save on blur, no save button | ✓ Good |
+| Manual rescore over auto-rescore | Avoids constant AI calls during editing, stale indicator shows when needed | ✓ Good |
 
 ## Evolution
 
@@ -128,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after milestone v2.0 start*
+*Last updated: 2026-03-28 after v2.0 Web UI milestone shipped*
