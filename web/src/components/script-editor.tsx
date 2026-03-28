@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import type { Script, ScriptBeat, AntiSlopScore } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { EditableField } from "@/components/editable-field";
 import { HookSection } from "@/components/hook-section";
@@ -191,28 +190,22 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                     </div>
                   </CardContent>
                 </Card>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "shrink-0 mt-3 h-7 w-7 cursor-pointer transition-opacity",
-                    regeneratingBeatId === beat.id
-                      ? "opacity-100"
-                      : regeneratingBeatId !== null
-                        ? "opacity-0 pointer-events-none"
-                        : "opacity-0 group-hover:opacity-100"
-                  )}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleRegenerateBeat(beat.id)}
-                  disabled={regeneratingBeatId !== null && regeneratingBeatId !== beat.id}
-                >
-                  <RefreshCw
-                    className={cn(
-                      "h-4 w-4",
-                      regeneratingBeatId === beat.id && "animate-spin"
-                    )}
-                  />
-                </Button>
+                {regeneratingBeatId === beat.id ? (
+                  <span className="shrink-0 mt-3 h-7 w-7 flex items-center justify-center">
+                    <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </span>
+                ) : regeneratingBeatId === null ? (
+                  <button
+                    type="button"
+                    className="shrink-0 mt-3 h-7 w-7 flex items-center justify-center rounded-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleRegenerateBeat(beat.id)}
+                  >
+                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ) : (
+                  <span className="shrink-0 mt-3 h-7 w-7" />
+                )}
               </div>
             ))}
           </div>
