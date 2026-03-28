@@ -61,7 +61,7 @@ export function HookSection({
           <TabsContent key={hook.variant} value={hook.variant}>
             <div className="grid grid-cols-2 gap-4 pt-3">
               <div className="space-y-1">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Visual
                 </p>
                 <EditableField
@@ -69,11 +69,11 @@ export function HookSection({
                   onSave={(val) =>
                     handleHookSave(hook.variant, "visual", val)
                   }
-                  className="text-sm italic text-muted-foreground leading-relaxed"
+                  className="text-base italic text-muted-foreground leading-relaxed"
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Voiceover
                 </p>
                 <EditableField
@@ -81,7 +81,7 @@ export function HookSection({
                   onSave={(val) =>
                     handleHookSave(hook.variant, "voiceover", val)
                   }
-                  className="text-sm text-foreground leading-relaxed"
+                  className="text-base text-foreground leading-relaxed"
                 />
               </div>
             </div>

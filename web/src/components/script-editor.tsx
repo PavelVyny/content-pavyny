@@ -83,15 +83,22 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-xl font-semibold text-foreground">
-            {currentTitle}
-          </h2>
+          <EditableField
+            value={currentTitle}
+            onSave={(val) => {
+              setCurrentTitle(val);
+              startTransition(() => {
+                selectTitle(script.id, val);
+              });
+            }}
+            className="text-2xl font-semibold text-foreground"
+          />
           <Badge variant={statusColor(script.status)}>{script.status}</Badge>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline">{script.format}</Badge>
           {script.durationEstimate && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground">
               {script.durationEstimate}
             </span>
           )}
@@ -126,7 +133,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                       });
                     }
                   }}
-                  className={`text-sm rounded-md px-3 py-1.5 cursor-pointer transition-colors ${
+                  className={`text-base rounded-md px-3 py-2 cursor-pointer transition-colors ${
                     title === currentTitle
                       ? "bg-primary/10 font-medium text-foreground"
                       : "text-muted-foreground hover:bg-zinc-100"
@@ -173,7 +180,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                     </Badge>
                     <div className="grid grid-cols-2 gap-4 flex-1">
                       <div className="space-y-1">
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                           Visual
                         </p>
                         <EditableField
@@ -181,11 +188,11 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                           onSave={(val) =>
                             handleBeatSave(beat.id, "visual", val)
                           }
-                          className="text-sm italic text-muted-foreground leading-relaxed"
+                          className="text-base italic text-muted-foreground leading-relaxed"
                         />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                           Voiceover
                         </p>
                         <EditableField
@@ -193,7 +200,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                           onSave={(val) =>
                             handleBeatSave(beat.id, "voiceover", val)
                           }
-                          className="text-sm text-foreground leading-relaxed"
+                          className="text-base text-foreground leading-relaxed"
                         />
                       </div>
                     </div>
@@ -248,7 +255,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
             </h3>
             <Card size="sm">
               <CardContent>
-                <p className="text-sm text-foreground leading-relaxed">
+                <p className="text-base text-foreground leading-relaxed">
                   {script.thumbnail}
                 </p>
               </CardContent>
