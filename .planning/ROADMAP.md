@@ -87,8 +87,13 @@ Plans:
   3. The generated script appears as structured beats (visual + voiceover pairs) with hook variants, title options, and anti-slop score — not raw text
   4. Generated scripts persist in SQLite and survive page refresh
   5. Reference files (brand-voice.md, anti-slop-rules.md, video-formats.md) are loaded from .claude/skills/ at generation time — not duplicated
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 04-01-PLAN.md — Scaffold Next.js 16 app with shadcn/ui, SQLite/Drizzle schema, types, and reference file reader
+- [ ] 04-02-PLAN.md — Agent SDK wrapper with structured output and server actions for generation
+- [ ] 04-03-PLAN.md — Generation form UI, script display, and end-to-end verification
 
 ### Phase 5: Script Editor
 **Goal**: Pavlo can view and edit any generated script as visual/voiceover beat blocks, switch hook variants, regenerate individual beats, and see anti-slop quality scoring
@@ -124,6 +129,6 @@ Phases execute in numeric order: 4 -> 5 -> 6
 | 1. Foundation | v1.0 | 3/3 | Complete | 2026-03-26 |
 | 2. Script Generation | v1.0 | 1/1 | Complete | 2026-03-27 |
 | 3. Feedback Loop | v1.0 | 0/1 | Paused | - |
-| 4. Foundation & Generation | v2.0 | 0/? | Not started | - |
+| 4. Foundation & Generation | v2.0 | 0/3 | Planning | - |
 | 5. Script Editor | v2.0 | 0/? | Not started | - |
 | 6. Library & Workflow | v2.0 | 0/? | Not started | - |
