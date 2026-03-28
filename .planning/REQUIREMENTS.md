@@ -60,9 +60,9 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 
 ### Script Generation UI
 
-- [ ] **GENR-01**: Generation form — format selector (7 formats), dev progress text input, generate button — Phase 4
+- [x] **GENR-01**: Generation form — format selector (7 formats), dev progress text input, generate button — Phase 4
 - [x] **GENR-02**: Structured output parsing — dual-track beats, hook variants, titles, thumbnail concept, anti-slop score extracted from AI response — Phase 4
-- [ ] **GENR-03**: Full script re-generation — re-generate entire script with same or modified input — Phase 4
+- [x] **GENR-03**: Full script re-generation — re-generate entire script with same or modified input — Phase 4
 
 ### Script Editor
 
@@ -103,9 +103,9 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 | APFN-02 | Phase 4 | Complete |
 | APFN-03 | Phase 4 | Complete |
 | APFN-04 | Phase 4 | Complete |
-| GENR-01 | Phase 4 | Pending |
+| GENR-01 | Phase 4 | Complete |
 | GENR-02 | Phase 4 | Complete |
-| GENR-03 | Phase 4 | Pending |
+| GENR-03 | Phase 4 | Complete |
 | EDIT-01 | Phase 5 | Pending |
 | EDIT-02 | Phase 5 | Pending |
 | EDIT-03 | Phase 5 | Pending |

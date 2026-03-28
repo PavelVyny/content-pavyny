@@ -93,7 +93,7 @@ Plans:
 Plans:
 - [x] 04-01-PLAN.md — Scaffold Next.js 16 app with shadcn/ui, SQLite/Drizzle schema, types, and reference file reader
 - [x] 04-02-PLAN.md — Agent SDK wrapper with structured output and server actions for generation
-- [ ] 04-03-PLAN.md — Generation form UI, script display, and end-to-end verification
+- [x] 04-03-PLAN.md — Generation form UI, script display, and end-to-end verification
 
 ### Phase 5: Script Editor
 **Goal**: Pavlo can view and edit any generated script as visual/voiceover beat blocks, switch hook variants, regenerate individual beats, and see anti-slop quality scoring
