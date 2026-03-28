@@ -73,7 +73,7 @@ Plans:
 
 - [x] **Phase 4: Foundation & Generation** - Next.js app with AI backend, database, and end-to-end script generation flow
 - [x] **Phase 5: Script Editor** - Dual-track beat editor with inline editing, hook variants, per-beat regeneration, and anti-slop scoring (completed 2026-03-28)
-- [ ] **Phase 6: Library & Workflow** - Script browsing, status management, and clipboard export for recording
+- [x] **Phase 6: Library & Workflow** - Script browsing, status management, and clipboard export for recording (completed 2026-03-28)
 
 ## Phase Details
 
@@ -138,4 +138,4 @@ Phases execute in numeric order: 4 -> 5 -> 6
 | 3. Feedback Loop | v1.0 | 0/1 | Paused | - |
 | 4. Foundation & Generation | v2.0 | 3/3 | Complete | 2026-03-28 |
 | 5. Script Editor | v2.0 | 2/2 | Complete    | 2026-03-28 |
-| 6. Library & Workflow | v2.0 | 0/1 | Not started | - |
+| 6. Library & Workflow | v2.0 | 0/1 | Complete    | 2026-03-28 |
