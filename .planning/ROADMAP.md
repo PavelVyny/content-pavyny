@@ -134,5 +134,5 @@ Phases execute in numeric order: 4 -> 5 -> 6
 | 2. Script Generation | v1.0 | 1/1 | Complete | 2026-03-27 |
 | 3. Feedback Loop | v1.0 | 0/1 | Paused | - |
 | 4. Foundation & Generation | v2.0 | 3/3 | Complete | 2026-03-28 |
-| 5. Script Editor | v2.0 | 2/2 | Complete   | 2026-03-28 |
+| 5. Script Editor | v2.0 | 2/2 | Complete    | 2026-03-28 |
 | 6. Library & Workflow | v2.0 | 0/? | Not started | - |
