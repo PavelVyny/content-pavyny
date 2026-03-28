@@ -91,7 +91,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01-PLAN.md — Scaffold Next.js 16 app with shadcn/ui, SQLite/Drizzle schema, types, and reference file reader
+- [x] 04-01-PLAN.md — Scaffold Next.js 16 app with shadcn/ui, SQLite/Drizzle schema, types, and reference file reader
 - [ ] 04-02-PLAN.md — Agent SDK wrapper with structured output and server actions for generation
 - [ ] 04-03-PLAN.md — Generation form UI, script display, and end-to-end verification
 
