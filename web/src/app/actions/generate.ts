@@ -11,6 +11,16 @@ type GenerateResult =
   | { error: string };
 
 /**
+ * Delete a script and its beats.
+ */
+export async function deleteScript(scriptId: number): Promise<void> {
+  const db = getDb();
+  db.delete(beats).where(eq(beats.scriptId, scriptId)).run();
+  db.delete(scripts).where(eq(scripts.id, scriptId)).run();
+  revalidatePath("/");
+}
+
+/**
  * Generate a new script from format and dev context.
  * Creates a placeholder row with status "generating", calls Agent SDK,
  * then updates with generated data or marks as failed.

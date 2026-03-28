@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 interface ScriptDisplayProps {
   script: Script & { beats: ScriptBeat[] };
   onRegenerate?: () => void;
+  onNewScript?: () => void;
+  onDelete?: () => void;
 }
 
 function scoreColor(total: number): string {
@@ -30,7 +32,7 @@ function statusColor(
   }
 }
 
-export function ScriptDisplay({ script, onRegenerate }: ScriptDisplayProps) {
+export function ScriptDisplay({ script, onRegenerate, onNewScript, onDelete }: ScriptDisplayProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -242,13 +244,25 @@ export function ScriptDisplay({ script, onRegenerate }: ScriptDisplayProps) {
       <Separator />
 
       {/* Actions */}
-      {onRegenerate && (
-        <div className="flex justify-end">
+      <div className="flex justify-between">
+        <div className="flex gap-2">
+          {onNewScript && (
+            <Button variant="default" onClick={onNewScript}>
+              New Script
+            </Button>
+          )}
+          {onDelete && (
+            <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={onDelete}>
+              Delete
+            </Button>
+          )}
+        </div>
+        {onRegenerate && (
           <Button variant="outline" onClick={onRegenerate}>
             Re-generate
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

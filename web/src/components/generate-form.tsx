@@ -13,11 +13,17 @@ import { toast } from "sonner";
 interface GenerateFormProps {
   formats: VideoFormat[];
   onScriptGenerated: (scriptId: number) => void;
+  failedScript?: { id: number; format: string; devContext: string | null } | undefined;
+  onDeleteFailed?: (() => void) | undefined;
+  isDeleting?: boolean;
 }
 
 export function GenerateForm({
   formats,
   onScriptGenerated,
+  failedScript,
+  onDeleteFailed,
+  isDeleting,
 }: GenerateFormProps) {
   const router = useRouter();
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
@@ -61,6 +67,27 @@ export function GenerateForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Failed generation banner */}
+      {failedScript && (
+        <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+          <p className="text-sm text-destructive">
+            Previous generation failed. Try again or delete it.
+          </p>
+          {onDeleteFailed && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive shrink-0"
+              onClick={onDeleteFailed}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete failed"}
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-foreground">
           Choose a Format

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { VideoFormat, Script, ScriptBeat } from "@/lib/types";
 import { GenerateForm } from "@/components/generate-form";
 import { ScriptDisplay } from "@/components/script-display";
+import { deleteScript } from "@/app/actions/generate";
 
 interface GenerationPageProps {
   formats: VideoFormat[];
@@ -18,11 +20,13 @@ export function GenerationPage({
   const [generatedScriptId, setGeneratedScriptId] = useState<number | null>(
     null
   );
+  const router = useRouter();
+  const [isDeleting, startDeleteTransition] = useTransition();
 
-  // After generation, the server component re-renders with the new script
-  // via router.refresh() in GenerateForm. The latestScript prop updates.
+  // Show form if: user chose to, no script exists, or script is a failed placeholder
+  const isFailed = latestScript?.title === "Generation failed";
   const displayScript =
-    latestScript && !showForm ? latestScript : null;
+    latestScript && !showForm && !isFailed ? latestScript : null;
 
   function handleScriptGenerated(scriptId: number) {
     setGeneratedScriptId(scriptId);
@@ -33,16 +37,38 @@ export function GenerationPage({
     setShowForm(true);
   }
 
+  function handleNewScript() {
+    setShowForm(true);
+    setGeneratedScriptId(null);
+  }
+
+  function handleDelete(scriptId: number) {
+    startDeleteTransition(async () => {
+      await deleteScript(scriptId);
+      setShowForm(true);
+      setGeneratedScriptId(null);
+      router.refresh();
+    });
+  }
+
   if (showForm || !displayScript) {
     return (
       <GenerateForm
         formats={formats}
         onScriptGenerated={handleScriptGenerated}
+        failedScript={isFailed ? latestScript : undefined}
+        onDeleteFailed={isFailed && latestScript ? () => handleDelete(latestScript.id) : undefined}
+        isDeleting={isDeleting}
       />
     );
   }
 
   return (
-    <ScriptDisplay script={displayScript} onRegenerate={handleRegenerate} />
+    <ScriptDisplay
+      script={displayScript}
+      onRegenerate={handleRegenerate}
+      onNewScript={handleNewScript}
+      onDelete={() => handleDelete(displayScript.id)}
+    />
   );
 }
