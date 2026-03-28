@@ -3,126 +3,123 @@
 **Defined:** 2026-03-27
 **Core Value:** Scripts must sound like Pavlo — natural, specific, with real dev details — never like AI-generated content.
 
-## v1 Requirements
-
-Requirements for initial release. Each maps to roadmap phases.
+## v1.0 Requirements (Completed)
 
 ### Ecosystem Audit
 
-- [x] **ECOS-01**: Audit all identified Claude Code skills (stop-slop, humanizer, viral-reel-generator, script-writer, last30days, video-toolkit) — verify which actually work, what's worth integrating, what to discard
-- [x] **ECOS-02**: Broader ecosystem search for scriptwriting/content skills and MCP servers not yet discovered — 2026 landscape analysis
-- [x] **ECOS-03**: Evaluate agentic workflow approaches (skill chaining, MCP integrations, automation patterns) for content creation pipelines
-- [x] **ECOS-04**: Integrate best-of-ecosystem components into the custom pipeline — adopt proven patterns, skip reinventing
+- [x] **ECOS-01**: Audit all identified Claude Code skills — Phase 1
+- [x] **ECOS-02**: Broader ecosystem search for undiscovered skills/tools — Phase 1
+- [x] **ECOS-03**: Evaluate agentic workflow approaches for content pipelines — Phase 1
+- [x] **ECOS-04**: Integrate best-of-ecosystem into the custom pipeline — Phase 1
 
 ### Brand Voice
 
-- [x] **VOIC-01**: Conduct brand voice interview with Pavlo to extract speech patterns, tone, vocabulary, Pavlo-isms
-- [x] **VOIC-02**: Create brand-voice.md with persona definition, tone dimensions, vocabulary rules (use/avoid), structural rules, on-brand/off-brand examples
-- [x] **VOIC-03**: Embed transcript excerpt from best-performing video (#6 "Troll throw people", 75.7% stayed) as style anchor
+- [x] **VOIC-01**: Brand voice interview with Pavlo — Phase 1
+- [x] **VOIC-02**: Create brand-voice.md with full voice profile — Phase 1
+- [x] **VOIC-03**: Embed transcript from best-performing videos as style anchor — Phase 1
 
 ### Skill Setup
 
-- [x] **SKIL-01**: Create custom devlog-scriptwriter skill in .claude/skills/ with SKILL.md under 500 lines
-- [x] **SKIL-02**: Install stop-slop companion skill globally in ~/.claude/skills/
-- [x] **SKIL-03**: Install humanizer companion skill globally in ~/.claude/skills/
-- [x] **SKIL-04**: Verify skill chaining works (main skill → stop-slop → humanizer) — embed critical anti-slop rules in main skill as fallback
+- [x] **SKIL-01**: Custom devlog-scriptwriter skill under 500 lines — Phase 1
+- [x] **SKIL-02**: Install stop-slop companion skill — Phase 1
+- [x] **SKIL-03**: Install humanizer companion skill — Phase 1
+- [x] **SKIL-04**: Verify skill chaining with fallback — Phase 1
 
 ### Script Generation
 
-- [x] **SCRP-01**: Generate scripts using 7 proven format templates (The Bug, The Satisfaction, Before/After, The Decision, The Trick, The Fail, The Number)
-- [x] **SCRP-02**: Scripts output in visual-audio dual-track format (what viewer sees + what Pavlo says)
-- [x] **SCRP-03**: Hook-first structure applied to every script: Pre-hook visual → Question → Deliver (first 3 seconds)
-- [x] **SCRP-04**: One-idea-per-script enforcement — structural check prevents cramming multiple topics
-- [x] **SCRP-05**: Generate 2-3 hook variants (A/B) for each script — different visual + opening line approaches
-- [x] **SCRP-06**: Generate 3 title options + thumbnail frame concept alongside every script
+- [x] **SCRP-01**: 7 format templates — Phase 2
+- [x] **SCRP-02**: Visual-audio dual-track output — Phase 2
+- [x] **SCRP-03**: Hook-first structure — Phase 2
+- [x] **SCRP-04**: One-idea enforcement — Phase 2
+- [x] **SCRP-05**: Hook A/B variants — Phase 2
+- [x] **SCRP-06**: Title + thumbnail concepts — Phase 2
 
 ### Quality Gates
 
-- [x] **QUAL-01**: Anti-slop scoring pass on every script (5 dimensions: Directness, Rhythm, Trust, Authenticity, Density) with 35+/50 threshold
-- [x] **QUAL-02**: Anti-slop rewrite pass — flagged phrases/structures automatically rewritten using brand voice profile, human reviews diff
-- [x] **QUAL-03**: Anti-slop rules reference file with 60+ banned phrases and structural patterns
+- [x] **QUAL-01**: Anti-slop scoring 35+/50 — Phase 2
+- [x] **QUAL-02**: Anti-slop rewrite pass — Phase 2
+- [x] **QUAL-03**: Anti-slop rules reference 60+ phrases — Phase 2
 
-### Analytics & Feedback
+### Analytics & Feedback (Paused — needs 3+ videos)
 
-- [ ] **ANLT-01**: Metrics log (metrics-log.md) captures per-video: format used, hook type, topic category, views, engaged views, avg duration, stayed %, swiped %, subscribers gained
-- [ ] **ANLT-02**: Pattern analysis runs every 3 published videos — produces concrete rules about which formats/hooks/topics perform best
-- [ ] **ANLT-03**: Feedback rules injected into script generation as preferences (e.g., "The Satisfaction format averages 70%+ retention — weight this format higher")
-- [ ] **ANLT-04**: Pre-populate metrics log with existing 6 videos baseline data
+- [ ] **ANLT-01**: Metrics log with format/hook/topic tags
+- [ ] **ANLT-02**: Pattern analysis every 3 videos
+- [ ] **ANLT-03**: Feedback rules injected into generation
+- [ ] **ANLT-04**: Pre-populate with existing 6 videos baseline
 
-## v2 Requirements
+## v2.0 Requirements — Web UI for Scriptwriting
 
-Deferred to future release. Tracked but not in current roadmap.
+Requirements for milestone v2.0. Each maps to roadmap phases.
 
-### Personalization Passes
+### App Foundation
 
-- **PERS-01**: Pronunciation optimization for Ukrainian-English speaker (flag hard consonant clusters, prefer short words, mandatory contractions)
-- **PERS-02**: Specificity injection — detect vague gamedev language ("worked on", "improved"), prompt for concrete numbers/names/timeframes
-- **PERS-03**: Ideation sessions generating 5-7 angles from weekly dev progress mapped to proven formats
-- **PERS-04**: Visual suggestion engine — recommend visual techniques (slow-mo, reverse, split-screen) mapped to script beats
+- [ ] **APFN-01**: Next.js 16 app scaffold with App Router, Tailwind CSS, shadcn/ui v4
+- [ ] **APFN-02**: SQLite database with Drizzle ORM — scripts table with structured beats (not blob), status field (draft/ready/recorded)
+- [ ] **APFN-03**: Claude Agent SDK integration using Max subscription auth — spawns Claude Code with devlog-scriptwriter skill access
+- [ ] **APFN-04**: Reference file reader — loads brand-voice.md, anti-slop-rules.md, video-formats.md from .claude/skills/ at runtime
 
-### Advanced Analytics
+### Script Generation UI
 
-- **ADVN-01**: Format performance ranking — aggregate stayed-% by format tag after 10+ videos
-- **ADVN-02**: Hook A/B testing framework — track which hook variant was used, compare performance
+- [ ] **GENR-01**: Generation form — format selector (7 formats), dev progress text input, generate button
+- [ ] **GENR-02**: Structured output parsing — dual-track beats, hook variants, titles, thumbnail concept, anti-slop score extracted from AI response
+- [ ] **GENR-03**: Full script re-generation — re-generate entire script with same or modified input
 
-### External Integrations
+### Script Editor
 
-- **EXTL-01**: YouTube MCP integration for automated metrics collection
-- **EXTL-02**: last30days trend research skill for external context
-- **EXTL-03**: FFmpeg subtitle burn-in automation
-- **EXTL-04**: Text overlay on hook (first 3 seconds) via FFmpeg
+- [ ] **EDIT-01**: Dual-track beat editor — visual and voiceover as separate editable blocks per beat, clean readable layout
+- [ ] **EDIT-02**: Inline editing — click any beat segment to edit text directly
+- [ ] **EDIT-03**: Hook variant selector — UI to switch between 2-3 generated hook variants
+- [ ] **EDIT-04**: Quick beat re-generate — re-generate a single beat without regenerating the whole script
+- [ ] **EDIT-05**: Anti-slop score display — 5 dimensions table with total score, updates on edit
 
-## Out of Scope
+### Script Library
 
-Explicitly excluded. Documented to prevent scope creep.
+- [ ] **LIBR-01**: Script list view — all saved scripts with title, format, date, status, anti-slop score
+- [ ] **LIBR-02**: Script status workflow — draft → ready → recorded
+- [ ] **LIBR-03**: Copy-to-clipboard — export ready script as clean text for recording reference
+
+## v2.0 Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| TTS / AI voiceover | Pavlo's voice IS the brand. AI voice destroys authenticity. |
-| Automated YouTube publishing | 1 video/week, manual upload takes 2 minutes. Automation removes final quality check. |
-| Full video generation (Remotion) | Premature complexity. Script quality is the bottleneck, not video rendering. |
-| Multi-platform adaptation | YouTube Shorts only. Same format works if cross-posted. |
-| SEO keyword optimization | Shorts discovery is algorithm-driven by engagement, not keywords. Would make scripts corporate. |
-| Trend-chasing automation | Devlog content comes from actual dev work, not social media trends. |
-| Collaboration / team features | Solo creator pipeline. |
-| Script length optimization | Duration follows content. Best videos range 30-47s naturally. |
+| Streaming AI response | Nice-to-have for local tool — defer to v2.1 if generation feels slow |
+| Anti-slop inline highlighting | Phase 3+ differentiator — HIGH complexity, cursor/selection edge cases |
+| Beat drag & drop reordering | Simple numbered beats sufficient for v2 |
+| Analytics/metrics dashboard | Phase 3 (v1) still paused, no data yet |
+| Dark mode toggle | One theme sufficient, clean light chosen |
+| Collaboration features | Solo creator tool |
+| PDF/markdown export | Copy-to-clipboard covers the need |
+| Mobile responsive | Desktop-only local tool |
+| Deployment/hosting | Localhost only |
+| AI chat sidebar | Script generation covers the interaction model |
+| Template builder | 7 formats from video-formats.md sufficient |
+| Prompt engineering UI | Prompts built from reference files automatically |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ECOS-01 | Phase 1 | Complete |
-| ECOS-02 | Phase 1 | Complete |
-| ECOS-03 | Phase 1 | Complete |
-| ECOS-04 | Phase 1 | Complete |
-| VOIC-01 | Phase 1 | Complete |
-| VOIC-02 | Phase 1 | Complete |
-| VOIC-03 | Phase 1 | Complete |
-| SKIL-01 | Phase 1 | Complete |
-| SKIL-02 | Phase 1 | Complete |
-| SKIL-03 | Phase 1 | Complete |
-| SKIL-04 | Phase 1 | Complete |
-| SCRP-01 | Phase 2 | Complete |
-| SCRP-02 | Phase 2 | Complete |
-| SCRP-03 | Phase 2 | Complete |
-| SCRP-04 | Phase 2 | Complete |
-| SCRP-05 | Phase 2 | Complete |
-| SCRP-06 | Phase 2 | Complete |
-| QUAL-01 | Phase 2 | Complete |
-| QUAL-02 | Phase 2 | Complete |
-| QUAL-03 | Phase 2 | Complete |
-| ANLT-01 | Phase 3 | Pending |
-| ANLT-02 | Phase 3 | Pending |
-| ANLT-03 | Phase 3 | Pending |
-| ANLT-04 | Phase 3 | Pending |
+| APFN-01 | — | Pending |
+| APFN-02 | — | Pending |
+| APFN-03 | — | Pending |
+| APFN-04 | — | Pending |
+| GENR-01 | — | Pending |
+| GENR-02 | — | Pending |
+| GENR-03 | — | Pending |
+| EDIT-01 | — | Pending |
+| EDIT-02 | — | Pending |
+| EDIT-03 | — | Pending |
+| EDIT-04 | — | Pending |
+| EDIT-05 | — | Pending |
+| LIBR-01 | — | Pending |
+| LIBR-02 | — | Pending |
+| LIBR-03 | — | Pending |
 
 **Coverage:**
-- v1 requirements: 24 total
-- Mapped to phases: 24
-- Unmapped: 0
+- v2.0 requirements: 15 total
+- Mapped to phases: 0
+- Unmapped: 15 ⚠️
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-26 after roadmap creation*
+*Last updated: 2026-03-27 after milestone v2.0 definition*
