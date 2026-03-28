@@ -113,6 +113,11 @@ Follow the format template's beat structure. For each beat provide:
 - visual: concrete description of what appears on screen ("troll grabs enemy by head" NOT "gameplay footage")
 - voiceover: what Pavlo says over this visual
 
+LANGUAGE RULE (CRITICAL):
+- ALL "visual" fields MUST be written in RUSSIAN (описание того что на экране — всегда на русском)
+- ALL "voiceover" fields MUST be written in ENGLISH (what Pavlo says — always in English)
+- This applies to hooks AND beats
+
 Script body rules:
 - Follow Pavlo's sentence rules (max ~15 words per sentence, fragments OK, no subordinate clauses)
 - Use signature phrases naturally: "so I...", "turns out...", "let's...", "okay..."
@@ -163,12 +168,12 @@ Respond with ONLY a valid JSON object. No markdown, no explanation, no wrapping.
 
 {
   "hooks": [
-    { "variant": "A", "visual": "pre-hook visual description (0-1s)", "voiceover": "opening line (1-3s)" },
+    { "variant": "A", "visual": "описание визуала на русском (0-1с)", "voiceover": "opening line in English (1-3s)" },
     { "variant": "B", "visual": "...", "voiceover": "..." },
     { "variant": "C", "visual": "...", "voiceover": "..." }
   ],
   "beats": [
-    { "visual": "what viewer sees on screen", "voiceover": "what Pavlo says" },
+    { "visual": "описание того что зритель видит на экране — на русском", "voiceover": "what Pavlo says in English" },
     { "visual": "...", "voiceover": "..." }
   ],
   "titles": ["Title 1", "Title 2", "Title 3"],
@@ -370,10 +375,12 @@ ${antiSlop}
 - Regenerate beat #${targetBeatOrder} ONLY
 - Keep it consistent with surrounding beats (don't repeat what adjacent beats say)
 - Follow all brand voice rules: short sentences, Pavlo's signature phrases, contractions, no banned words
+- CRITICAL: "visual" MUST be in RUSSIAN (описание что на экране — на русском)
+- CRITICAL: "voiceover" MUST be in ENGLISH
 - Visual must describe concrete on-screen action (not "gameplay footage")
 - Voiceover comments on what viewer SEES
 
-Respond with ONLY a JSON object: { "visual": "...", "voiceover": "..." }`;
+Respond with ONLY a JSON object: { "visual": "описание на русском", "voiceover": "English text" }`;
 
   const result = await queryForJson<{ visual: string; voiceover: string }>(prompt);
 
@@ -432,11 +439,13 @@ ${antiSlop}
 - Regenerate hook variant ${targetVariant} ONLY
 - This is the HOOK — first 3 seconds. Must be punchy, surprising, or funny
 - Don't repeat approaches from other hook variants
+- CRITICAL: "visual" MUST be in RUSSIAN (описание что на экране — на русском)
+- CRITICAL: "voiceover" MUST be in ENGLISH
 - Visual: concrete on-screen action that grabs attention
-- Voiceover: short, punchy opening line
+- Voiceover: short, punchy opening line in English
 - Follow all brand voice rules
 
-Respond with ONLY a JSON object: { "visual": "...", "voiceover": "..." }`;
+Respond with ONLY a JSON object: { "visual": "описание на русском", "voiceover": "English text" }`;
 
   const result = await queryForJson<{ visual: string; voiceover: string }>(prompt);
 
