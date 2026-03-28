@@ -27,12 +27,15 @@ Scaffold a Next.js 16 web app with SQLite database, Claude Agent SDK integration
 - **D-07:** SQLite with Drizzle ORM and better-sqlite3. Scripts stored as structured beats (separate rows/JSON column), not text blobs.
 - **D-08:** Reference files (brand-voice.md, anti-slop-rules.md, video-formats.md) read from `.claude/skills/devlog-scriptwriter/references/` at runtime via `fs.readFileSync`. Shared source of truth with CLI.
 
+### UI/UX Process
+- **D-09:** Use the `frontend-design` skill when implementing any UI/UX work. This ensures pixel-perfect implementation with visual references, responsive layouts, and proper design-to-code workflow. Apply to: generation form, script display, loading states, layout, all shadcn/ui component usage.
+
 ### Claude's Discretion
 - Project structure (root vs subfolder vs monorepo) — Claude decides based on best practices
-- Generation form layout and UX — Claude designs based on the requirements
+- Generation form layout and UX — Claude designs using frontend-design skill
 - Prompt construction for Agent SDK — Claude decides how to build prompts that trigger the skill
 - Database schema details (column types, indexes) — Claude decides based on data model needs
-- Loading/error state UI — Claude designs appropriate states
+- Loading/error state UI — Claude designs using frontend-design skill
 - Output parsing strategy — Claude decides how to extract structured beats from AI response
 
 </decisions>
