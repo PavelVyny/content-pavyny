@@ -149,6 +149,16 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
 
       <Separator />
 
+      {/* Column headers — one row for both hooks and beats */}
+      <div className="grid grid-cols-2 gap-4 pl-12">
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Visual
+        </p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Voiceover
+        </p>
+      </div>
+
       {/* Hook Variants — above beats per D-06 */}
       {script.hooks && script.hooks.length > 0 && (
         <HookSection
@@ -179,36 +189,21 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                       #{beat.order}
                     </Badge>
                     <div className="grid grid-cols-2 gap-4 flex-1">
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Visual
-                        </p>
-                        <EditableField
-                          value={beat.visual}
-                          onSave={(val) =>
-                            handleBeatSave(beat.id, "visual", val)
-                          }
-                          className="text-base italic text-muted-foreground leading-relaxed"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Voiceover
-                        </p>
-                        <EditableField
-                          value={beat.voiceover}
-                          onSave={(val) =>
-                            handleBeatSave(beat.id, "voiceover", val)
-                          }
-                          className="text-base text-foreground leading-relaxed"
-                        />
-                      </div>
+                      <EditableField
+                        value={beat.visual}
+                        onSave={(val) =>
+                          handleBeatSave(beat.id, "visual", val)
+                        }
+                        className="text-base italic text-muted-foreground leading-relaxed"
+                      />
+                      <EditableField
+                        value={beat.voiceover}
+                        onSave={(val) =>
+                          handleBeatSave(beat.id, "voiceover", val)
+                        }
+                        className="text-base text-foreground leading-relaxed"
+                      />
                     </div>
-                    {beat.duration && (
-                      <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">
-                        {beat.duration}
-                      </span>
-                    )}
                     <Button
                       variant="ghost"
                       size="icon"
