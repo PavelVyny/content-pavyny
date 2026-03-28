@@ -120,8 +120,11 @@ Plans:
   1. A script list page shows all saved scripts with title, format type, creation date, status, and anti-slop score
   2. Pavlo can change a script's status (draft -> ready -> recorded) and the list reflects the current status
   3. One click copies the voiceover-only text (all beats, voiceover column only) to clipboard in clean format ready for recording reference
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
+
+Plans:
+- [ ] 06-01-PLAN.md — Scripts list page with table layout, inline status dropdown, clipboard copy, and header navigation
 
 ## Progress
 
@@ -135,4 +138,4 @@ Phases execute in numeric order: 4 -> 5 -> 6
 | 3. Feedback Loop | v1.0 | 0/1 | Paused | - |
 | 4. Foundation & Generation | v2.0 | 3/3 | Complete | 2026-03-28 |
 | 5. Script Editor | v2.0 | 2/2 | Complete    | 2026-03-28 |
-| 6. Library & Workflow | v2.0 | 0/? | Not started | - |
+| 6. Library & Workflow | v2.0 | 0/1 | Not started | - |
