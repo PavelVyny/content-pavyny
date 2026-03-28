@@ -263,3 +263,182 @@ Requirements:
 
   throw new Error("No result message received from Agent SDK");
 }
+
+/**
+ * Helper to run a query and extract JSON from the result.
+ * Reuses the same JSON extraction logic as generateScript.
+ */
+async function queryForJson<T>(prompt: string): Promise<T> {
+  for await (const message of query({
+    prompt,
+    options: {
+      cwd: PROJECT_ROOT,
+      settingSources: ["project"],
+      maxTurns: 3,
+      permissionMode: "dontAsk",
+      allowedTools: [],
+      disallowedTools: ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+    },
+  })) {
+    if (message.type === "result") {
+      if (message.subtype === "success") {
+        const resultText = (message as Record<string, unknown>).result as string | undefined;
+        console.log(
+          `[agent] Query complete: ${message.num_turns} turns, $${message.total_cost_usd.toFixed(4)}`
+        );
+
+        if (!resultText) {
+          throw new Error("Query succeeded but empty result");
+        }
+
+        let jsonStr = resultText.trim();
+        const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (codeBlockMatch) {
+          jsonStr = codeBlockMatch[1].trim();
+        }
+        const firstBrace = jsonStr.indexOf("{");
+        const lastBrace = jsonStr.lastIndexOf("}");
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+          jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
+        }
+
+        try {
+          return JSON.parse(jsonStr) as T;
+        } catch (parseErr) {
+          console.error("[agent] JSON parse failed. Raw (first 1000):", jsonStr.slice(0, 1000));
+          throw new Error(
+            `Failed to parse JSON: ${parseErr instanceof Error ? parseErr.message : "unknown"}`
+          );
+        }
+      }
+
+      const errorResult = message as { subtype: string; errors?: string[] };
+      throw new Error(
+        `Query failed (${errorResult.subtype}): ${errorResult.errors?.join(", ") ?? "unknown"}`
+      );
+    }
+  }
+
+  throw new Error("No result message received from Agent SDK");
+}
+
+/**
+ * Regenerate a single beat's text using full script context.
+ * Returns new visual + voiceover for the target beat only.
+ */
+export async function regenerateBeatText(
+  format: string,
+  devContext: string,
+  allBeats: { order: number; visual: string; voiceover: string }[],
+  hooks: { variant: string; visual: string; voiceover: string }[],
+  targetBeatOrder: number
+): Promise<{ visual: string; voiceover: string }> {
+  const brandVoice = loadRef("brand-voice.md");
+  const antiSlop = loadRef("anti-slop-rules.md");
+
+  const beatsContext = allBeats
+    .map((b) => `Beat #${b.order}:\n  Visual: ${b.visual}\n  Voiceover: ${b.voiceover}`)
+    .join("\n\n");
+
+  const hooksContext = hooks
+    .map((h) => `Hook ${h.variant}:\n  Visual: ${h.visual}\n  Voiceover: ${h.voiceover}`)
+    .join("\n\n");
+
+  const prompt = `You are the devlog-scriptwriter for Pavlo's YouTube Shorts game devlog.
+
+Your task: regenerate ONLY beat #${targetBeatOrder} with a fresh angle and phrasing. Keep the same topic/moment but find a different way to describe the visual and write the voiceover.
+
+=== FORMAT ===
+${format}
+
+=== DEV CONTEXT ===
+${devContext}
+
+=== HOOK VARIANTS ===
+${hooksContext}
+
+=== ALL SCRIPT BEATS (for context) ===
+${beatsContext}
+
+=== BRAND VOICE PROFILE ===
+${brandVoice}
+
+=== ANTI-SLOP RULES ===
+${antiSlop}
+
+=== INSTRUCTIONS ===
+- Regenerate beat #${targetBeatOrder} ONLY
+- Keep it consistent with surrounding beats (don't repeat what adjacent beats say)
+- Follow all brand voice rules: short sentences, Pavlo's signature phrases, contractions, no banned words
+- Visual must describe concrete on-screen action (not "gameplay footage")
+- Voiceover comments on what viewer SEES
+
+Respond with ONLY a JSON object: { "visual": "...", "voiceover": "..." }`;
+
+  const result = await queryForJson<{ visual: string; voiceover: string }>(prompt);
+
+  if (!result.visual || !result.voiceover) {
+    throw new Error("Regeneration result missing visual or voiceover");
+  }
+
+  console.log(`[agent] Regenerated beat #${targetBeatOrder}`);
+  return { visual: result.visual, voiceover: result.voiceover };
+}
+
+/**
+ * Re-score a script's text on the 5 anti-slop dimensions.
+ * Returns a full AntiSlopScore object.
+ */
+export async function rescoreScriptText(
+  allBeats: { visual: string; voiceover: string }[],
+  hooks: { variant: string; visual: string; voiceover: string }[],
+  selectedHook: string
+): Promise<AntiSlopScore> {
+  const brandVoice = loadRef("brand-voice.md");
+  const antiSlop = loadRef("anti-slop-rules.md");
+
+  const selectedHookText = hooks.find((h) => h.variant === selectedHook);
+  const scriptText = [
+    selectedHookText ? selectedHookText.voiceover : "",
+    ...allBeats.map((b) => b.voiceover),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const prompt = `You are the anti-slop scorer for Pavlo's YouTube Shorts devlog scripts.
+
+Score this script on 5 anti-slop dimensions (1-10 each): directness, rhythm, trust, authenticity, density.
+
+=== SCRIPT TEXT (selected hook + all beats voiceover) ===
+${scriptText}
+
+=== BRAND VOICE PROFILE ===
+${brandVoice}
+
+=== ANTI-SLOP SCORING RUBRIC ===
+${antiSlop}
+
+=== INSTRUCTIONS ===
+Score each dimension 1-10:
+- Directness: "Is this a statement or an announcement?" Point-first, no filler lead-ins.
+- Rhythm: "Read aloud -- does it sound like a person or a metronome?" Punchy mix of lengths.
+- Trust: "Am I explaining or showing?" Respect viewer intelligence.
+- Authenticity: "Would Pavlo say this out loud without cringing?" Specific, self-deprecating, honest.
+- Density: "Can I cut any word without losing meaning?" Every word earns its place.
+
+Include total (sum of 5 dimensions) and notes explaining the scores.
+
+Respond with ONLY JSON: { "directness": N, "rhythm": N, "trust": N, "authenticity": N, "density": N, "total": N, "notes": "..." }`;
+
+  const result = await queryForJson<AntiSlopScore>(prompt);
+
+  // Compute total if not present or incorrect
+  const computed = (result.directness || 0) + (result.rhythm || 0) + (result.trust || 0) +
+                   (result.authenticity || 0) + (result.density || 0);
+  if (!result.total || result.total !== computed) {
+    result.total = computed;
+  }
+
+  console.log(`[agent] Rescored: ${result.total}/50`);
+  return result;
+}
