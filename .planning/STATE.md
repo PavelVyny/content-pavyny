@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Web UI
-status: Ready to execute
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-03-28T15:05:39.829Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-28T15:28:25.688Z"
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -50,6 +50,7 @@ Plan: 2 of 2
 | Phase 04 P01 | 6 | 2 tasks | 10 files |
 | Phase 04 P02 | 3 | 2 tasks | 2 files |
 | Phase 05 P01 | 3 | 2 tasks | 6 files |
+| Phase 05 P02 | 8 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Rewrote agent.ts from markdown-parsing to JSON-prompt approach after checkpoint revealed parsing failures
 - [Phase 04]: GenerationPage client wrapper owns form/display toggle state; page.tsx stays as server component fetching formats and latest script
 - [Phase 05]: base-ui Tabs via shadcn for hook variant switching; local beat state for optimistic updates
+- [Phase 05]: Score panel scrolls with page (not sticky) for layout simplicity
+- [Phase 05]: Regenerate button always visible (not hover-only) for discoverability; onMouseDown preventDefault prevents blur race condition
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T15:05:39.826Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-03-28T15:28:25.685Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None

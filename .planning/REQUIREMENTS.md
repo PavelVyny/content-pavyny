@@ -69,8 +69,8 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 - [x] **EDIT-01**: Dual-track beat editor — visual and voiceover as separate editable blocks per beat, clean readable layout — Phase 5
 - [x] **EDIT-02**: Inline editing — click any beat segment to edit text directly — Phase 5
 - [x] **EDIT-03**: Hook variant selector — UI to switch between 2-3 generated hook variants — Phase 5
-- [ ] **EDIT-04**: Quick beat re-generate — re-generate a single beat without regenerating the whole script — Phase 5
-- [ ] **EDIT-05**: Anti-slop score display — 5 dimensions table with total score, updates on edit — Phase 5
+- [x] **EDIT-04**: Quick beat re-generate — re-generate a single beat without regenerating the whole script — Phase 5
+- [x] **EDIT-05**: Anti-slop score display — 5 dimensions table with total score, updates on edit — Phase 5
 
 ### Script Library
 
@@ -109,8 +109,8 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 | EDIT-01 | Phase 5 | Complete |
 | EDIT-02 | Phase 5 | Complete |
 | EDIT-03 | Phase 5 | Complete |
-| EDIT-04 | Phase 5 | Pending |
-| EDIT-05 | Phase 5 | Pending |
+| EDIT-04 | Phase 5 | Complete |
+| EDIT-05 | Phase 5 | Complete |
 | LIBR-01 | Phase 6 | Pending |
 | LIBR-02 | Phase 6 | Pending |
 | LIBR-03 | Phase 6 | Pending |
