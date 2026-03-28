@@ -141,16 +141,13 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
       <Separator />
 
       {/* Column headers — one row for both hooks and beats */}
-      <div className="flex items-start gap-3">
-        <div className="w-10 shrink-0" />
-        <div className="grid grid-cols-2 gap-4 flex-1">
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Visual
-          </p>
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Voiceover
-          </p>
-        </div>
+      <div className="grid grid-cols-2 gap-4">
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Visual
+        </p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Voiceover
+        </p>
       </div>
 
       {/* Hook Variants — above beats per D-06 */}
@@ -173,13 +170,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
           </h3>
           <div className="space-y-3">
             {localBeats.map((beat) => (
-              <div key={beat.id} className="group relative flex items-start gap-3">
-                <Badge
-                  variant="outline"
-                  className="shrink-0 mt-3 tabular-nums"
-                >
-                  #{beat.order}
-                </Badge>
+              <div key={beat.id} className="group relative flex items-start gap-2">
                 <Card size="sm" className="flex-1">
                   <CardContent>
                     <div className="grid grid-cols-2 gap-4">
@@ -204,7 +195,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "shrink-0 mt-3 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity",
+                    "shrink-0 mt-3 h-7 w-7 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity",
                     regeneratingBeatId === beat.id && "opacity-100"
                   )}
                   onMouseDown={(e) => e.preventDefault()}
