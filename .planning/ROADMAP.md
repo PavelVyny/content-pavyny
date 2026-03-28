@@ -71,7 +71,7 @@ Plans:
 
 **Milestone Goal:** Local web application that wraps the CLI scriptwriting pipeline in a visual interface with dual-track editor and script library.
 
-- [ ] **Phase 4: Foundation & Generation** - Next.js app with AI backend, database, and end-to-end script generation flow
+- [x] **Phase 4: Foundation & Generation** - Next.js app with AI backend, database, and end-to-end script generation flow
 - [ ] **Phase 5: Script Editor** - Dual-track beat editor with inline editing, hook variants, per-beat regeneration, and anti-slop scoring
 - [ ] **Phase 6: Library & Workflow** - Script browsing, status management, and clipboard export for recording
 
@@ -105,8 +105,12 @@ Plans:
   3. Pavlo can switch between 2-3 hook variants for the first beat without regenerating the rest of the script
   4. Pavlo can regenerate a single beat (AI re-generates just that beat using the same context) without losing edits to other beats
   5. Anti-slop score panel shows the total score and 5-dimension breakdown, updating when beat text is edited
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 05-01-PLAN.md — Editor page route, server actions, click-to-edit beat cards, and hook variant tabs
+- [ ] 05-02-PLAN.md — Beat regeneration, anti-slop rescoring, score panel, and Edit link from generation page
 
 ### Phase 6: Library & Workflow
 **Goal**: Pavlo can browse all saved scripts, track their status from draft to recorded, and copy the voiceover text for recording sessions
@@ -129,6 +133,6 @@ Phases execute in numeric order: 4 -> 5 -> 6
 | 1. Foundation | v1.0 | 3/3 | Complete | 2026-03-26 |
 | 2. Script Generation | v1.0 | 1/1 | Complete | 2026-03-27 |
 | 3. Feedback Loop | v1.0 | 0/1 | Paused | - |
-| 4. Foundation & Generation | v2.0 | 0/3 | Planning | - |
-| 5. Script Editor | v2.0 | 0/? | Not started | - |
+| 4. Foundation & Generation | v2.0 | 3/3 | Complete | 2026-03-28 |
+| 5. Script Editor | v2.0 | 0/2 | Planning | - |
 | 6. Library & Workflow | v2.0 | 0/? | Not started | - |
