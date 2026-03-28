@@ -55,13 +55,13 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 
 - [x] **APFN-01**: Next.js 16 app scaffold with App Router, Tailwind CSS, shadcn/ui v4 — Phase 4
 - [x] **APFN-02**: SQLite database with Drizzle ORM — scripts table with structured beats (not blob), status field (draft/ready/recorded) — Phase 4
-- [ ] **APFN-03**: Claude Agent SDK integration using Max subscription auth — spawns Claude Code with devlog-scriptwriter skill access — Phase 4
+- [x] **APFN-03**: Claude Agent SDK integration using Max subscription auth — spawns Claude Code with devlog-scriptwriter skill access — Phase 4
 - [x] **APFN-04**: Reference file reader — loads brand-voice.md, anti-slop-rules.md, video-formats.md from .claude/skills/ at runtime — Phase 4
 
 ### Script Generation UI
 
 - [ ] **GENR-01**: Generation form — format selector (7 formats), dev progress text input, generate button — Phase 4
-- [ ] **GENR-02**: Structured output parsing — dual-track beats, hook variants, titles, thumbnail concept, anti-slop score extracted from AI response — Phase 4
+- [x] **GENR-02**: Structured output parsing — dual-track beats, hook variants, titles, thumbnail concept, anti-slop score extracted from AI response — Phase 4
 - [ ] **GENR-03**: Full script re-generation — re-generate entire script with same or modified input — Phase 4
 
 ### Script Editor
@@ -101,10 +101,10 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 |-------------|-------|--------|
 | APFN-01 | Phase 4 | Complete |
 | APFN-02 | Phase 4 | Complete |
-| APFN-03 | Phase 4 | Pending |
+| APFN-03 | Phase 4 | Complete |
 | APFN-04 | Phase 4 | Complete |
 | GENR-01 | Phase 4 | Pending |
-| GENR-02 | Phase 4 | Pending |
+| GENR-02 | Phase 4 | Complete |
 | GENR-03 | Phase 4 | Pending |
 | EDIT-01 | Phase 5 | Pending |
 | EDIT-02 | Phase 5 | Pending |
