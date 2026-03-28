@@ -61,6 +61,18 @@ export async function selectHook(
   return { success: true };
 }
 
+export async function selectTitle(
+  scriptId: number,
+  title: string
+): Promise<{ success: boolean }> {
+  const db = getDb();
+  db.update(scripts)
+    .set({ title, updatedAt: new Date() })
+    .where(eq(scripts.id, scriptId))
+    .run();
+  return { success: true };
+}
+
 export async function regenerateBeat(
   beatId: number,
   scriptId: number

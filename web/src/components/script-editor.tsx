@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { EditableField } from "@/components/editable-field";
 import { HookSection } from "@/components/hook-section";
 import { ScorePanel } from "@/components/score-panel";
-import { updateBeat, regenerateBeat } from "@/app/actions/editor";
+import { updateBeat, regenerateBeat, selectTitle } from "@/app/actions/editor";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -38,6 +38,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
     script.antiSlopScore ?? null
   );
   const [regeneratingBeatId, setRegeneratingBeatId] = useState<number | null>(null);
+  const [currentTitle, setCurrentTitle] = useState(script.title);
   const [, startTransition] = useTransition();
 
   function handleBeatSave(
@@ -83,7 +84,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-xl font-semibold text-foreground">
-            {script.title}
+            {currentTitle}
           </h2>
           <Badge variant={statusColor(script.status)}>{script.status}</Badge>
         </div>
@@ -109,10 +110,26 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
               {script.titles.map((title, i) => (
                 <li
                   key={i}
-                  className={`text-sm rounded-md px-3 py-1.5 ${
-                    i === 0
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setCurrentTitle(title);
+                    startTransition(() => {
+                      selectTitle(script.id, title);
+                    });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      setCurrentTitle(title);
+                      startTransition(() => {
+                        selectTitle(script.id, title);
+                      });
+                    }
+                  }}
+                  className={`text-sm rounded-md px-3 py-1.5 cursor-pointer transition-colors ${
+                    title === currentTitle
                       ? "bg-primary/10 font-medium text-foreground"
-                      : "text-muted-foreground"
+                      : "text-muted-foreground hover:bg-zinc-100"
                   }`}
                 >
                   {i + 1}. {title}
