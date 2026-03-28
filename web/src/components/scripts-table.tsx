@@ -103,7 +103,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
               <td className="py-3 px-2">
                 <Link
                   href={`/script/${script.id}`}
-                  className="text-foreground hover:underline font-medium max-w-[200px] truncate block"
+                  className="text-base text-foreground font-medium max-w-[280px] truncate block hover:text-primary transition-colors"
                 >
                   {script.title}
                 </Link>
@@ -124,7 +124,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                   onChange={(e) =>
                     handleStatusChange(script.id, e.target.value)
                   }
-                  className={`text-xs rounded border px-2 py-1 ${statusBg(script.status)}`}
+                  className={`text-xs rounded border px-2 py-1 cursor-pointer ${statusBg(script.status)}`}
                 >
                   <option value="draft">draft</option>
                   <option value="ready">ready</option>
@@ -143,7 +143,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
               <td className="py-3 px-2">
                 <button
                   onClick={() => handleCopy(script.id)}
-                  className={`text-xs border rounded px-2 py-1 transition-colors ${
+                  className={`text-xs border rounded px-2 py-1 cursor-pointer transition-colors ${
                     copiedId === script.id
                       ? "bg-green-600 text-white border-green-600"
                       : "text-muted-foreground hover:text-foreground"

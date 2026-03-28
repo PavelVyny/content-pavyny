@@ -195,12 +195,16 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "shrink-0 mt-3 h-7 w-7 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity",
-                    regeneratingBeatId === beat.id && "opacity-100"
+                    "shrink-0 mt-3 h-7 w-7 cursor-pointer transition-opacity",
+                    regeneratingBeatId === beat.id
+                      ? "opacity-100"
+                      : regeneratingBeatId !== null
+                        ? "opacity-0 pointer-events-none"
+                        : "opacity-0 group-hover:opacity-100"
                   )}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleRegenerateBeat(beat.id)}
-                  disabled={regeneratingBeatId !== null}
+                  disabled={regeneratingBeatId !== null && regeneratingBeatId !== beat.id}
                 >
                   <RefreshCw
                     className={cn(

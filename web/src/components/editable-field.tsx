@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
 
 interface EditableFieldProps {
   value: string;
@@ -19,8 +18,6 @@ export function EditableField({
   const [editing, setEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
 
-  // Sync localValue with prop when it changes externally (e.g. after regeneration)
-  // but only when not currently editing
   useEffect(() => {
     if (!editing) {
       setLocalValue(value);
@@ -36,19 +33,17 @@ export function EditableField({
 
   if (editing) {
     return (
-      <Textarea
+      <textarea
         autoFocus
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={handleBlur}
-        className={`min-h-0 ${className}`}
+        className={`field-sizing-content w-full rounded border border-ring bg-transparent px-1 -mx-1 py-0 outline-none ring-2 ring-ring/30 resize-none ${className}`}
       />
     );
   }
 
   return (
-    // NOTE: Parent buttons (like regenerate) should use onMouseDown + preventDefault()
-    // to avoid blur-before-click issues when this field is in edit mode nearby.
     <p
       onClick={() => setEditing(true)}
       className={`cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors ${className}`}
