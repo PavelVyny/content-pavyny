@@ -124,7 +124,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 06-01-PLAN.md — Scripts list page with table layout, inline status dropdown, clipboard copy, and header navigation
+- [x] 06-01-PLAN.md — Scripts list page with table layout, inline status dropdown, clipboard copy, and header navigation
 
 ## Progress
 

@@ -74,9 +74,9 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 
 ### Script Library
 
-- [ ] **LIBR-01**: Script list view — all saved scripts with title, format, date, status, anti-slop score — Phase 6
-- [ ] **LIBR-02**: Script status workflow — draft → ready → recorded — Phase 6
-- [ ] **LIBR-03**: Copy-to-clipboard — export ready script as clean text for recording reference — Phase 6
+- [x] **LIBR-01**: Script list view — all saved scripts with title, format, date, status, anti-slop score — Phase 6
+- [x] **LIBR-02**: Script status workflow — draft → ready → recorded — Phase 6
+- [x] **LIBR-03**: Copy-to-clipboard — export ready script as clean text for recording reference — Phase 6
 
 ## v2.0 Out of Scope
 
@@ -111,9 +111,9 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 | EDIT-03 | Phase 5 | Complete |
 | EDIT-04 | Phase 5 | Complete |
 | EDIT-05 | Phase 5 | Complete |
-| LIBR-01 | Phase 6 | Pending |
-| LIBR-02 | Phase 6 | Pending |
-| LIBR-03 | Phase 6 | Pending |
+| LIBR-01 | Phase 6 | Complete |
+| LIBR-02 | Phase 6 | Complete |
+| LIBR-03 | Phase 6 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 15 total
