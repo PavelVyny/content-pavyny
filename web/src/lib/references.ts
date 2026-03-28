@@ -1,24 +1,4 @@
-import { readFileSync } from "fs";
-import { join } from "path";
 import type { VideoFormat } from "./types";
-
-const REFS_DIR = join(
-  process.cwd(),
-  "..", // Up from web/ to project root
-  ".claude/skills/devlog-scriptwriter/references"
-);
-
-export function readBrandVoice(): string {
-  return readFileSync(join(REFS_DIR, "brand-voice.md"), "utf-8");
-}
-
-export function readAntiSlopRules(): string {
-  return readFileSync(join(REFS_DIR, "anti-slop-rules.md"), "utf-8");
-}
-
-export function readVideoFormats(): string {
-  return readFileSync(join(REFS_DIR, "video-formats.md"), "utf-8");
-}
 
 export function getFormatList(): VideoFormat[] {
   return [

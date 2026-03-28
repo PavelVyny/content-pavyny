@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { VideoFormat, Script, ScriptBeat } from "@/lib/types";
 import { GenerateForm } from "@/components/generate-form";
 import { ScriptDisplay } from "@/components/script-display";
-import { deleteScript } from "@/app/actions/generate";
+import { deleteScript, regenerateScript } from "@/app/actions/generate";
 
 interface GenerationPageProps {
   formats: VideoFormat[];
@@ -22,6 +22,7 @@ export function GenerationPage({
   );
   const router = useRouter();
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [isRegenerating, startRegenerateTransition] = useTransition();
 
   // Show form if: user chose to, no script exists, or script is a failed placeholder
   const isFailed = latestScript?.title === "Generation failed";
@@ -34,7 +35,17 @@ export function GenerationPage({
   }
 
   function handleRegenerate() {
-    setShowForm(true);
+    if (!displayScript) return;
+    startRegenerateTransition(async () => {
+      const result = await regenerateScript(
+        displayScript.id,
+        displayScript.format,
+        displayScript.devContext ?? ""
+      );
+      if ("success" in result) {
+        router.refresh();
+      }
+    });
   }
 
   function handleNewScript() {

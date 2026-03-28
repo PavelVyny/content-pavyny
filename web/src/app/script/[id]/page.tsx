@@ -38,12 +38,11 @@ export default async function ScriptPage({
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <Link
-        href="/"
+        href="/scripts"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
       >
         &larr; Back
       </Link>
-      <h1 className="text-xl font-semibold mb-6">{script.title}</h1>
       <ScriptEditor script={{ ...script, beats: scriptBeats }} />
     </main>
   );
