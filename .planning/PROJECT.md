@@ -12,23 +12,33 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Custom scriptwriting skill installed and operational — Phase 1
+- ✓ Brand voice profile created through interview (brand-voice.md) — Phase 1
+- ✓ Anti-slop rules integrated (90+ banned phrases from 4 sources) — Phase 1
+- ✓ Script generation produces ready-to-record scripts in 7 tested formats — Phase 2
+- ✓ Scripts follow "one Short = one idea" principle — Phase 2
+- ✓ Scripts follow "visuals drive, voice follows" principle — Phase 2
+- ✓ Hook formula applied with 2-3 variants — Phase 2
+- ✓ Anti-slop scoring pass on every script (35+/50) with auto-rewrite — Phase 2
+- ✓ Companion skills (stop-slop, humanizer) installed — Phase 1
 
 ### Active
 
-- [ ] Custom scriptwriting skill installed and operational in Claude Code
-- [ ] Brand voice profile created through interview (brand-voice.md)
-- [ ] Anti-slop rules integrated (60+ banned phrases, structural rules)
-- [ ] Script generation produces ready-to-record scripts in tested formats (The Bug, The Satisfaction, Before/After, The Decision, The Trick, The Fail, The Number)
-- [ ] Ideation phase generates 5-7 topic angles per session based on current game dev progress
-- [ ] Scripts follow "one Short = one idea" principle
-- [ ] Scripts follow "visuals drive, voice follows" principle — voiceover comments on what viewer sees
-- [ ] Hook formula applied: Pre-hook → Question → Deliver (first 3 seconds)
-- [ ] Scripts are easy to pronounce for non-native English speaker
-- [ ] Metrics log (metrics-log.md) captures per-video analytics after publish
-- [ ] Feedback loop: metrics patterns feed back into script generation preferences
-- [ ] Anti-slop scoring pass on every script (target: 35+/50)
-- [ ] Companion skills (stop-slop, humanizer) installed and integrated
+- [ ] Metrics log captures per-video analytics after publish (Phase 3 — paused, needs 3+ videos)
+- [ ] Feedback loop: metrics patterns feed back into generation (Phase 3 — paused)
+
+## Current Milestone: v2.0 Web UI for Scriptwriting
+
+**Goal:** Local web application for the scriptwriting workflow with visual script editor and library.
+
+**Target features:**
+- Script generation via web interface (format selection, context input → ready script)
+- Visual script editor — beats split into blocks (visual | voiceover), each editable inline
+- Script library — store, browse, search generated scripts
+- Anti-slop scoring integrated in UI (show score, highlight problems)
+
+**Stack:** Next.js (React + TypeScript), simple local database
+**AI Backend:** Requires research — must work with Claude Max subscription without additional costs
 
 ### Out of Scope
 
@@ -94,7 +104,11 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 | Custom skill over existing skills | No single skill covers devlog + anti-slop + feedback loop; combine best of all | — Pending |
 | Manual metrics over YouTube MCP | 1 video/week doesn't justify API setup; manual entry in metrics-log.md sufficient | — Pending |
 | English scripts only | Target audience is global gamedev community; Pavlo records English voiceover | — Pending |
-| Brand voice via interview (not transcript) | No ready transcripts to extract style from; interview establishes voice profile | — Pending |
+| Brand voice via interview (not transcript) | No ready transcripts to extract style from; interview establishes voice profile | ✓ Good |
+| Merge anti-slop from 4 sources | stop-slop + humanizer + slop-radar + anti-slop-writing = 90+ patterns | ✓ Good |
+| Skill chaining unreliable — embed rules | Auto-chaining is probabilistic; critical rules embedded in main skill | ✓ Good |
+| Phase 3 paused until 3 videos | Feedback loop needs data; skip to Web UI milestone | — Pending |
+| Web UI as milestone v2 | CLI pipeline works; web interface for better workflow experience | — Pending |
 
 ## Evolution
 
@@ -114,4 +128,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-26 after initialization*
+*Last updated: 2026-03-27 after milestone v2.0 start*
