@@ -113,36 +113,27 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
             <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Title Options
             </h3>
-            <ol className="space-y-1.5">
+            <div className="flex flex-wrap gap-2">
               {script.titles.map((title, i) => (
-                <li
+                <button
                   key={i}
-                  role="button"
-                  tabIndex={0}
+                  type="button"
                   onClick={() => {
                     setCurrentTitle(title);
                     startTransition(() => {
                       selectTitle(script.id, title);
                     });
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      setCurrentTitle(title);
-                      startTransition(() => {
-                        selectTitle(script.id, title);
-                      });
-                    }
-                  }}
-                  className={`text-base rounded-md px-3 py-2 cursor-pointer transition-colors ${
+                  className={`text-sm rounded-md px-3 py-1.5 border cursor-pointer transition-colors ${
                     title === currentTitle
-                      ? "bg-primary/10 font-medium text-foreground"
-                      : "text-muted-foreground hover:bg-zinc-100"
+                      ? "bg-primary/10 border-primary/30 font-medium text-foreground"
+                      : "border-transparent text-muted-foreground hover:bg-zinc-100 hover:border-zinc-200"
                   }`}
                 >
-                  {i + 1}. {title}
-                </li>
+                  {title}
+                </button>
               ))}
-            </ol>
+            </div>
           </section>
         </>
       )}
@@ -150,13 +141,16 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
       <Separator />
 
       {/* Column headers — one row for both hooks and beats */}
-      <div className="grid grid-cols-2 gap-4 pl-12">
-        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Visual
-        </p>
-        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Voiceover
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="w-10 shrink-0" />
+        <div className="grid grid-cols-2 gap-4 flex-1">
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Visual
+          </p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Voiceover
+          </p>
+        </div>
       </div>
 
       {/* Hook Variants — above beats per D-06 */}
@@ -179,16 +173,16 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
           </h3>
           <div className="space-y-3">
             {localBeats.map((beat) => (
-              <Card key={beat.id} size="sm" className="relative">
-                <CardContent>
-                  <div className="flex items-start gap-3">
-                    <Badge
-                      variant="outline"
-                      className="shrink-0 mt-0.5 tabular-nums"
-                    >
-                      #{beat.order}
-                    </Badge>
-                    <div className="grid grid-cols-2 gap-4 flex-1">
+              <div key={beat.id} className="group relative flex items-start gap-3">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 mt-3 tabular-nums"
+                >
+                  #{beat.order}
+                </Badge>
+                <Card size="sm" className="flex-1">
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
                       <EditableField
                         value={beat.visual}
                         onSave={(val) =>
@@ -204,24 +198,27 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                         className="text-base text-foreground leading-relaxed"
                       />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 h-7 w-7"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleRegenerateBeat(beat.id)}
-                      disabled={regeneratingBeatId !== null}
-                    >
-                      <RefreshCw
-                        className={cn(
-                          "h-4 w-4",
-                          regeneratingBeatId === beat.id && "animate-spin"
-                        )}
-                      />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "shrink-0 mt-3 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity",
+                    regeneratingBeatId === beat.id && "opacity-100"
+                  )}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleRegenerateBeat(beat.id)}
+                  disabled={regeneratingBeatId !== null}
+                >
+                  <RefreshCw
+                    className={cn(
+                      "h-4 w-4",
+                      regeneratingBeatId === beat.id && "animate-spin"
+                    )}
+                  />
+                </Button>
+              </div>
             ))}
           </div>
         </section>

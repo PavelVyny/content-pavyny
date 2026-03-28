@@ -59,7 +59,9 @@ export function HookSection({
         </TabsList>
         {hooks.map((hook) => (
           <TabsContent key={hook.variant} value={hook.variant}>
-            <div className="grid grid-cols-2 gap-4 pt-3">
+            <div className="flex items-start gap-3 pt-3">
+              <div className="w-10 shrink-0" />
+              <div className="grid grid-cols-2 gap-4 flex-1">
               <EditableField
                 value={hook.visual}
                 onSave={(val) =>
@@ -74,6 +76,7 @@ export function HookSection({
                 }
                 className="text-base text-foreground leading-relaxed"
               />
+              </div>
             </div>
           </TabsContent>
         ))}
