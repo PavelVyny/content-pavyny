@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface ScriptDisplayProps {
   script: Script & { beats: ScriptBeat[] };
@@ -257,11 +258,16 @@ export function ScriptDisplay({ script, onRegenerate, onNewScript, onDelete }: S
             </Button>
           )}
         </div>
-        {onRegenerate && (
-          <Button variant="outline" onClick={onRegenerate}>
-            Re-generate
-          </Button>
-        )}
+        <div className="flex gap-2">
+          <Link href={`/script/${script.id}`}>
+            <Button variant="outline">Edit</Button>
+          </Link>
+          {onRegenerate && (
+            <Button variant="outline" onClick={onRegenerate}>
+              Re-generate
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
