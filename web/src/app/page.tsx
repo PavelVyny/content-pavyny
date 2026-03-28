@@ -1,15 +1,15 @@
 import { getFormatList } from "@/lib/references";
 import { getDb } from "@/lib/db";
-import { scripts, beats } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { scripts } from "@/lib/db/schema";
+import { desc } from "drizzle-orm";
 import { GenerationPage } from "@/components/generation-page";
-import type { Script, ScriptBeat } from "@/lib/types";
+import type { Script } from "@/lib/types";
 
 export default function Home() {
   const formats = getFormatList();
   const db = getDb();
 
-  // Load the most recent script (if any) with its beats
+  // Check if a failed generation exists (to show error banner)
   const latestScript = db
     .select()
     .from(scripts)
@@ -17,17 +17,10 @@ export default function Home() {
     .limit(1)
     .get();
 
-  let scriptWithBeats: (Script & { beats: ScriptBeat[] }) | null = null;
+  let failedScript: (Script & { beats: never[] }) | null = null;
 
-  if (latestScript && latestScript.status !== "generating") {
-    const scriptBeats = db
-      .select()
-      .from(beats)
-      .where(eq(beats.scriptId, latestScript.id))
-      .orderBy(beats.order)
-      .all();
-
-    scriptWithBeats = {
+  if (latestScript?.title === "Generation failed") {
+    failedScript = {
       ...latestScript,
       hooks: latestScript.hooks as Script["hooks"],
       titles: latestScript.titles as Script["titles"],
@@ -35,11 +28,7 @@ export default function Home() {
       status: latestScript.status as Script["status"],
       createdAt: new Date(latestScript.createdAt),
       updatedAt: new Date(latestScript.updatedAt),
-      beats: scriptBeats.map((b) => ({
-        ...b,
-        createdAt: undefined,
-        updatedAt: undefined,
-      })) as ScriptBeat[],
+      beats: [],
     };
   }
 
@@ -54,7 +43,7 @@ export default function Home() {
         </p>
       </div>
 
-      <GenerationPage formats={formats} latestScript={scriptWithBeats} />
+      <GenerationPage formats={formats} latestScript={failedScript} />
     </div>
   );
 }
