@@ -10,6 +10,7 @@ import {
   getChannelInfoAction,
 } from "@/app/actions/youtube";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Status = "disconnected" | "connected" | "expired";
 interface ChannelInfo {
@@ -55,8 +56,15 @@ export function YouTubeConnectCard() {
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Checking connection...
+        <CardContent className="py-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="w-12 h-12 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+            <Skeleton className="h-8 w-24 rounded-md" />
+          </div>
         </CardContent>
       </Card>
     );
