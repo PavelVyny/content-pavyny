@@ -43,6 +43,15 @@ interface VideoGridProps {
   videos: VideoWithMetrics[];
 }
 
+function MiniStat({ label, value, className = "" }: { label: string; value: string; className?: string }) {
+  return (
+    <div>
+      <div className={`text-xs font-semibold ${className}`}>{value}</div>
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
 export function VideoGrid({ videos }: VideoGridProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -89,16 +98,16 @@ export function VideoGrid({ videos }: VideoGridProps) {
                     {formatDate(video.publishedAt)}
                   </p>
                   {metrics && (
-                    <div className="flex gap-3 mt-1 text-xs">
-                      <span className="font-medium">{formatCompact(metrics.views)} views</span>
+                    <div className="flex gap-4 mt-1.5">
+                      <MiniStat label="Views" value={formatCompact(metrics.views)} />
                       {engagedPct !== null && (
-                        <span className={engagedColor(engagedPct)}>
-                          {engagedPct}% engaged
-                        </span>
+                        <MiniStat label="Engaged" value={`${engagedPct}%`} className={engagedColor(engagedPct)} />
                       )}
-                      <span className={retentionColor(metrics.averageViewPercentage ?? 0)}>
-                        {metrics.averageViewPercentage}% ret
-                      </span>
+                      <MiniStat
+                        label="Retention"
+                        value={`${metrics.averageViewPercentage}%`}
+                        className={retentionColor(metrics.averageViewPercentage ?? 0)}
+                      />
                     </div>
                   )}
                   {linkedScriptTitle && (
