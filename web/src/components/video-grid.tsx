@@ -53,8 +53,28 @@ function MiniStat({ label, value, className = "" }: { label: string; value: stri
   );
 }
 
+type SortKey = "date" | "views" | "engaged";
+
+function sortVideos(videos: VideoWithMetrics[], key: SortKey): VideoWithMetrics[] {
+  return [...videos].sort((a, b) => {
+    switch (key) {
+      case "views":
+        return (b.metrics?.views ?? 0) - (a.metrics?.views ?? 0);
+      case "engaged":
+        return (b.metrics?.engagedViews ?? 0) - (a.metrics?.engagedViews ?? 0);
+      case "date":
+      default: {
+        const da = a.video.publishedAt ? new Date(a.video.publishedAt).getTime() : 0;
+        const db = b.video.publishedAt ? new Date(b.video.publishedAt).getTime() : 0;
+        return db - da;
+      }
+    }
+  });
+}
+
 export function VideoGrid({ videos }: VideoGridProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("date");
 
   if (videos.length === 0) {
     return (
@@ -64,9 +84,23 @@ export function VideoGrid({ videos }: VideoGridProps) {
     );
   }
 
+  const sorted = sortVideos(videos, sortKey);
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {videos.map((item) => {
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as SortKey)}
+          className="text-xs text-muted-foreground border rounded px-2 py-1 cursor-pointer bg-transparent"
+        >
+          <option value="date">Sort by date</option>
+          <option value="views">Sort by views</option>
+          <option value="engaged">Sort by engaged</option>
+        </select>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {sorted.map((item) => {
         const { video, metrics, linkedScriptTitle } = item;
         const isExpanded = expandedId === video.id;
         const engagedPct =
@@ -169,6 +203,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
