@@ -8,11 +8,8 @@ interface MetricsCardProps {
   metrics: VideoMetricsData;
 }
 
-// YouTube Shorts retention benchmarks (industry data):
-// Avg Retention (averageViewPercentage — average % of video watched):
+// Avg Retention (averageViewPercentage):
 //   <40% poor | 40-60% average | 60-75% good | >75% excellent
-// Stayed (% who watched to the end — last point of retention curve):
-//   <20% poor | 20-35% average | 35-50% good | >50% excellent
 function retentionColor(pct: number): string {
   if (pct >= 75) return "text-green-600";
   if (pct >= 60) return "text-emerald-600";
@@ -20,20 +17,52 @@ function retentionColor(pct: number): string {
   return "text-red-600";
 }
 
+// Engaged % (engagedViews / views — proxy for Shorts shelf hook strength):
+//   <45% poor | 45-55% average | 55-65% good | >65% excellent
+function engagedColor(pct: number): string {
+  if (pct >= 65) return "text-green-600";
+  if (pct >= 55) return "text-emerald-600";
+  if (pct >= 45) return "text-zinc-700";
+  return "text-red-600";
+}
+
+function formatCompact(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
 
 export function MetricsCard({ metrics }: MetricsCardProps) {
   const [expanded, setExpanded] = useState(false);
 
+  const engagedPct =
+    metrics.engagedViews && metrics.views > 0
+      ? Math.round((metrics.engagedViews / metrics.views) * 100)
+      : null;
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-6">
-        <MetricItem label="Views" value={metrics.views.toLocaleString()} />
-        {metrics.engagedViews > 0 && (
-          <MetricItem
-            label="Engaged"
-            value={metrics.engagedViews.toLocaleString()}
-          />
-        )}
+        <div>
+          <div className="text-sm font-semibold">
+            {formatCompact(metrics.views)}
+            {metrics.engagedViews > 0 && (
+              <>
+                {" / "}
+                <span className={engagedPct !== null ? engagedColor(engagedPct) : ""}>
+                  {formatCompact(metrics.engagedViews)}
+                </span>
+              </>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Views / Engaged
+            {engagedPct !== null && (
+              <span className={`ml-1 ${engagedColor(engagedPct)}`}>
+                ({engagedPct}%)
+              </span>
+            )}
+          </div>
+        </div>
         <MetricItem
           label="Avg Retention"
           value={`${metrics.averageViewPercentage}%`}
@@ -51,9 +80,6 @@ export function MetricsCard({ metrics }: MetricsCardProps) {
         onClick={() => setExpanded(!expanded)}
         className="cursor-pointer"
       >
-        <div className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">
-          Retention curve {expanded ? "▲" : "▼"}
-        </div>
         <RetentionChart
           data={metrics.retentionCurve ?? []}
           expanded={expanded}
