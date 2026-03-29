@@ -140,7 +140,7 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
                   className={`text-sm rounded-md px-3 py-1.5 border cursor-pointer transition-colors ${
                     i === selectedTitleIndex
                       ? "bg-primary/10 border-primary/30 font-medium text-foreground"
-                      : "border-transparent bg-transparent text-muted-foreground hover:text-foreground"
+                      : "border-transparent bg-zinc-100 text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {title}
