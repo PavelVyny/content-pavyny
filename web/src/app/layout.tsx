@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
-import { Settings, Sparkles } from "lucide-react";
+import { Settings, CircleFadingPlus } from "lucide-react";
 import { Providers } from "@/components/providers";
 import { YouTubeStatusIcon } from "@/components/youtube-status-icon";
 import { getQuickConnectionStatus } from "@/lib/youtube-client";
@@ -44,7 +44,7 @@ export default function RootLayout({
                   className="text-muted-foreground hover:text-primary cursor-pointer transition-colors"
                   title="Generate"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <CircleFadingPlus className="w-4 h-4" />
                 </Link>
                 <Link
                   href="/scripts"
