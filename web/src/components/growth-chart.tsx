@@ -60,8 +60,8 @@ export function GrowthChart({ data }: GrowthChartProps) {
         <AreaChart data={data} margin={{ left: -10, right: 10, top: 5, bottom: 0 }}>
           <defs>
             <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+              <stop offset="0%" stopColor="hsl(160, 60%, 35%)" stopOpacity={0.2} />
+              <stop offset="100%" stopColor="hsl(160, 60%, 35%)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -81,11 +81,11 @@ export function GrowthChart({ data }: GrowthChartProps) {
           <Area
             type="monotone"
             dataKey="cumulativeViews"
-            stroke="#3b82f6"
+            stroke="hsl(160, 60%, 35%)"
             strokeWidth={2}
             fill="url(#viewsGradient)"
-            dot={{ r: 4, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
-            activeDot={{ r: 6, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
+            dot={{ r: 4, fill: "hsl(160, 60%, 35%)", stroke: "#fff", strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: "hsl(160, 60%, 35%)", stroke: "#fff", strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

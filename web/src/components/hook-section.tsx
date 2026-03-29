@@ -39,6 +39,11 @@ export function HookSection({
     field: "visual" | "voiceover",
     value: string
   ) {
+    setLocalHooks((prev) =>
+      prev.map((h) =>
+        h.variant === variant ? { ...h, [field]: value } : h
+      )
+    );
     startTransition(() => {
       updateHook(scriptId, variant, field, value);
     });
