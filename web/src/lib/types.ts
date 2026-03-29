@@ -27,7 +27,7 @@ export interface Script {
   id: number;
   title: string;
   format: string;
-  status: "generating" | "draft" | "ready" | "recorded";
+  status: "generating" | "draft" | "ready" | "done";
   hooks: HookVariant[] | null;
   selectedHook: string | null;
   titles: string[] | null;

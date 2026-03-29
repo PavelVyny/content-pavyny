@@ -5,7 +5,7 @@ export const scripts = sqliteTable("scripts", {
   title: text("title").notNull(),
   format: text("format").notNull(), // "the-bug", "the-satisfaction", etc.
   status: text("status", {
-    enum: ["generating", "draft", "ready", "recorded"],
+    enum: ["generating", "draft", "ready", "done"],
   })
     .notNull()
     .default("draft"),

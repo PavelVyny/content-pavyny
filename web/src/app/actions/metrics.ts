@@ -248,6 +248,12 @@ export async function linkVideo(
     .where(eq(videos.id, videoId))
     .run();
 
+  // Auto-set script status to "done" when linked to a video
+  db.update(scripts)
+    .set({ status: "done", updatedAt: new Date() })
+    .where(eq(scripts.id, scriptId))
+    .run();
+
   revalidatePath("/scripts");
   revalidatePath(`/script/${scriptId}`);
 
@@ -258,10 +264,25 @@ export async function unlinkVideo(
   videoId: number
 ): Promise<{ success: boolean }> {
   const db = getDb();
+
+  // Find the linked script before unlinking
+  const video = db.select({ scriptId: videos.scriptId })
+    .from(videos)
+    .where(eq(videos.id, videoId))
+    .get();
+
   db.update(videos)
     .set({ scriptId: null, updatedAt: new Date() })
     .where(eq(videos.id, videoId))
     .run();
+
+  // Auto-revert script status to "draft" when unlinked
+  if (video?.scriptId) {
+    db.update(scripts)
+      .set({ status: "draft", updatedAt: new Date() })
+      .where(eq(scripts.id, video.scriptId))
+      .run();
+  }
 
   revalidatePath("/scripts");
   revalidatePath("/script/[id]");

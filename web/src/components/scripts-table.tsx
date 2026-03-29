@@ -13,7 +13,7 @@ function statusBg(status: string): string {
   switch (status) {
     case "ready":
       return "bg-green-100";
-    case "recorded":
+    case "done":
       return "bg-blue-100";
     default:
       return "bg-gray-100";
@@ -45,7 +45,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
   }
 
   async function handleStatusChange(scriptId: number, newStatus: string) {
-    const validStatus = newStatus as "draft" | "ready" | "recorded";
+    const validStatus = newStatus as "draft" | "ready" | "done";
     setScripts((prev) =>
       prev.map((s) => (s.id === scriptId ? { ...s, status: validStatus } : s))
     );
@@ -110,7 +110,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                   >
                     <option value="draft">draft</option>
                     <option value="ready">ready</option>
-                    <option value="recorded">recorded</option>
+                    <option value="done">recorded</option>
                   </select>
                 </td>
                 <td className="py-3 px-2 text-center">

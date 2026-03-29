@@ -33,7 +33,7 @@ export async function getAllScripts(): Promise<Script[]> {
 
 export async function updateScriptStatus(
   scriptId: number,
-  status: "draft" | "ready" | "recorded"
+  status: "draft" | "ready" | "done"
 ): Promise<{ success: boolean }> {
   const db = getDb();
   db.update(scripts)

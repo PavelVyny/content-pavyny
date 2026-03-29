@@ -26,7 +26,7 @@ function statusColor(
   switch (status) {
     case "ready":
       return "default";
-    case "recorded":
+    case "done":
       return "secondary";
     default:
       return "outline";
