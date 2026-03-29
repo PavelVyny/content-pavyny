@@ -5,12 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { updateScriptStatus } from "@/app/actions/library";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TruncatedText } from "./truncated-text";
 import { MetricsCard } from "./metrics-card";
 import type { ScriptWithVideo } from "@/lib/types";
 
@@ -75,7 +70,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
             <th className="text-left py-3 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Status
             </th>
-            <th className="text-left py-3 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <th className="text-center py-3 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               YT Stats
             </th>
           </tr>
@@ -85,21 +80,15 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
             <React.Fragment key={script.id}>
               <tr className="border-b hover:bg-zinc-50">
                 <td className="py-3 px-2">
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          href={`/script/${script.id}`}
-                          className="text-base text-foreground font-medium max-w-[280px] truncate block hover:text-primary transition-colors"
-                        >
-                          {script.title}
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" align="start">
-                        {script.title}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Link
+                    href={`/script/${script.id}`}
+                    className="block max-w-[280px] hover:text-primary transition-colors"
+                  >
+                    <TruncatedText
+                      text={script.title}
+                      className="text-base text-foreground font-medium max-w-[280px]"
+                    />
+                  </Link>
                 </td>
                 <td className="py-3 px-2">
                   <Badge variant="outline">{script.format}</Badge>
@@ -124,7 +113,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                     <option value="recorded">recorded</option>
                   </select>
                 </td>
-                <td className="py-3 px-2">
+                <td className="py-3 px-2 text-center">
                   {script.video && script.metrics ? (
                     <button
                       onClick={() =>

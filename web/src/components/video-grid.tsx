@@ -3,12 +3,7 @@
 import { useState } from "react";
 import { RetentionChart } from "./retention-chart";
 import type { VideoMetricsData, VideoData } from "@/lib/types";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TruncatedText } from "./truncated-text";
 
 interface VideoWithMetrics {
   video: VideoData;
@@ -98,18 +93,10 @@ export function VideoGrid({ videos }: VideoGridProps) {
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <TooltipProvider delayDuration={300}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <p className="text-sm font-medium truncate flex-1 min-w-0">
-                            {cleanTitle(video.title)}
-                          </p>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" align="start">
-                          {cleanTitle(video.title)}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <TruncatedText
+                      text={cleanTitle(video.title)}
+                      className="text-sm font-medium flex-1 min-w-0"
+                    />
                     {linkedScriptTitle && (
                       <span className="shrink-0 text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">
                         Linked
