@@ -29,9 +29,10 @@ function statusColor(
 interface ScriptEditorProps {
   script: Script & { beats: ScriptBeat[] };
   videoLinkSlot?: React.ReactNode;
+  deleteSlot?: React.ReactNode;
 }
 
-export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
+export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditorProps) {
   const [localBeats, setLocalBeats] = useState<ScriptBeat[]>(script.beats);
   const [isScoreStale, setIsScoreStale] = useState(false);
   const [localScore, setLocalScore] = useState<AntiSlopScore | null>(
@@ -87,20 +88,23 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-3">
-          <EditableField
-            value={currentTitle}
-            onSave={(val) => {
-              setCurrentTitle(val);
-              setLocalTitles((prev) =>
-                prev.map((t, i) => (i === selectedTitleIndex ? val : t))
-              );
-              startTransition(() => {
-                selectTitle(script.id, val);
-              });
-            }}
-            className="text-2xl font-semibold text-foreground"
-          />
-          <Badge variant={statusColor(script.status)}>{script.status}</Badge>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <EditableField
+              value={currentTitle}
+              onSave={(val) => {
+                setCurrentTitle(val);
+                setLocalTitles((prev) =>
+                  prev.map((t, i) => (i === selectedTitleIndex ? val : t))
+                );
+                startTransition(() => {
+                  selectTitle(script.id, val);
+                });
+              }}
+              className="text-2xl font-semibold text-foreground"
+            />
+            <Badge variant={statusColor(script.status)} className="shrink-0">{script.status}</Badge>
+          </div>
+          {deleteSlot}
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline">{script.format}</Badge>

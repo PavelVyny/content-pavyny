@@ -66,15 +66,6 @@ export default async function ScriptPage({
 
   return (
     <main>
-      <div className="flex items-center justify-between mb-6">
-        <Link
-          href="/scripts"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          &larr; Back
-        </Link>
-        <DeleteScriptButton scriptId={scriptId} />
-      </div>
       {videoData && serializedMetrics && (
         <div className="mb-6">
           <EditorMetricsPanel
@@ -85,6 +76,7 @@ export default async function ScriptPage({
       )}
       <ScriptEditor
         script={{ ...script, beats: scriptBeats }}
+        deleteSlot={<DeleteScriptButton scriptId={scriptId} />}
         videoLinkSlot={
           <VideoLinkSelector
             scriptId={scriptId}
