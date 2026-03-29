@@ -39,6 +39,7 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
   );
   const [regeneratingBeatId, setRegeneratingBeatId] = useState<number | null>(null);
   const [currentTitle, setCurrentTitle] = useState(script.title);
+  const [localTitles, setLocalTitles] = useState<string[]>(script.titles ?? []);
   const [selectedTitleIndex, setSelectedTitleIndex] = useState<number>(
     script.titles?.indexOf(script.title) ?? 0
   );
@@ -90,6 +91,9 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
             value={currentTitle}
             onSave={(val) => {
               setCurrentTitle(val);
+              setLocalTitles((prev) =>
+                prev.map((t, i) => (i === selectedTitleIndex ? val : t))
+              );
               startTransition(() => {
                 selectTitle(script.id, val);
               });
@@ -110,7 +114,7 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
       </div>
 
       {/* Title Options */}
-      {script.titles && script.titles.length > 0 && (
+      {localTitles.length > 0 && (
         <>
           <Separator />
           <section className="space-y-3">
@@ -118,7 +122,7 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
               Title Options
             </h3>
             <div className="flex flex-wrap gap-2">
-              {script.titles.map((title, i) => (
+              {localTitles.map((title, i) => (
                 <button
                   key={i}
                   type="button"
