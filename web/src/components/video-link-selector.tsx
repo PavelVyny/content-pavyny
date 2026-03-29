@@ -7,10 +7,10 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X } from "lucide-react";
 
 interface VideoLinkSelectorProps {
   scriptId: number;
@@ -39,48 +39,29 @@ export function VideoLinkSelector({
 }: VideoLinkSelectorProps) {
   const [isPending, startTransition] = useTransition();
 
-  function handleLink(value: string) {
+  function handleChange(value: string) {
     if (!value) return;
-    const videoId = Number(value);
-    if (!isNaN(videoId)) {
-      startTransition(async () => {
-        await linkVideo(scriptId, videoId);
-      });
-    }
-  }
 
-  function handleUnlink() {
-    if (!linkedVideo) return;
     startTransition(async () => {
-      await unlinkVideo(linkedVideo.id);
+      if (value === "__unlink__" && linkedVideo) {
+        await unlinkVideo(linkedVideo.id);
+      } else {
+        const videoId = Number(value);
+        if (!isNaN(videoId)) {
+          await linkVideo(scriptId, videoId);
+        }
+      }
     });
   }
 
-  if (linkedVideo) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <span className="flex items-center gap-2 text-sm border rounded-lg px-2.5 py-1.5">
-          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 shrink-0" fill="#a1a1aa">
-            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-          </svg>
-          {cleanTitle(linkedVideo.title)}
-        </span>
-        <button
-          onClick={handleUnlink}
-          disabled={isPending}
-          className="p-1 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer disabled:opacity-50"
-          title="Unlink video"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    );
-  }
+  // Use a key that changes after unlink to force Select to reset
+  const selectKey = linkedVideo ? `linked-${linkedVideo.id}` : "unlinked";
 
   return (
     <Select
-      value=""
-      onValueChange={handleLink}
+      key={selectKey}
+      defaultValue={linkedVideo ? String(linkedVideo.id) : undefined}
+      onValueChange={handleChange}
       disabled={isPending}
     >
       <SelectTrigger size="sm" className="w-auto max-w-full cursor-pointer">
@@ -88,18 +69,32 @@ export function VideoLinkSelector({
           <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 shrink-0" fill="#a1a1aa">
             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
           </svg>
-          <SelectValue placeholder="Link to video..." />
+          <SelectValue placeholder="Link to video...">
+            {linkedVideo ? cleanTitle(linkedVideo.title) : "Link to video..."}
+          </SelectValue>
         </span>
       </SelectTrigger>
       <SelectContent className="w-auto min-w-[350px]">
-        {unlinkedVideos.map((v) => (
-          <SelectItem key={v.id} value={String(v.id)}>
-            <span className="flex items-center justify-between gap-4 w-full">
-              <span className="truncate">{cleanTitle(v.title)}</span>
-              <span className="shrink-0 text-muted-foreground">{formatDate(v.publishedAt)}</span>
-            </span>
-          </SelectItem>
-        ))}
+        {linkedVideo ? (
+          <>
+            <SelectItem value={String(linkedVideo.id)}>
+              {cleanTitle(linkedVideo.title)}
+            </SelectItem>
+            <SelectSeparator />
+            <SelectItem value="__unlink__">Unlink video</SelectItem>
+          </>
+        ) : (
+          <>
+            {unlinkedVideos.map((v) => (
+              <SelectItem key={v.id} value={String(v.id)}>
+                <span className="flex items-center justify-between gap-4 w-full">
+                  <span className="truncate">{cleanTitle(v.title)}</span>
+                  <span className="shrink-0 text-muted-foreground">{formatDate(v.publishedAt)}</span>
+                </span>
+              </SelectItem>
+            ))}
+          </>
+        )}
       </SelectContent>
     </Select>
   );
