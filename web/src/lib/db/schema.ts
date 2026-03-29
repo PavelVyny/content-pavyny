@@ -51,3 +51,43 @@ export const beats = sqliteTable("beats", {
   voiceover: text("voiceover").notNull().default(""),
   duration: text("duration"), // "2-3s"
 });
+
+export const videos = sqliteTable("videos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  youtubeId: text("youtube_id").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description"),
+  thumbnailUrl: text("thumbnail_url"),
+  publishedAt: integer("published_at", { mode: "timestamp" }),
+  channelTitle: text("channel_title"),
+  scriptId: integer("script_id").references(() => scripts.id, {
+    onDelete: "set null",
+  }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const videoMetrics = sqliteTable("video_metrics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoId: integer("video_id")
+    .notNull()
+    .references(() => videos.id, { onDelete: "cascade" })
+    .unique(),
+  views: integer("views").notNull().default(0),
+  engagedViews: integer("engaged_views"),
+  likes: integer("likes").default(0),
+  comments: integer("comments").default(0),
+  shares: integer("shares").default(0),
+  subscribersGained: integer("subscribers_gained").default(0),
+  subscribersLost: integer("subscribers_lost").default(0),
+  averageViewPercentage: integer("average_view_percentage"),
+  averageViewDuration: integer("average_view_duration"),
+  retentionCurve: text("retention_curve", { mode: "json" }).$type<number[]>(),
+  lastSyncedAt: integer("last_synced_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
