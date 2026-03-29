@@ -377,6 +377,124 @@ export async function getAllVideosWithMetrics(): Promise<VideoWithMetrics[]> {
   }));
 }
 
+export interface ChannelStats {
+  totalViews: number;
+  totalLikes: number;
+  subscriberCount: number;
+  videoCount: number;
+}
+
+export interface GrowthPoint {
+  date: string;
+  title: string;
+  views: number;
+  cumulativeViews: number;
+  thumbnailUrl: string | null;
+}
+
+export interface TopVideo {
+  title: string;
+  thumbnailUrl: string | null;
+  views: number;
+  badge: string;
+  badgeValue: string;
+}
+
+export async function getChannelStats(): Promise<ChannelStats> {
+  const db = getDb();
+  const { getChannelInfo } = await import("@/lib/youtube-client");
+
+  const agg = db
+    .select({
+      totalViews: sql<number>`COALESCE(SUM(${videoMetrics.views}), 0)`,
+      totalLikes: sql<number>`COALESCE(SUM(${videoMetrics.likes}), 0)`,
+    })
+    .from(videoMetrics)
+    .get();
+
+  const channelInfo = await getChannelInfo();
+
+  return {
+    totalViews: agg?.totalViews ?? 0,
+    totalLikes: agg?.totalLikes ?? 0,
+    subscriberCount: channelInfo?.subscriberCount ?? 0,
+    videoCount: channelInfo?.videoCount ?? 0,
+  };
+}
+
+export async function getGrowthTimeline(): Promise<GrowthPoint[]> {
+  const db = getDb();
+
+  const rows = db
+    .select({
+      title: videos.title,
+      publishedAt: videos.publishedAt,
+      thumbnailUrl: videos.thumbnailUrl,
+      views: videoMetrics.views,
+    })
+    .from(videos)
+    .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
+    .orderBy(videos.publishedAt)
+    .all();
+
+  let cumulative = 0;
+  return rows.map((r) => {
+    cumulative += r.views ?? 0;
+    const d = r.publishedAt ? new Date(r.publishedAt) : new Date();
+    return {
+      date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      title: (r.title ?? "").replace(/\s*[|].*$/, "").replace(/\s*#\w+/g, "").trim(),
+      views: r.views ?? 0,
+      cumulativeViews: cumulative,
+      thumbnailUrl: r.thumbnailUrl ?? null,
+    };
+  });
+}
+
+export async function getTopPerformers(): Promise<TopVideo[]> {
+  const db = getDb();
+
+  const rows = db
+    .select({
+      title: videos.title,
+      thumbnailUrl: videos.thumbnailUrl,
+      views: videoMetrics.views,
+      avgRetention: videoMetrics.averageViewPercentage,
+      subsGained: videoMetrics.subscribersGained,
+      engagedViews: videoMetrics.engagedViews,
+    })
+    .from(videos)
+    .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
+    .where(ne(videoMetrics.views, 0))
+    .orderBy(desc(videoMetrics.views))
+    .all();
+
+  if (rows.length === 0) return [];
+
+  const clean = (t: string) => t.replace(/\s*[|].*$/, "").replace(/\s*#\w+/g, "").trim();
+
+  // Find best in each category
+  const bestViews = rows[0]; // already sorted by views desc
+  const bestRetention = rows.reduce((a, b) => ((a.avgRetention ?? 0) > (b.avgRetention ?? 0) ? a : b));
+  const bestSubs = rows.reduce((a, b) => ((a.subsGained ?? 0) > (b.subsGained ?? 0) ? a : b));
+
+  const seen = new Set<string>();
+  const top: TopVideo[] = [];
+
+  const add = (r: typeof rows[0], badge: string, badgeValue: string) => {
+    const t = clean(r.title ?? "");
+    if (seen.has(t)) return;
+    seen.add(t);
+    top.push({ title: t, thumbnailUrl: r.thumbnailUrl ?? null, views: r.views ?? 0, badge, badgeValue });
+  };
+
+  add(bestViews, "Most Viewed", `${((bestViews.views ?? 0) / 1000).toFixed(1)}K views`);
+  add(bestSubs, "Most Subscribers", `+${bestSubs.subsGained} subs`);
+  add(bestRetention, "Best Retention", `${bestRetention.avgRetention}% avg`);
+
+  return top;
+}
+
 export async function getVideoForScript(
   scriptId: number
 ): Promise<{ video: VideoData; metrics: VideoMetricsData } | null> {
