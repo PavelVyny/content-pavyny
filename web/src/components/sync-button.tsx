@@ -8,39 +8,21 @@ interface SyncButtonProps {
   lastSyncedAt: string | null;
 }
 
-function getStaleness(lastSyncedAt: string | null): {
-  color: string;
-  label: string;
-} {
-  if (!lastSyncedAt) {
-    return { color: "bg-red-100 text-red-800", label: "Never synced" };
-  }
+function getStalenessLabel(lastSyncedAt: string | null): string {
+  if (!lastSyncedAt) return "Never synced";
 
   const diff = Date.now() - new Date(lastSyncedAt).getTime();
   const hourMs = 60 * 60 * 1000;
   const dayMs = 24 * hourMs;
-
   const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
-  let label: string;
   if (diff < hourMs) {
-    const minutes = Math.round(diff / 60000);
-    label = rtf.format(-minutes, "minute");
+    return rtf.format(-Math.round(diff / 60000), "minute");
   } else if (diff < dayMs) {
-    const hours = Math.round(diff / hourMs);
-    label = rtf.format(-hours, "hour");
+    return rtf.format(-Math.round(diff / hourMs), "hour");
   } else {
-    const days = Math.round(diff / dayMs);
-    label = rtf.format(-days, "day");
+    return rtf.format(-Math.round(diff / dayMs), "day");
   }
-
-  if (diff < hourMs) {
-    return { color: "bg-green-100 text-green-800", label };
-  }
-  if (diff < dayMs) {
-    return { color: "bg-yellow-100 text-yellow-800", label };
-  }
-  return { color: "bg-red-100 text-red-800", label };
 }
 
 export function SyncButton({ lastSyncedAt }: SyncButtonProps) {
@@ -100,7 +82,7 @@ export function SyncButton({ lastSyncedAt }: SyncButtonProps) {
     }
   }
 
-  const staleness = getStaleness(lastSyncedAt);
+  const stalenessLabel = getStalenessLabel(lastSyncedAt);
 
   let buttonText = "Sync Now";
   if (syncing && progress) {
@@ -114,10 +96,8 @@ export function SyncButton({ lastSyncedAt }: SyncButtonProps) {
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-3">
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${staleness.color}`}
-        >
-          {staleness.label}
+        <span className="text-xs text-muted-foreground">
+          {stalenessLabel}
         </span>
         <Button
           variant="outline"
