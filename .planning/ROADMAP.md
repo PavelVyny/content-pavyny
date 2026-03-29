@@ -126,7 +126,7 @@ Plans:
 
 </details>
 
-### 🚧 v2.1 YouTube Analytics (In Progress)
+### v2.1 YouTube Analytics (In Progress)
 
 **Milestone Goal:** Automatic YouTube metrics collection, in-app display alongside scripts, and data-aware generation where AI sees metrics as context without drawing conclusions on small sample sizes.
 
@@ -162,8 +162,13 @@ Plans:
   2. A metrics dashboard shows per-video cards with key numbers and a retention curve line chart for each video
   3. Sync staleness indicator shows how fresh the data is (green under 1 hour, yellow under 24 hours, red over 24 hours)
   4. Pavlo can link any script to a YouTube video via a dropdown, and unlink it — linked scripts show metrics mini-cards in the library and a detail panel in the editor
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 08-01-PLAN.md — Sync engine backend: YouTube API methods for video discovery + metrics, server actions for sync flow and data queries
+- [ ] 08-02-PLAN.md — Scripts page UI: Sync Now button, staleness indicator, expandable table rows with metrics cards and retention sparklines
+- [ ] 08-03-PLAN.md — Video linking dropdown on editor page, metrics detail panel with full retention chart
 
 ### Phase 9: Data-Aware Generation
 **Goal**: Pavlo's script generation uses real channel performance data as context, referencing actual numbers without the AI making strategic recommendations from a small sample
@@ -189,5 +194,5 @@ Phases execute in numeric order: 7 -> 8 -> 9
 | 5. Script Editor | v2.0 | 2/2 | Complete | 2026-03-28 |
 | 6. Library & Workflow | v2.0 | 1/1 | Complete | 2026-03-28 |
 | 7. OAuth & Schema | v2.1 | 0/2 | Planned    |  |
-| 8. Metrics & Dashboard | v2.1 | 0/? | Not started | - |
+| 8. Metrics & Dashboard | v2.1 | 0/3 | Planned | - |
 | 9. Data-Aware Generation | v2.1 | 0/? | Not started | - |
