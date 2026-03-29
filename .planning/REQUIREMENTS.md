@@ -85,10 +85,10 @@ Requirements for milestone v2.1. Each maps to roadmap phases.
 ### YouTube Integration
 
 - [ ] **YTUB-01**: User can connect YouTube channel via OAuth2 with one-click "Connect YouTube" button — Phase 7
-- [ ] **YTUB-02**: OAuth2 tokens persist in local file with auto-refresh (not 7-day expiry) — Phase 7
+- [x] **YTUB-02**: OAuth2 tokens persist in local file with auto-refresh (not 7-day expiry) — Phase 7
 - [ ] **YTUB-03**: Connection status indicator visible at all times (disconnected/connected/expired) — Phase 7
 - [ ] **YTUB-04**: User can disconnect YouTube channel from settings — Phase 7
-- [ ] **YTUB-05**: Database schema has `videos` and `video_metrics` tables with time-series snapshots — Phase 7
+- [x] **YTUB-05**: Database schema has `videos` and `video_metrics` tables with time-series snapshots — Phase 7
 
 ### Metrics Sync
 
@@ -191,10 +191,10 @@ Deferred until 20+ published videos or v2.2+.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | YTUB-01 | Phase 7 | Pending |
-| YTUB-02 | Phase 7 | Pending |
+| YTUB-02 | Phase 7 | Complete |
 | YTUB-03 | Phase 7 | Pending |
 | YTUB-04 | Phase 7 | Pending |
-| YTUB-05 | Phase 7 | Pending |
+| YTUB-05 | Phase 7 | Complete |
 | SYNC-01 | Phase 8 | Pending |
 | SYNC-02 | Phase 8 | Pending |
 | SYNC-03 | Phase 8 | Pending |

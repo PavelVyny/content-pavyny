@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: YouTube Analytics
-status: planning
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-29T14:09:50.784Z"
-last_activity: 2026-03-29 — Roadmap created for v2.1 milestone
+status: Ready to plan
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-29T16:16:48.228Z"
 progress:
   total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 63
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Scripts must sound like Pavlo — natural, specific, with real dev details — never like AI-generated content.
-**Current focus:** v2.1 YouTube Analytics — Phase 7 (OAuth & Schema)
+**Current focus:** Phase 07 — oauth-schema
 
 ## Current Position
 
-Phase: 7 of 9 (OAuth & Schema)
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-03-29 — Roadmap created for v2.1 milestone
-
-Progress: [██████████████████░░░░░░░░░░░░] 63% (overall project: 10/16 plans across v1.0+v2.0)
+Phase: 8
+Plan: Not started
 
 ## Performance Metrics
 
@@ -56,6 +50,7 @@ Progress: [██████████████████░░░░░
 - Trend: Improving
 
 *Updated after each plan completion*
+| Phase 07-oauth-schema P01 | 4min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -69,6 +64,8 @@ Recent decisions affecting current work:
 - [v2.1 Research]: Token storage in local JSON file (`data/.youtube-tokens.json`), NOT in SQLite
 - [v2.1 Research]: OAuth consent screen must be "In production" mode + fresh credentials to avoid 7-day token expiry
 - [v2.1 Research]: Only `recharts` added for charts — no tanstack-query, no cron, no separate google-auth-library
+- [Phase 07-oauth-schema]: Token merge pattern: on('tokens') strips nulls and merges with existing to preserve refresh_token
+- [Phase 07-oauth-schema]: Quick vs full status check: file-check for header, API call for settings page only
 
 ### Pending Todos
 
@@ -82,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T14:09:50.781Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-oauth-schema/07-CONTEXT.md
+Last session: 2026-03-29T15:12:09.908Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None
