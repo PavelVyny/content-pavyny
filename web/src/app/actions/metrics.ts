@@ -193,8 +193,8 @@ export async function getScriptsWithMetrics(): Promise<ScriptWithVideo[]> {
     video: r.videoId
       ? {
           id: r.videoId,
-          youtubeId: r.videoYoutubeId,
-          title: r.videoTitle,
+          youtubeId: r.videoYoutubeId!,
+          title: r.videoTitle!,
           description: r.videoDescription ?? null,
           thumbnailUrl: r.videoThumbnailUrl ?? null,
           publishedAt: r.videoPublishedAt ?? null,
