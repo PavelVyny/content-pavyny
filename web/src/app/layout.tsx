@@ -33,9 +33,9 @@ export default function RootLayout({
         <Providers>
           <div className="max-w-4xl mx-auto px-6 py-8 w-full">
             <header className="mb-8 flex items-center justify-between">
-              <Link href="/scripts" className="cursor-pointer flex items-center gap-2">
-                <LibraryBig className="w-6 h-6 text-zinc-900" />
-                <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+              <Link href="/scripts" className="cursor-pointer flex items-center gap-2 group">
+                <LibraryBig className="w-6 h-6 text-zinc-900 group-hover:text-primary transition-colors" />
+                <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 group-hover:text-primary transition-colors">
                   Scriptor
                 </h1>
               </Link>
