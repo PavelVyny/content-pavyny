@@ -110,7 +110,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                   >
                     <option value="draft">draft</option>
                     <option value="ready">ready</option>
-                    <option value="done">recorded</option>
+                    <option value="done">done</option>
                   </select>
                 </td>
                 <td className="py-3 px-2 text-center">
