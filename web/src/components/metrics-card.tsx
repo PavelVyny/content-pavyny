@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { RetentionChart } from "./retention-chart";
 import type { VideoMetricsData } from "@/lib/types";
 
@@ -32,8 +31,6 @@ function formatCompact(n: number): string {
 }
 
 export function MetricsCard({ metrics }: MetricsCardProps) {
-  const [expanded, setExpanded] = useState(false);
-
   const engagedPct =
     metrics.engagedViews && metrics.views > 0
       ? Math.round((metrics.engagedViews / metrics.views) * 100)
@@ -76,15 +73,7 @@ export function MetricsCard({ metrics }: MetricsCardProps) {
         <MetricItem label="Comments" value={String(metrics.comments)} />
       </div>
 
-      <div
-        onClick={() => setExpanded(!expanded)}
-        className="cursor-pointer"
-      >
-        <RetentionChart
-          data={metrics.retentionCurve ?? []}
-          expanded={expanded}
-        />
-      </div>
+      <RetentionChart data={metrics.retentionCurve ?? []} expanded />
     </div>
   );
 }
