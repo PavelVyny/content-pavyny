@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import {
-  updateScriptStatus,
-  getVoiceoverText,
-} from "@/app/actions/library";
-import type { Script } from "@/lib/types";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { updateScriptStatus } from "@/app/actions/library";
+import { MetricsCard } from "./metrics-card";
+import type { ScriptWithVideo } from "@/lib/types";
 
 function scoreColor(total: number): string {
   if (total >= 35) return "text-green-600";
@@ -27,12 +26,12 @@ function statusBg(status: string): string {
 }
 
 interface ScriptsTableProps {
-  scripts: Script[];
+  scripts: ScriptWithVideo[];
 }
 
 export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
   const [scripts, setScripts] = useState(initialScripts);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   if (scripts.length === 0) {
     return (
@@ -56,19 +55,6 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
       prev.map((s) => (s.id === scriptId ? { ...s, status: validStatus } : s))
     );
     await updateScriptStatus(scriptId, validStatus);
-  }
-
-  async function handleCopy(scriptId: number) {
-    try {
-      const result = await getVoiceoverText(scriptId);
-      if (result.success && result.text) {
-        await navigator.clipboard.writeText(result.text);
-        setCopiedId(scriptId);
-        setTimeout(() => setCopiedId(null), 2000);
-      }
-    } catch {
-      // clipboard failed silently
-    }
   }
 
   return (
@@ -99,61 +85,79 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
         </thead>
         <tbody>
           {scripts.map((script) => (
-            <tr key={script.id} className="border-b hover:bg-zinc-50">
-              <td className="py-3 px-2">
-                <Link
-                  href={`/script/${script.id}`}
-                  className="text-base text-foreground font-medium max-w-[280px] truncate block hover:text-primary transition-colors"
-                >
-                  {script.title}
-                </Link>
-              </td>
-              <td className="py-3 px-2">
-                <Badge variant="outline">{script.format}</Badge>
-              </td>
-              <td className="py-3 px-2 text-muted-foreground">
-                {new Date(script.createdAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </td>
-              <td className="py-3 px-2">
-                <select
-                  value={script.status}
-                  onChange={(e) =>
-                    handleStatusChange(script.id, e.target.value)
-                  }
-                  className={`text-xs rounded border px-2 py-1 cursor-pointer ${statusBg(script.status)}`}
-                >
-                  <option value="draft">draft</option>
-                  <option value="ready">ready</option>
-                  <option value="recorded">recorded</option>
-                </select>
-              </td>
-              <td className="py-3 px-2">
-                {script.antiSlopScore ? (
-                  <span className={scoreColor(script.antiSlopScore.total)}>
-                    {script.antiSlopScore.total}/50
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">&mdash;</span>
-                )}
-              </td>
-              <td className="py-3 px-2">
-                <button
-                  onClick={() => handleCopy(script.id)}
-                  className={`text-xs border rounded px-2 py-1 cursor-pointer transition-colors ${
-                    copiedId === script.id
-                      ? "bg-green-600 text-white border-green-600"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  title="Copy voiceover text"
-                >
-                  {copiedId === script.id ? "Copied!" : "Copy"}
-                </button>
-              </td>
-            </tr>
+            <React.Fragment key={script.id}>
+              <tr className="border-b hover:bg-zinc-50">
+                <td className="py-3 px-2">
+                  <Link
+                    href={`/script/${script.id}`}
+                    className="text-base text-foreground font-medium max-w-[280px] truncate block hover:text-primary transition-colors"
+                  >
+                    {script.title}
+                  </Link>
+                </td>
+                <td className="py-3 px-2">
+                  <Badge variant="outline">{script.format}</Badge>
+                </td>
+                <td className="py-3 px-2 text-muted-foreground">
+                  {new Date(script.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </td>
+                <td className="py-3 px-2">
+                  <select
+                    value={script.status}
+                    onChange={(e) =>
+                      handleStatusChange(script.id, e.target.value)
+                    }
+                    className={`text-xs rounded border px-2 py-1 cursor-pointer ${statusBg(script.status)}`}
+                  >
+                    <option value="draft">draft</option>
+                    <option value="ready">ready</option>
+                    <option value="recorded">recorded</option>
+                  </select>
+                </td>
+                <td className="py-3 px-2">
+                  {script.antiSlopScore ? (
+                    <span className={scoreColor(script.antiSlopScore.total)}>
+                      {script.antiSlopScore.total}/50
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">&mdash;</span>
+                  )}
+                </td>
+                <td className="py-3 px-2">
+                  {script.video && script.metrics ? (
+                    <button
+                      onClick={() =>
+                        setExpandedId(
+                          expandedId === script.id ? null : script.id
+                        )
+                      }
+                      className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      {expandedId === script.id ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      No video
+                    </span>
+                  )}
+                </td>
+              </tr>
+              {expandedId === script.id && script.metrics && (
+                <tr>
+                  <td colSpan={6} className="py-3 px-4 bg-zinc-50/50">
+                    <MetricsCard metrics={script.metrics} />
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
           ))}
         </tbody>
       </table>
