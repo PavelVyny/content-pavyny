@@ -31,7 +31,7 @@ export function YouTubeConnectCard() {
         setStatus(s);
         if (s === "connected") {
           const info = await getChannelInfoAction();
-          setChannel(info);
+          setChannel(info ?? null);
         }
       } finally {
         setLoading(false);
