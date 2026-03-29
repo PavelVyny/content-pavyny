@@ -79,7 +79,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
             key={video.id}
             className="border rounded-lg overflow-hidden hover:border-zinc-400 transition-colors"
           >
-            <button
+            <div
               onClick={() => setExpandedId(isExpanded ? null : video.id)}
               className="w-full text-left cursor-pointer"
             >
@@ -121,7 +121,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
                   )}
                 </div>
               </div>
-            </button>
+            </div>
 
             {isExpanded && metrics && (
               <div className="px-3 pb-3 border-t bg-zinc-50/50">

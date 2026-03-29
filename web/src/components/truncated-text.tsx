@@ -37,7 +37,9 @@ export function TruncatedText({ text, className = "", as: Tag = "p", children }:
   return (
     <TooltipProvider delayDuration={300}>
       <Tooltip>
-        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipTrigger render={<Tag ref={ref as any} className={`truncate cursor-pointer ${className}`} />}>
+          {children ?? text}
+        </TooltipTrigger>
         <TooltipContent side="bottom" align="start">
           {text}
         </TooltipContent>
