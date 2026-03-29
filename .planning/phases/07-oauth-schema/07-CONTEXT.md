@@ -30,12 +30,12 @@ Deliver YouTube OAuth2 connection flow from a new settings page, persistent toke
 
 ### DB Schema
 - **D-10:** `scriptId` FK on videos table (video points to its script). Claude's discretion based on query patterns — videos are discovered from YouTube, then optionally linked to scripts.
-- **D-11:** `video_metrics` uses time-series snapshots (new row per sync per video). Claude's discretion — enables 48h/7d/30d tracking needed for Phase 8 dashboard.
+- **D-11:** `video_metrics` stores latest aggregates per video (one row per video, overwritten on sync). YouTube Analytics API provides daily breakdowns via `dimensions=day` — no need to duplicate time-series in DB. Historical charts query the API directly.
 - **D-12:** Retention curve data stored as JSON text column in video_metrics (100-point array from audienceWatchRatio).
 
 ### Claude's Discretion
 - FK direction: `scriptId` on videos table chosen because videos are discovered from YouTube independently, then linked to scripts. Videos exist without scripts; scripts exist without videos.
-- Time-series metrics: snapshots chosen because Phase 8 needs trend data and the storage cost is trivial (~365 rows/year at 1 video/week with daily sync).
+- Metrics storage: latest aggregates per video (not time-series snapshots). YouTube Analytics API provides daily breakdowns natively via `dimensions=day` queries — historical charts in Phase 8 will query the API directly instead of duplicating data in SQLite.
 - Token storage: local JSON file (`data/.youtube-tokens.json`) per architecture research recommendation. Separate from SQLite — simpler for OAuth token lifecycle.
 - OAuth callback route: `app/api/youtube/callback/route.ts` — standard Next.js API route for server-side token exchange.
 
