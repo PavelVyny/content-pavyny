@@ -4,6 +4,13 @@ import { useState } from "react";
 import { RetentionChart } from "./retention-chart";
 import type { VideoMetricsData, VideoData } from "@/lib/types";
 import { TruncatedText } from "./truncated-text";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface VideoWithMetrics {
   video: VideoData;
@@ -89,15 +96,16 @@ export function VideoGrid({ videos }: VideoGridProps) {
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <select
-          value={sortKey}
-          onChange={(e) => setSortKey(e.target.value as SortKey)}
-          className="text-xs text-muted-foreground border rounded px-2 py-1 cursor-pointer bg-transparent"
-        >
-          <option value="date">Sort by date</option>
-          <option value="views">Sort by views</option>
-          <option value="engaged">Sort by engaged</option>
-        </select>
+        <Select defaultValue="date" onValueChange={(v) => setSortKey(v as SortKey)}>
+          <SelectTrigger size="sm" className="w-auto cursor-pointer">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent side="bottom" alignItemWithTrigger={false}>
+            <SelectItem value="date">Sort by date</SelectItem>
+            <SelectItem value="views">Sort by views</SelectItem>
+            <SelectItem value="engaged">Sort by engaged</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {sorted.map((item) => {
