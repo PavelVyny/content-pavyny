@@ -20,19 +20,20 @@ function retentionColor(pct: number): string {
   return "text-red-600";
 }
 
+// Stayed to watch (engagedViews / views — % who chose to watch vs swipe away):
+//   <50% poor | 50-65% average | 65-80% good | >80% excellent
 function stayedColor(pct: number): string {
-  if (pct >= 50) return "text-green-600";
-  if (pct >= 35) return "text-emerald-600";
-  if (pct >= 20) return "text-zinc-700";
+  if (pct >= 80) return "text-green-600";
+  if (pct >= 65) return "text-emerald-600";
+  if (pct >= 50) return "text-zinc-700";
   return "text-red-600";
 }
 
 export function MetricsCard({ metrics }: MetricsCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const curve = metrics.retentionCurve ?? [];
-  const stayedPct = curve.length > 0
-    ? Math.round(curve[curve.length - 1] * 100)
+  const stayedPct = metrics.engagedViews && metrics.views > 0
+    ? Math.round((metrics.engagedViews / metrics.views) * 100)
     : null;
 
   return (
