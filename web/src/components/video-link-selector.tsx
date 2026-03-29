@@ -3,6 +3,14 @@
 import { useTransition } from "react";
 import type { VideoData } from "@/lib/types";
 import { linkVideo, unlinkVideo } from "@/app/actions/metrics";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface VideoLinkSelectorProps {
   scriptId: number;
@@ -21,7 +29,6 @@ function formatDate(date: Date | string | null): string {
 }
 
 function cleanTitle(title: string): string {
-  // Strip hashtags and pipe-separated suffixes for cleaner dropdown display
   return title.replace(/\s*[|].*$/, "").replace(/\s*#\w+/g, "").trim();
 }
 
@@ -32,8 +39,7 @@ export function VideoLinkSelector({
 }: VideoLinkSelectorProps) {
   const [isPending, startTransition] = useTransition();
 
-  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const value = e.target.value;
+  function handleChange(value: string) {
     if (!value) return;
 
     startTransition(async () => {
@@ -48,30 +54,36 @@ export function VideoLinkSelector({
     });
   }
 
+  const currentValue = linkedVideo ? String(linkedVideo.id) : "";
+
   return (
-    <select
-      value={linkedVideo ? String(linkedVideo.id) : ""}
-      onChange={handleChange}
+    <Select
+      value={currentValue}
+      onValueChange={handleChange}
       disabled={isPending}
-      className="text-sm rounded border px-2 py-1 bg-background text-foreground disabled:opacity-50 max-w-[300px] truncate"
     >
-      {linkedVideo ? (
-        <>
-          <option value={String(linkedVideo.id)}>
-            {cleanTitle(linkedVideo.title)}
-          </option>
-          <option value="unlink">Unlink video</option>
-        </>
-      ) : (
-        <>
-          <option value="">Link to video...</option>
-          {unlinkedVideos.map((v) => (
-            <option key={v.id} value={String(v.id)}>
-              {cleanTitle(v.title)} — {formatDate(v.publishedAt)}
-            </option>
-          ))}
-        </>
-      )}
-    </select>
+      <SelectTrigger size="sm" className="max-w-[280px]">
+        <SelectValue placeholder="Link to video..." />
+      </SelectTrigger>
+      <SelectContent>
+        {linkedVideo ? (
+          <>
+            <SelectItem value={String(linkedVideo.id)}>
+              {cleanTitle(linkedVideo.title)}
+            </SelectItem>
+            <SelectSeparator />
+            <SelectItem value="unlink">Unlink video</SelectItem>
+          </>
+        ) : (
+          <>
+            {unlinkedVideos.map((v) => (
+              <SelectItem key={v.id} value={String(v.id)}>
+                {cleanTitle(v.title)} — {formatDate(v.publishedAt)}
+              </SelectItem>
+            ))}
+          </>
+        )}
+      </SelectContent>
+    </Select>
   );
 }
