@@ -5,6 +5,13 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { updateScriptStatus } from "@/app/actions/library";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TruncatedText } from "./truncated-text";
 import { MetricsCard } from "./metrics-card";
 import type { ScriptWithVideo } from "@/lib/types";
@@ -101,17 +108,20 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                   })}
                 </td>
                 <td className="py-3 px-2">
-                  <select
-                    value={script.status}
-                    onChange={(e) =>
-                      handleStatusChange(script.id, e.target.value)
-                    }
-                    className={`text-xs rounded border px-2 py-1 cursor-pointer ${statusBg(script.status)}`}
+                  <Select
+                    key={`status-${script.id}-${script.status}`}
+                    defaultValue={script.status}
+                    onValueChange={(val) => handleStatusChange(script.id, val)}
                   >
-                    <option value="draft">draft</option>
-                    <option value="ready">ready</option>
-                    <option value="done">done</option>
-                  </select>
+                    <SelectTrigger size="sm" className={`w-auto cursor-pointer ${statusBg(script.status)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">draft</SelectItem>
+                      <SelectItem value="ready">ready</SelectItem>
+                      <SelectItem value="done">done</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </td>
                 <td className="py-3 px-2 text-center">
                   {script.video && script.metrics ? (
