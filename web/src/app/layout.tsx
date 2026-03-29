@@ -42,10 +42,10 @@ export default function RootLayout({
               <nav className="flex items-center gap-4">
                 <Link
                   href="/"
-                  className="text-muted-foreground hover:text-primary cursor-pointer transition-colors"
+                  className="group/gen text-muted-foreground hover:text-primary cursor-pointer transition-colors"
                   title="Generate"
                 >
-                  <CircleFadingPlus className="w-4 h-4" />
+                  <CircleFadingPlus className="w-4 h-4 transition-transform duration-150 group-hover/gen:scale-125" />
                 </Link>
                 <YouTubeStatusIcon status={connectionStatus} />
                 <Link
