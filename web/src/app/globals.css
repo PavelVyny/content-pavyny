@@ -127,5 +127,6 @@
   html {
     @apply font-sans;
     font-size: 20px; /* 125% of 16px — comfortable without browser zoom */
+    overflow-y: scroll; /* always show scrollbar to prevent layout shift */
   }
 }
