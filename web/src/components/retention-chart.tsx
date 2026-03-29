@@ -67,30 +67,28 @@ export function RetentionChart({ data, expanded = false }: RetentionChartProps) 
     );
   }
 
-  // Sparkline: 400px, mini axis labels
+  // Sparkline: 400px with tiny axis labels
   return (
-    <div style={{ width: 400, height: 56 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ left: 2, right: 2, bottom: 12, top: 2 }}>
-          <XAxis
-            dataKey="pct"
-            tick={false}
-            axisLine={{ stroke: "#d4d4d8", strokeWidth: 0.5 }}
-            label={{ value: "Progress", position: "insideBottom", offset: 0, fontSize: 9, fill: "#a1a1aa" }}
-          />
-          <YAxis
-            hide
-            domain={[0, "auto"]}
-          />
-          <Line
-            type="monotone"
-            dataKey="retention"
-            stroke="#3b82f6"
-            strokeWidth={1.5}
-            dot={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="flex items-end gap-1">
+      <span className="text-[9px] text-muted-foreground leading-none mb-3" style={{ writingMode: "vertical-lr", transform: "rotate(180deg)" }}>
+        Watching
+      </span>
+      <div>
+        <div style={{ width: 400, height: 48 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ left: 0, right: 0, bottom: 0, top: 2 }}>
+              <Line
+                type="monotone"
+                dataKey="retention"
+                stroke="#3b82f6"
+                strokeWidth={1.5}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="text-[9px] text-muted-foreground text-center">Progress</div>
+      </div>
     </div>
   );
 }
