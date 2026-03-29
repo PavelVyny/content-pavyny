@@ -133,7 +133,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                       }
                       className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
-                      <span className="text-xs font-medium">
+                      <span className="text-sm font-medium">
                         {script.metrics.views >= 1000
                           ? `${(script.metrics.views / 1000).toFixed(1)}K`
                           : script.metrics.views}
@@ -145,7 +145,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                       )}
                     </button>
                   ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+                    <span className="text-sm text-muted-foreground">—</span>
                   )}
                 </td>
               </tr>
