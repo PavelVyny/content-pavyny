@@ -27,7 +27,7 @@ export function TruncatedText({ text, className = "", as: Tag = "p", children }:
   }, [text]);
 
   const content = (
-    <Tag ref={ref as any} className={`truncate ${className}`}>
+    <Tag ref={ref as any} className={`truncate cursor-pointer ${className}`}>
       {children ?? text}
     </Tag>
   );
