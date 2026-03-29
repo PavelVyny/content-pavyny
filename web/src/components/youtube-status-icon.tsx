@@ -33,7 +33,7 @@ export function YouTubeStatusIcon({ status }: { status: Status }) {
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white" />
             )}
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-[10px] px-2 py-1">
+        <TooltipContent side="bottom" className="text-[11px]">
           {statusLabels[status]}
         </TooltipContent>
       </Tooltip>
