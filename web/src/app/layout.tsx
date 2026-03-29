@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
-import { Settings, CircleFadingPlus } from "lucide-react";
+import { Settings, CircleFadingPlus, LibraryBig } from "lucide-react";
 import { Providers } from "@/components/providers";
 import { YouTubeStatusIcon } from "@/components/youtube-status-icon";
 import { getQuickConnectionStatus } from "@/lib/youtube-client";
@@ -13,9 +13,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Devlog Scriptwriter",
+  title: "Scriptor",
   description:
-    "AI-powered script generation for YouTube Shorts devlogs",
+    "AI-powered script generation and analytics for YouTube Shorts",
 };
 
 export default function RootLayout({
@@ -33,9 +33,10 @@ export default function RootLayout({
         <Providers>
           <div className="max-w-4xl mx-auto px-6 py-8 w-full">
             <header className="mb-8 flex items-center justify-between">
-              <Link href="/scripts" className="cursor-pointer">
+              <Link href="/scripts" className="cursor-pointer flex items-center gap-2">
+                <LibraryBig className="w-6 h-6 text-zinc-900" />
                 <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-                  Devlog Scriptwriter
+                  Scriptor
                 </h1>
               </Link>
               <nav className="flex items-center gap-4">
