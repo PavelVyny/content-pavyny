@@ -4,6 +4,9 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ScriptEditor } from "@/components/script-editor";
+import { getVideoForScript, getUnlinkedVideos } from "@/app/actions/metrics";
+import { VideoLinkSelector } from "@/components/video-link-selector";
+import { EditorMetricsPanel } from "@/components/editor-metrics-panel";
 
 export default async function ScriptPage({
   params,
@@ -35,14 +38,54 @@ export default async function ScriptPage({
     .orderBy(beats.order)
     .all();
 
+  const videoData = await getVideoForScript(scriptId);
+  const unlinkedVideos = await getUnlinkedVideos();
+
+  // Serialize Date objects for client components
+  const serializedLinkedVideo = videoData
+    ? {
+        ...videoData.video,
+        publishedAt: videoData.video.publishedAt
+          ? videoData.video.publishedAt.toISOString()
+          : null,
+      }
+    : null;
+
+  const serializedUnlinkedVideos = unlinkedVideos.map((v) => ({
+    ...v,
+    publishedAt: v.publishedAt ? v.publishedAt.toISOString() : null,
+  }));
+
+  const serializedMetrics = videoData
+    ? {
+        ...videoData.metrics,
+        lastSyncedAt: videoData.metrics.lastSyncedAt.toISOString(),
+      }
+    : null;
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <Link
-        href="/scripts"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-      >
-        &larr; Back
-      </Link>
+      <div className="flex items-center justify-between mb-6">
+        <Link
+          href="/scripts"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          &larr; Back
+        </Link>
+        <VideoLinkSelector
+          scriptId={scriptId}
+          linkedVideo={serializedLinkedVideo as any}
+          unlinkedVideos={serializedUnlinkedVideos as any}
+        />
+      </div>
+      {videoData && serializedMetrics && (
+        <div className="mb-6">
+          <EditorMetricsPanel
+            metrics={serializedMetrics as any}
+            videoTitle={videoData.video.title}
+          />
+        </div>
+      )}
       <ScriptEditor script={{ ...script, beats: scriptBeats }} />
     </main>
   );
