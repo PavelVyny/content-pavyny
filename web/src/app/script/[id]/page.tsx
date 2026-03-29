@@ -73,7 +73,7 @@ export default async function ScriptPage({
         >
           &larr; Back
         </Link>
-        <div className="ml-auto flex flex-col items-end gap-2">
+        <div className="ml-auto flex flex-col items-end gap-2 min-w-0 max-w-[60%]">
           <DeleteScriptButton scriptId={scriptId} />
           <VideoLinkSelector
             scriptId={scriptId}
