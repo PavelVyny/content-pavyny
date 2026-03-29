@@ -40,12 +40,12 @@
 - [x] **QUAL-02**: Anti-slop rewrite pass — Phase 2
 - [x] **QUAL-03**: Anti-slop rules reference 60+ phrases — Phase 2
 
-### Analytics & Feedback (Paused — needs 3+ videos)
+### Analytics & Feedback (Superseded by v2.1)
 
-- [ ] **ANLT-01**: Metrics log with format/hook/topic tags
-- [ ] **ANLT-02**: Pattern analysis every 3 videos
-- [ ] **ANLT-03**: Feedback rules injected into generation
-- [ ] **ANLT-04**: Pre-populate with existing 6 videos baseline
+- [x] **ANLT-01**: ~~Metrics log with format/hook/topic tags~~ → replaced by YTUB-05 (automated via API)
+- [x] **ANLT-02**: ~~Pattern analysis every 3 videos~~ → replaced by DATA-01 (data-aware generation)
+- [x] **ANLT-03**: ~~Feedback rules injected into generation~~ → replaced by DATA-01/DATA-03
+- [x] **ANLT-04**: ~~Pre-populate with existing 6 videos baseline~~ → replaced by SYNC-01 (auto-sync)
 
 ## v2.0 Requirements — Web UI for Scriptwriting
 
@@ -77,6 +77,75 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 - [x] **LIBR-01**: Script list view — all saved scripts with title, format, date, status, anti-slop score — Phase 6
 - [x] **LIBR-02**: Script status workflow — draft → ready → recorded — Phase 6
 - [x] **LIBR-03**: Copy-to-clipboard — export ready script as clean text for recording reference — Phase 6
+
+## v2.1 Requirements — YouTube Analytics
+
+Requirements for milestone v2.1. Each maps to roadmap phases.
+
+### YouTube Integration
+
+- [ ] **YTUB-01**: User can connect YouTube channel via OAuth2 with one-click "Connect YouTube" button
+- [ ] **YTUB-02**: OAuth2 tokens persist in local file with auto-refresh (not 7-day expiry)
+- [ ] **YTUB-03**: Connection status indicator visible at all times (disconnected/connected/expired)
+- [ ] **YTUB-04**: User can disconnect YouTube channel from settings
+- [ ] **YTUB-05**: Database schema has `videos` and `video_metrics` tables with time-series snapshots
+
+### Metrics Sync
+
+- [ ] **SYNC-01**: User can click "Sync Now" to fetch all channel videos and metrics
+- [ ] **SYNC-02**: Video list auto-discovered from channel (no manual entry)
+- [ ] **SYNC-03**: Basic metrics fetched per video (views, likes, comments, subs gained, avg view %)
+- [ ] **SYNC-04**: Retention curve fetched per video (100-point audienceWatchRatio)
+- [ ] **SYNC-05**: Sync staleness indicator (green <1h, yellow <24h, red >24h)
+
+### Metrics Dashboard
+
+- [ ] **DASH-01**: Per-video metrics cards in dashboard view (views, retention %, subs gained)
+- [ ] **DASH-02**: Retention curve chart per video (line chart with recharts)
+- [ ] **DASH-03**: Metrics mini-cards on script library page (for linked videos)
+- [ ] **DASH-04**: Metrics detail panel on script editor page (when script linked to video)
+
+### Script-Video Linking
+
+- [ ] **LINK-01**: User can link a script to a YouTube video via dropdown selector
+- [ ] **LINK-02**: User can unlink a script from a video
+
+### Data-Aware Generation
+
+- [ ] **DATA-01**: Metrics context injected into AI prompt during generation (raw data, not conclusions)
+- [ ] **DATA-02**: Toggle checkbox on generation form to enable/disable metrics context
+- [ ] **DATA-03**: AI prompt includes explicit small-sample guardrail (no recommendations at N<20)
+
+## v2.1 Future Requirements
+
+Deferred until 20+ published videos or v2.2+.
+
+### Smart Feedback
+
+- **SMRT-01**: AI-generated content format recommendations based on performance patterns
+- **SMRT-02**: Format-to-performance mapping dashboard (which formats correlate with which metrics)
+- **SMRT-03**: "Generate like my best video" one-click pre-fill
+- **SMRT-04**: Metrics trend sparklines (48h vs 7d vs 30d per video)
+- **SMRT-05**: Auto-sync on dashboard load when data >24h stale
+
+### Advanced Analytics
+
+- **ADVN-01**: Retention curve overlay with beat timestamps
+- **ADVN-02**: Demographic breakdowns (deferred until 1K+ subscribers)
+
+## v2.1 Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| AI content recommendations | N=6 videos, any pattern is noise — defer to 20+ videos |
+| "Viewed vs Swiped Away" metric | Not available via YouTube Analytics API, only in Studio UI |
+| Real-time analytics streaming | YouTube has 24-48h processing delay |
+| Demographic breakdowns | YouTube suppresses data below undocumented thresholds at 55 subs |
+| Multi-channel competitor comparison | Demoralizing and actionless at 55 subs |
+| Automated posting schedule | Zero significance with 6 videos; Shorts shelf is algorithmic |
+| Automatic script-video matching | Unreliable (title differences, date gaps); manual linking is 2 seconds |
+| YouTube MCP server | Python-based overkill; `googleapis` npm is simpler and native |
+| Streaming AI response | Deferred from v2.0; still nice-to-have |
 
 ## v2.0 Out of Scope
 
@@ -122,4 +191,4 @@ Requirements for milestone v2.0. Each maps to roadmap phases.
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-26 after v2.0 roadmap creation*
+*Last updated: 2026-03-29 after v2.1 requirements definition*
