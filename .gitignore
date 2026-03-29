@@ -1,0 +1,17 @@
+# environment variables
+.env
+.env.local
+
+# youtube tokens
+data/.youtube-tokens.json
+
+# dependencies
+node_modules/
+
+# next.js
+.next/
+
+# database
+*.db
+*.sqlite
+data/*.db
