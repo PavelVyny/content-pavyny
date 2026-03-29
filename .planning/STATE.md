@@ -1,30 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Web UI
-status: v2.0 milestone complete
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-28T18:08:51.531Z"
+milestone: v2.1
+milestone_name: YouTube Analytics
+status: Defining requirements
+stopped_at: null
+last_updated: "2026-03-29"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-27)
+See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Scripts must sound like Pavlo — natural, specific, with real dev details — never like AI-generated content.
-**Current focus:** Phase 06 — library-workflow
+**Current focus:** Defining requirements for v2.1
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-29 — Milestone v2.1 started
 
 ## Performance Metrics
 

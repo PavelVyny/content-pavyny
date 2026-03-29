@@ -31,8 +31,9 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 
 ### Active
 
-- [ ] Metrics log captures per-video analytics after publish (Phase 3 — paused, needs 3+ videos)
-- [ ] Feedback loop: metrics patterns feed back into generation (Phase 3 — paused)
+- [ ] YouTube Analytics API integration via MCP server (retention curves, views, CTR)
+- [ ] Metrics dashboard in web UI (mini-cards per video alongside scripts)
+- [ ] Data-aware generation — AI receives metrics as context during script creation
 
 ## Shipped: v2.0 Web UI
 
@@ -43,7 +44,7 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 
 ### Out of Scope
 
-- YouTube MCP integration for auto-metrics — manual entry sufficient for 1 video/week
+- Smart AI feedback loop with statistical conclusions — insufficient data at 6-10 videos, deferred to 20+ videos
 - AI video editing (subtitles, overlay, auto-cut) — separate initiative
 - Remotion programmatic rendering — deferred
 - ElevenLabs TTS — Pavlo records voiceover himself
@@ -119,6 +120,15 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 | Click-to-edit over always-editable | Notion-style clean UI, save on blur, no save button | ✓ Good |
 | Manual rescore over auto-rescore | Avoids constant AI calls during editing, stale indicator shows when needed | ✓ Good |
 
+## Current Milestone: v2.1 YouTube Analytics
+
+**Goal:** Automatic YouTube metrics collection, in-app display alongside scripts, and data-aware generation where AI sees metrics as context without drawing conclusions on small sample sizes.
+
+**Target features:**
+- YouTube Analytics API integration via MCP server (retention curves, views, CTR)
+- Mini metrics dashboard in web UI (per-video cards alongside scripts)
+- Data-aware generation — AI receives raw metrics as context at generation time (not recommendations)
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -137,4 +147,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-28 after v2.0 Web UI milestone shipped*
+*Last updated: 2026-03-29 after v2.1 YouTube Analytics milestone started*
