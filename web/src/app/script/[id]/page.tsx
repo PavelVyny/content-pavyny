@@ -65,7 +65,7 @@ export default async function ScriptPage({
     : null;
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main>
       <div className="flex items-center justify-between mb-6">
         <Link
           href="/scripts"
