@@ -20,6 +20,11 @@ function formatDate(date: Date | string | null): string {
   });
 }
 
+function cleanTitle(title: string): string {
+  // Strip hashtags and pipe-separated suffixes for cleaner dropdown display
+  return title.replace(/\s*[|].*$/, "").replace(/\s*#\w+/g, "").trim();
+}
+
 export function VideoLinkSelector({
   scriptId,
   linkedVideo,
@@ -48,12 +53,12 @@ export function VideoLinkSelector({
       value={linkedVideo ? String(linkedVideo.id) : ""}
       onChange={handleChange}
       disabled={isPending}
-      className="text-sm rounded border px-2 py-1 bg-background text-foreground disabled:opacity-50"
+      className="text-sm rounded border px-2 py-1 bg-background text-foreground disabled:opacity-50 max-w-[300px] truncate"
     >
       {linkedVideo ? (
         <>
           <option value={String(linkedVideo.id)}>
-            {linkedVideo.title}
+            {cleanTitle(linkedVideo.title)}
           </option>
           <option value="unlink">Unlink video</option>
         </>
@@ -62,7 +67,7 @@ export function VideoLinkSelector({
           <option value="">Link to video...</option>
           {unlinkedVideos.map((v) => (
             <option key={v.id} value={String(v.id)}>
-              {v.title} — {formatDate(v.publishedAt)}
+              {cleanTitle(v.title)} — {formatDate(v.publishedAt)}
             </option>
           ))}
         </>
