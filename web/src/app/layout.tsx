@@ -33,7 +33,7 @@ export default function RootLayout({
         <Providers>
           <div className="max-w-4xl mx-auto px-6 py-8 w-full">
             <header className="mb-8 flex items-center justify-between">
-              <Link href="/">
+              <Link href="/scripts" className="cursor-pointer">
                 <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
                   Devlog Scriptwriter
                 </h1>
@@ -45,12 +45,6 @@ export default function RootLayout({
                   title="Generate"
                 >
                   <CircleFadingPlus className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/scripts"
-                  className="text-sm text-muted-foreground hover:text-primary cursor-pointer transition-colors"
-                >
-                  Scripts
                 </Link>
                 <YouTubeStatusIcon status={connectionStatus} />
                 <Link
