@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { Settings, Sparkles } from "lucide-react";
 import { Providers } from "@/components/providers";
 import { YouTubeStatusIcon } from "@/components/youtube-status-icon";
 import { getQuickConnectionStatus } from "@/lib/youtube-client";
@@ -41,9 +41,10 @@ export default function RootLayout({
               <nav className="flex items-center gap-4">
                 <Link
                   href="/"
-                  className="text-sm text-muted-foreground hover:text-primary cursor-pointer transition-colors"
+                  className="text-muted-foreground hover:text-primary cursor-pointer transition-colors"
+                  title="Generate"
                 >
-                  Generate
+                  <Sparkles className="w-4 h-4" />
                 </Link>
                 <Link
                   href="/scripts"
