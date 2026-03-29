@@ -92,23 +92,23 @@ Requirements for milestone v2.1. Each maps to roadmap phases.
 
 ### Metrics Sync
 
-- [ ] **SYNC-01**: User can click "Sync Now" to fetch all channel videos and metrics — Phase 8
-- [ ] **SYNC-02**: Video list auto-discovered from channel (no manual entry) — Phase 8
-- [ ] **SYNC-03**: Basic metrics fetched per video (views, likes, comments, subs gained, avg view %) — Phase 8
-- [ ] **SYNC-04**: Retention curve fetched per video (100-point audienceWatchRatio) — Phase 8
-- [ ] **SYNC-05**: Sync staleness indicator (green <1h, yellow <24h, red >24h) — Phase 8
+- [x] **SYNC-01**: User can click "Sync Now" to fetch all channel videos and metrics — Phase 8
+- [x] **SYNC-02**: Video list auto-discovered from channel (no manual entry) — Phase 8
+- [x] **SYNC-03**: Basic metrics fetched per video (views, likes, comments, subs gained, avg view %) — Phase 8
+- [x] **SYNC-04**: Retention curve fetched per video (100-point audienceWatchRatio) — Phase 8
+- [x] **SYNC-05**: Sync staleness indicator (green <1h, yellow <24h, red >24h) — Phase 8
 
 ### Metrics Dashboard
 
-- [ ] **DASH-01**: Per-video metrics cards in dashboard view (views, retention %, subs gained) — Phase 8
-- [ ] **DASH-02**: Retention curve chart per video (line chart with recharts) — Phase 8
-- [ ] **DASH-03**: Metrics mini-cards on script library page (for linked videos) — Phase 8
-- [ ] **DASH-04**: Metrics detail panel on script editor page (when script linked to video) — Phase 8
+- [x] **DASH-01**: Per-video metrics cards in dashboard view (views, retention %, subs gained) — Phase 8
+- [x] **DASH-02**: Retention curve chart per video (line chart with recharts) — Phase 8
+- [x] **DASH-03**: Metrics mini-cards on script library page (for linked videos) — Phase 8
+- [x] **DASH-04**: Metrics detail panel on script editor page (when script linked to video) — Phase 8
 
 ### Script-Video Linking
 
-- [ ] **LINK-01**: User can link a script to a YouTube video via dropdown selector — Phase 8
-- [ ] **LINK-02**: User can unlink a script from a video — Phase 8
+- [x] **LINK-01**: User can link a script to a YouTube video via dropdown selector — Phase 8
+- [x] **LINK-02**: User can unlink a script from a video — Phase 8
 
 ### Data-Aware Generation
 
@@ -195,17 +195,17 @@ Deferred until 20+ published videos or v2.2+.
 | YTUB-03 | Phase 7 | Pending |
 | YTUB-04 | Phase 7 | Pending |
 | YTUB-05 | Phase 7 | Complete |
-| SYNC-01 | Phase 8 | Pending |
-| SYNC-02 | Phase 8 | Pending |
-| SYNC-03 | Phase 8 | Pending |
-| SYNC-04 | Phase 8 | Pending |
-| SYNC-05 | Phase 8 | Pending |
-| DASH-01 | Phase 8 | Pending |
-| DASH-02 | Phase 8 | Pending |
-| DASH-03 | Phase 8 | Pending |
-| DASH-04 | Phase 8 | Pending |
-| LINK-01 | Phase 8 | Pending |
-| LINK-02 | Phase 8 | Pending |
+| SYNC-01 | Phase 8 | Complete |
+| SYNC-02 | Phase 8 | Complete |
+| SYNC-03 | Phase 8 | Complete |
+| SYNC-04 | Phase 8 | Complete |
+| SYNC-05 | Phase 8 | Complete |
+| DASH-01 | Phase 8 | Complete |
+| DASH-02 | Phase 8 | Complete |
+| DASH-03 | Phase 8 | Complete |
+| DASH-04 | Phase 8 | Complete |
+| LINK-01 | Phase 8 | Complete |
+| LINK-02 | Phase 8 | Complete |
 | DATA-01 | Phase 9 | Pending |
 | DATA-02 | Phase 9 | Pending |
 | DATA-03 | Phase 9 | Pending |

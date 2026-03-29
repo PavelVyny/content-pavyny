@@ -166,8 +166,8 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 08-01-PLAN.md — Sync engine backend: YouTube API methods for video discovery + metrics, server actions for sync flow and data queries
-- [ ] 08-02-PLAN.md — Scripts page UI: Sync Now button, staleness indicator, expandable table rows with metrics cards and retention sparklines
+- [x] 08-01-PLAN.md — Sync engine backend: YouTube API methods for video discovery + metrics, server actions for sync flow and data queries
+- [x] 08-02-PLAN.md — Scripts page UI: Sync Now button, staleness indicator, expandable table rows with metrics cards and retention sparklines
 - [ ] 08-03-PLAN.md — Video linking dropdown on editor page, metrics detail panel with full retention chart
 
 ### Phase 9: Data-Aware Generation
@@ -194,5 +194,5 @@ Phases execute in numeric order: 7 -> 8 -> 9
 | 5. Script Editor | v2.0 | 2/2 | Complete | 2026-03-28 |
 | 6. Library & Workflow | v2.0 | 1/1 | Complete | 2026-03-28 |
 | 7. OAuth & Schema | v2.1 | 0/2 | Planned    |  |
-| 8. Metrics & Dashboard | v2.1 | 0/3 | Planned | - |
+| 8. Metrics & Dashboard | v2.1 | 2/3 | In Progress|  |
 | 9. Data-Aware Generation | v2.1 | 0/? | Not started | - |
