@@ -63,7 +63,9 @@ export function VideoLinkSelector({
       disabled={isPending}
     >
       <SelectTrigger size="sm" className="w-auto max-w-full cursor-pointer">
-        <SelectValue placeholder="Link to video..." />
+        <SelectValue placeholder="Link to video...">
+          {linkedVideo ? cleanTitle(linkedVideo.title) : "Link to video..."}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent className="w-auto min-w-[350px]">
         {linkedVideo ? (
