@@ -86,7 +86,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                   >
                     <TruncatedText
                       text={script.title}
-                      className="text-base text-foreground font-medium max-w-[280px]"
+                      className="text-sm text-foreground font-medium max-w-[320px]"
                     />
                   </Link>
                 </td>
