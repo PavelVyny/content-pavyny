@@ -9,47 +9,70 @@ interface EditorMetricsPanelProps {
   videoTitle: string;
 }
 
-function MetricItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="space-y-0.5">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <p className="text-sm font-medium tabular-nums">{value}</p>
-    </div>
-  );
+// Same color logic as metrics-card.tsx
+function retentionColor(pct: number): string {
+  if (pct >= 75) return "text-green-600";
+  if (pct >= 60) return "text-emerald-600";
+  if (pct >= 40) return "text-zinc-700";
+  return "text-red-600";
+}
+
+function engagedColor(pct: number): string {
+  if (pct >= 65) return "text-green-600";
+  if (pct >= 55) return "text-emerald-600";
+  if (pct >= 45) return "text-zinc-700";
+  return "text-red-600";
+}
+
+function formatCompact(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return n.toLocaleString();
 }
 
 export function EditorMetricsPanel({
   metrics,
   videoTitle,
 }: EditorMetricsPanelProps) {
+  const engagedPct =
+    metrics.engagedViews && metrics.views > 0
+      ? Math.round((metrics.engagedViews / metrics.views) * 100)
+      : null;
+
   return (
     <Card size="sm">
       <CardContent className="space-y-4">
         <p className="font-medium text-sm">{videoTitle}</p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div className="flex flex-wrap gap-6">
+          <div>
+            <div className="text-sm font-semibold">
+              {formatCompact(metrics.views)}
+              {metrics.engagedViews > 0 && (
+                <>
+                  {" / "}
+                  <span className={engagedPct !== null ? engagedColor(engagedPct) : ""}>
+                    {formatCompact(metrics.engagedViews)}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Views / Engaged
+              {engagedPct !== null && (
+                <span className={`ml-1 ${engagedColor(engagedPct)}`}>
+                  ({engagedPct}%)
+                </span>
+              )}
+            </div>
+          </div>
           <MetricItem
-            label="Views"
-            value={metrics.views.toLocaleString()}
+            label="Avg Retention"
+            value={`${metrics.averageViewPercentage}%`}
+            className={retentionColor(metrics.averageViewPercentage ?? 0)}
           />
-          <MetricItem
-            label="Retention"
-            value={`${Math.round(metrics.averageViewPercentage)}%`}
-          />
-          <MetricItem
-            label="Subs gained"
-            value={`+${metrics.subscribersGained}`}
-          />
-          <MetricItem
-            label="Likes"
-            value={metrics.likes.toLocaleString()}
-          />
-          <MetricItem
-            label="Comments"
-            value={metrics.comments.toLocaleString()}
-          />
+          <MetricItem label="Subs" value={`+${metrics.subscribersGained}`} />
+          <MetricItem label="Likes" value={metrics.likes.toLocaleString()} />
+          <MetricItem label="Comments" value={String(metrics.comments)} />
         </div>
 
         {metrics.retentionCurve && metrics.retentionCurve.length >= 10 ? (
@@ -61,5 +84,22 @@ export function EditorMetricsPanel({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function MetricItem({
+  label,
+  value,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div>
+      <div className={`text-sm font-semibold ${className}`}>{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </div>
   );
 }
