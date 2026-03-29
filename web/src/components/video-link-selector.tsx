@@ -78,7 +78,10 @@ export function VideoLinkSelector({
           <>
             {unlinkedVideos.map((v) => (
               <SelectItem key={v.id} value={String(v.id)}>
-                {cleanTitle(v.title)} — {formatDate(v.publishedAt)}
+                <span className="flex items-center justify-between gap-4 w-full">
+                  <span className="truncate">{cleanTitle(v.title)}</span>
+                  <span className="shrink-0 text-muted-foreground">{formatDate(v.publishedAt)}</span>
+                </span>
               </SelectItem>
             ))}
           </>
