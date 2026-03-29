@@ -33,6 +33,17 @@ export default function Home() {
   }
 
   return (
-    <GenerationPage formats={formats} latestScript={failedScript} />
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-xl font-semibold text-zinc-900 mb-1">
+          Generate Script
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Select a format and describe your dev progress.
+        </p>
+      </div>
+
+      <GenerationPage formats={formats} latestScript={failedScript} />
+    </div>
   );
 }
