@@ -39,6 +39,9 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
   );
   const [regeneratingBeatId, setRegeneratingBeatId] = useState<number | null>(null);
   const [currentTitle, setCurrentTitle] = useState(script.title);
+  const [selectedTitleIndex, setSelectedTitleIndex] = useState<number>(
+    script.titles?.indexOf(script.title) ?? 0
+  );
   const [, startTransition] = useTransition();
 
   function handleBeatSave(
@@ -121,12 +124,13 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
                   type="button"
                   onClick={() => {
                     setCurrentTitle(title);
+                    setSelectedTitleIndex(i);
                     startTransition(() => {
                       selectTitle(script.id, title);
                     });
                   }}
                   className={`text-sm rounded-md px-3 py-1.5 border cursor-pointer transition-colors ${
-                    title === currentTitle
+                    i === selectedTitleIndex
                       ? "bg-primary/10 border-primary/30 font-medium text-foreground"
                       : "border-transparent text-muted-foreground hover:bg-zinc-100 hover:border-zinc-200"
                   }`}

@@ -82,7 +82,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                 <td className="py-3 px-2">
                   <Link
                     href={`/script/${script.id}`}
-                    className="block max-w-[280px] hover:text-primary transition-colors"
+                    className="block max-w-[280px] hover:text-primary transition-colors cursor-pointer"
                   >
                     <TruncatedText
                       text={script.title}
