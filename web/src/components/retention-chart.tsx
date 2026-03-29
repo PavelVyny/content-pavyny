@@ -65,9 +65,9 @@ export function RetentionChart({ data, expanded = false }: RetentionChartProps) 
     );
   }
 
-  // Sparkline mode: small, no axes, no grid, no tooltip
+  // Sparkline mode: wider, no axes, no grid, no tooltip
   return (
-    <div style={{ width: 100, height: 32 }} className="cursor-pointer">
+    <div style={{ width: 200, height: 40 }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <Line
