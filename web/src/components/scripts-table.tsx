@@ -116,7 +116,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                     <SelectTrigger size="sm" className={`w-auto cursor-pointer ${statusBg(script.status)}`}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent side="bottom" alignItemWithTrigger={false}>
                       <SelectItem value="draft">draft</SelectItem>
                       <SelectItem value="ready">ready</SelectItem>
                       <SelectItem value="done">done</SelectItem>
