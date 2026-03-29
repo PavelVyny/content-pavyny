@@ -28,9 +28,10 @@ function statusColor(
 
 interface ScriptEditorProps {
   script: Script & { beats: ScriptBeat[] };
+  videoLinkSlot?: React.ReactNode;
 }
 
-export function ScriptEditor({ script }: ScriptEditorProps) {
+export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
   const [localBeats, setLocalBeats] = useState<ScriptBeat[]>(script.beats);
   const [isScoreStale, setIsScoreStale] = useState(false);
   const [localScore, setLocalScore] = useState<AntiSlopScore | null>(
@@ -101,6 +102,7 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
               {script.durationEstimate}
             </span>
           )}
+          {videoLinkSlot && <div className="ml-auto">{videoLinkSlot}</div>}
         </div>
       </div>
 

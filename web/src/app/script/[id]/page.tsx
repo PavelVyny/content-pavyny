@@ -66,23 +66,14 @@ export default async function ScriptPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <div className="flex items-start gap-4 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <Link
           href="/scripts"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0 pt-0.5"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           &larr; Back
         </Link>
-        <div className="ml-auto flex flex-col items-end gap-2">
-          <div className="flex items-center gap-3">
-            <VideoLinkSelector
-              scriptId={scriptId}
-              linkedVideo={serializedLinkedVideo as any}
-              unlinkedVideos={serializedUnlinkedVideos as any}
-            />
-            <DeleteScriptButton scriptId={scriptId} />
-          </div>
-        </div>
+        <DeleteScriptButton scriptId={scriptId} />
       </div>
       {videoData && serializedMetrics && (
         <div className="mb-6">
@@ -92,7 +83,16 @@ export default async function ScriptPage({
           />
         </div>
       )}
-      <ScriptEditor script={{ ...script, beats: scriptBeats }} />
+      <ScriptEditor
+        script={{ ...script, beats: scriptBeats }}
+        videoLinkSlot={
+          <VideoLinkSelector
+            scriptId={scriptId}
+            linkedVideo={serializedLinkedVideo as any}
+            unlinkedVideos={serializedUnlinkedVideos as any}
+          />
+        }
+      />
     </main>
   );
 }
