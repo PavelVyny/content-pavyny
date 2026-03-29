@@ -12,9 +12,9 @@ import type { ScriptWithVideo } from "@/lib/types";
 function statusBg(status: string): string {
   switch (status) {
     case "ready":
-      return "bg-green-100";
-    case "done":
       return "bg-blue-100";
+    case "done":
+      return "bg-green-100";
     default:
       return "bg-gray-100";
   }
