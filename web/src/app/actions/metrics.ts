@@ -290,6 +290,72 @@ export async function getUnlinkedVideos(): Promise<VideoData[]> {
   }));
 }
 
+export interface VideoWithMetrics {
+  video: VideoData;
+  metrics: VideoMetricsData | null;
+  linkedScriptTitle: string | null;
+}
+
+export async function getAllVideosWithMetrics(): Promise<VideoWithMetrics[]> {
+  const db = getDb();
+
+  const rows = db
+    .select({
+      videoId: videos.id,
+      videoYoutubeId: videos.youtubeId,
+      videoTitle: videos.title,
+      videoDescription: videos.description,
+      videoThumbnailUrl: videos.thumbnailUrl,
+      videoPublishedAt: videos.publishedAt,
+      videoScriptId: videos.scriptId,
+      scriptTitle: scripts.title,
+      metricsViews: videoMetrics.views,
+      metricsLikes: videoMetrics.likes,
+      metricsComments: videoMetrics.comments,
+      metricsShares: videoMetrics.shares,
+      metricsSubsGained: videoMetrics.subscribersGained,
+      metricsSubsLost: videoMetrics.subscribersLost,
+      metricsAvgViewPct: videoMetrics.averageViewPercentage,
+      metricsAvgViewDuration: videoMetrics.averageViewDuration,
+      metricsEngagedViews: videoMetrics.engagedViews,
+      metricsRetentionCurve: videoMetrics.retentionCurve,
+      metricsLastSyncedAt: videoMetrics.lastSyncedAt,
+    })
+    .from(videos)
+    .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
+    .leftJoin(scripts, eq(scripts.id, videos.scriptId))
+    .orderBy(desc(videos.publishedAt))
+    .all();
+
+  return rows.map((row) => ({
+    video: {
+      id: row.videoId,
+      youtubeId: row.videoYoutubeId,
+      title: row.videoTitle,
+      description: row.videoDescription ?? null,
+      thumbnailUrl: row.videoThumbnailUrl ?? null,
+      publishedAt: row.videoPublishedAt ?? null,
+      scriptId: row.videoScriptId ?? null,
+    },
+    metrics: row.metricsViews !== null
+      ? {
+          views: row.metricsViews ?? 0,
+          likes: row.metricsLikes ?? 0,
+          comments: row.metricsComments ?? 0,
+          shares: row.metricsShares ?? 0,
+          subscribersGained: row.metricsSubsGained ?? 0,
+          subscribersLost: row.metricsSubsLost ?? 0,
+          averageViewPercentage: row.metricsAvgViewPct ?? 0,
+          averageViewDuration: row.metricsAvgViewDuration ?? 0,
+          engagedViews: row.metricsEngagedViews ?? 0,
+          retentionCurve: (row.metricsRetentionCurve as number[] | null) ?? null,
+          lastSyncedAt: row.metricsLastSyncedAt ?? new Date(),
+        }
+      : null,
+    linkedScriptTitle: row.scriptTitle ?? null,
+  }));
+}
+
 export async function getVideoForScript(
   scriptId: number
 ): Promise<{ video: VideoData; metrics: VideoMetricsData } | null> {
