@@ -232,8 +232,10 @@ export async function getLastSyncTime(): Promise<Date | null> {
 
   if (!result?.maxSync) return null;
 
-  // SQLite stores timestamps as integers (seconds since epoch)
-  return new Date(result.maxSync);
+  // SQLite stores timestamps as integers (seconds since epoch via Drizzle mode: "timestamp")
+  // But Drizzle's mode: "timestamp" already handles conversion, so maxSync is already ms
+  // However, raw sql<number> bypasses Drizzle's conversion — multiply by 1000
+  return new Date(result.maxSync * 1000);
 }
 
 export async function linkVideo(
