@@ -5,14 +5,14 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { updateScriptStatus } from "@/app/actions/library";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { MetricsCard } from "./metrics-card";
 import type { ScriptWithVideo } from "@/lib/types";
-
-function scoreColor(total: number): string {
-  if (total >= 35) return "text-green-600";
-  if (total >= 25) return "text-yellow-600";
-  return "text-red-600";
-}
 
 function statusBg(status: string): string {
   switch (status) {
@@ -76,9 +76,6 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
               Status
             </th>
             <th className="text-left py-3 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Score
-            </th>
-            <th className="text-left py-3 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               YT Stats
             </th>
           </tr>
@@ -88,12 +85,21 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
             <React.Fragment key={script.id}>
               <tr className="border-b hover:bg-zinc-50">
                 <td className="py-3 px-2">
-                  <Link
-                    href={`/script/${script.id}`}
-                    className="text-base text-foreground font-medium max-w-[280px] truncate block hover:text-primary transition-colors"
-                  >
-                    {script.title}
-                  </Link>
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          href={`/script/${script.id}`}
+                          className="text-base text-foreground font-medium max-w-[280px] truncate block hover:text-primary transition-colors"
+                        >
+                          {script.title}
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" align="start">
+                        {script.title}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </td>
                 <td className="py-3 px-2">
                   <Badge variant="outline">{script.format}</Badge>
@@ -117,15 +123,6 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                     <option value="ready">ready</option>
                     <option value="recorded">recorded</option>
                   </select>
-                </td>
-                <td className="py-3 px-2">
-                  {script.antiSlopScore ? (
-                    <span className={scoreColor(script.antiSlopScore.total)}>
-                      {script.antiSlopScore.total}/50
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">&mdash;</span>
-                  )}
                 </td>
                 <td className="py-3 px-2">
                   {script.video && script.metrics ? (
@@ -155,7 +152,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
               </tr>
               {expandedId === script.id && script.metrics && (
                 <tr>
-                  <td colSpan={6} className="py-3 px-4 bg-zinc-50/50">
+                  <td colSpan={5} className="py-3 px-4 bg-zinc-50/50">
                     <MetricsCard metrics={script.metrics} />
                   </td>
                 </tr>
