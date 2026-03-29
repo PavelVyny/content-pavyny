@@ -46,3 +46,32 @@ export interface VideoFormat {
   description: string;
   beatCount: number;
 }
+
+export interface VideoMetricsData {
+  views: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  subscribersGained: number;
+  subscribersLost: number;
+  averageViewPercentage: number;
+  averageViewDuration: number;
+  engagedViews: number;
+  retentionCurve: number[] | null;
+  lastSyncedAt: Date;
+}
+
+export interface VideoData {
+  id: number;
+  youtubeId: string;
+  title: string;
+  description: string | null;
+  thumbnailUrl: string | null;
+  publishedAt: Date | null;
+  scriptId: number | null;
+}
+
+export interface ScriptWithVideo extends Script {
+  video: VideoData | null;
+  metrics: VideoMetricsData | null;
+}
