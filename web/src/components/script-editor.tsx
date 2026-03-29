@@ -169,8 +169,8 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
           </h3>
           <div className="space-y-3">
             {localBeats.map((beat) => (
-              <div key={beat.id} className="group relative flex items-start gap-2">
-                <Card size="sm" className="flex-1">
+              <div key={beat.id} className="group relative">
+                <Card size="sm">
                   <CardContent>
                     <div className="grid grid-cols-2 gap-4">
                       <EditableField
@@ -191,21 +191,19 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                   </CardContent>
                 </Card>
                 {regeneratingBeatId === beat.id ? (
-                  <span className="shrink-0 mt-3 h-7 w-7 flex items-center justify-center">
+                  <span className="absolute -right-9 top-3 h-7 w-7 flex items-center justify-center">
                     <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
                   </span>
                 ) : regeneratingBeatId === null ? (
                   <button
                     type="button"
-                    className="shrink-0 mt-3 h-7 w-7 flex items-center justify-center rounded-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+                    className="absolute -right-9 top-3 h-7 w-7 flex items-center justify-center rounded-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleRegenerateBeat(beat.id)}
                   >
                     <RefreshCw className="h-4 w-4 text-muted-foreground" />
                   </button>
-                ) : (
-                  <span className="shrink-0 mt-3 h-7 w-7" />
-                )}
+                ) : null}
               </div>
             ))}
           </div>
