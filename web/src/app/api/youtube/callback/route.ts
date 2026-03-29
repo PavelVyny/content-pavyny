@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   getOAuth2Client,
   saveTokens,
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
     // Immediately fetch and cache channel info
     // (Pitfall 6: OAuth only gives tokens, not channel data)
     await getChannelInfo();
+    revalidatePath("/", "layout");
 
     return NextResponse.redirect(
       new URL("/settings?connected=true", request.url)

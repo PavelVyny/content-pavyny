@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   getAuthUrl,
   getQuickConnectionStatus,
@@ -27,6 +28,7 @@ export async function disconnectYouTube(): Promise<{ success: boolean }> {
   }
   deleteTokens();
   resetOAuth2Client();
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
