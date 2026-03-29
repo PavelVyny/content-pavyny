@@ -84,37 +84,37 @@ Requirements for milestone v2.1. Each maps to roadmap phases.
 
 ### YouTube Integration
 
-- [ ] **YTUB-01**: User can connect YouTube channel via OAuth2 with one-click "Connect YouTube" button
-- [ ] **YTUB-02**: OAuth2 tokens persist in local file with auto-refresh (not 7-day expiry)
-- [ ] **YTUB-03**: Connection status indicator visible at all times (disconnected/connected/expired)
-- [ ] **YTUB-04**: User can disconnect YouTube channel from settings
-- [ ] **YTUB-05**: Database schema has `videos` and `video_metrics` tables with time-series snapshots
+- [ ] **YTUB-01**: User can connect YouTube channel via OAuth2 with one-click "Connect YouTube" button — Phase 7
+- [ ] **YTUB-02**: OAuth2 tokens persist in local file with auto-refresh (not 7-day expiry) — Phase 7
+- [ ] **YTUB-03**: Connection status indicator visible at all times (disconnected/connected/expired) — Phase 7
+- [ ] **YTUB-04**: User can disconnect YouTube channel from settings — Phase 7
+- [ ] **YTUB-05**: Database schema has `videos` and `video_metrics` tables with time-series snapshots — Phase 7
 
 ### Metrics Sync
 
-- [ ] **SYNC-01**: User can click "Sync Now" to fetch all channel videos and metrics
-- [ ] **SYNC-02**: Video list auto-discovered from channel (no manual entry)
-- [ ] **SYNC-03**: Basic metrics fetched per video (views, likes, comments, subs gained, avg view %)
-- [ ] **SYNC-04**: Retention curve fetched per video (100-point audienceWatchRatio)
-- [ ] **SYNC-05**: Sync staleness indicator (green <1h, yellow <24h, red >24h)
+- [ ] **SYNC-01**: User can click "Sync Now" to fetch all channel videos and metrics — Phase 8
+- [ ] **SYNC-02**: Video list auto-discovered from channel (no manual entry) — Phase 8
+- [ ] **SYNC-03**: Basic metrics fetched per video (views, likes, comments, subs gained, avg view %) — Phase 8
+- [ ] **SYNC-04**: Retention curve fetched per video (100-point audienceWatchRatio) — Phase 8
+- [ ] **SYNC-05**: Sync staleness indicator (green <1h, yellow <24h, red >24h) — Phase 8
 
 ### Metrics Dashboard
 
-- [ ] **DASH-01**: Per-video metrics cards in dashboard view (views, retention %, subs gained)
-- [ ] **DASH-02**: Retention curve chart per video (line chart with recharts)
-- [ ] **DASH-03**: Metrics mini-cards on script library page (for linked videos)
-- [ ] **DASH-04**: Metrics detail panel on script editor page (when script linked to video)
+- [ ] **DASH-01**: Per-video metrics cards in dashboard view (views, retention %, subs gained) — Phase 8
+- [ ] **DASH-02**: Retention curve chart per video (line chart with recharts) — Phase 8
+- [ ] **DASH-03**: Metrics mini-cards on script library page (for linked videos) — Phase 8
+- [ ] **DASH-04**: Metrics detail panel on script editor page (when script linked to video) — Phase 8
 
 ### Script-Video Linking
 
-- [ ] **LINK-01**: User can link a script to a YouTube video via dropdown selector
-- [ ] **LINK-02**: User can unlink a script from a video
+- [ ] **LINK-01**: User can link a script to a YouTube video via dropdown selector — Phase 8
+- [ ] **LINK-02**: User can unlink a script from a video — Phase 8
 
 ### Data-Aware Generation
 
-- [ ] **DATA-01**: Metrics context injected into AI prompt during generation (raw data, not conclusions)
-- [ ] **DATA-02**: Toggle checkbox on generation form to enable/disable metrics context
-- [ ] **DATA-03**: AI prompt includes explicit small-sample guardrail (no recommendations at N<20)
+- [ ] **DATA-01**: Metrics context injected into AI prompt during generation (raw data, not conclusions) — Phase 9
+- [ ] **DATA-02**: Toggle checkbox on generation form to enable/disable metrics context — Phase 9
+- [ ] **DATA-03**: AI prompt includes explicit small-sample guardrail (no recommendations at N<20) — Phase 9
 
 ## v2.1 Future Requirements
 
@@ -166,6 +166,8 @@ Deferred until 20+ published videos or v2.2+.
 
 ## Traceability
 
+### v2.0 Web UI
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | APFN-01 | Phase 4 | Complete |
@@ -184,11 +186,35 @@ Deferred until 20+ published videos or v2.2+.
 | LIBR-02 | Phase 6 | Complete |
 | LIBR-03 | Phase 6 | Complete |
 
+### v2.1 YouTube Analytics
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| YTUB-01 | Phase 7 | Pending |
+| YTUB-02 | Phase 7 | Pending |
+| YTUB-03 | Phase 7 | Pending |
+| YTUB-04 | Phase 7 | Pending |
+| YTUB-05 | Phase 7 | Pending |
+| SYNC-01 | Phase 8 | Pending |
+| SYNC-02 | Phase 8 | Pending |
+| SYNC-03 | Phase 8 | Pending |
+| SYNC-04 | Phase 8 | Pending |
+| SYNC-05 | Phase 8 | Pending |
+| DASH-01 | Phase 8 | Pending |
+| DASH-02 | Phase 8 | Pending |
+| DASH-03 | Phase 8 | Pending |
+| DASH-04 | Phase 8 | Pending |
+| LINK-01 | Phase 8 | Pending |
+| LINK-02 | Phase 8 | Pending |
+| DATA-01 | Phase 9 | Pending |
+| DATA-02 | Phase 9 | Pending |
+| DATA-03 | Phase 9 | Pending |
+
 **Coverage:**
-- v2.0 requirements: 15 total
-- Mapped to phases: 15
+- v2.0 requirements: 15/15 mapped (all complete)
+- v2.1 requirements: 19/19 mapped (all pending)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-29 after v2.1 requirements definition*
+*Last updated: 2026-03-29 after v2.1 roadmap creation*

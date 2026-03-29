@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: YouTube Analytics
-status: Defining requirements
-stopped_at: null
+status: Ready to plan Phase 7
+stopped_at: Roadmap created for v2.1
 last_updated: "2026-03-29"
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,22 +19,24 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Scripts must sound like Pavlo — natural, specific, with real dev details — never like AI-generated content.
-**Current focus:** Defining requirements for v2.1
+**Current focus:** v2.1 YouTube Analytics — Phase 7 (OAuth & Schema)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-29 — Milestone v2.1 started
+Phase: 7 of 9 (OAuth & Schema)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-03-29 — Roadmap created for v2.1 milestone
+
+Progress: [██████████████████░░░░░░░░░░░░] 63% (overall project: 10/16 plans across v1.0+v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 4 (from v1.0)
-- Average duration: ~70 min
-- Total execution time: ~4.7 hours
+- Total plans completed: 10 (3 from v1.0, 7 from v2.0)
+- Average duration: ~50 min
+- Total execution time: ~8.3 hours
 
 **By Phase:**
 
@@ -42,18 +44,16 @@ Last activity: 2026-03-29 — Milestone v2.1 started
 |-------|-------|-------|----------|
 | Phase 01 | 3 | ~125 min | ~42 min |
 | Phase 02 | 1 | 154 min | 154 min |
+| Phase 04 | 3 | ~60 min | ~20 min |
+| Phase 05 | 2 | ~55 min | ~28 min |
+| Phase 06 | 1 | ~10 min | ~10 min |
 
 **Recent Trend:**
 
-- Last 4 plans: 90, 5, 30, 154 min
-- Trend: Variable (Phase 02 was verification-heavy)
+- v2.0 plans were faster than v1.0 (established patterns, less exploration)
+- Trend: Improving
 
 *Updated after each plan completion*
-| Phase 04 P01 | 6 | 2 tasks | 10 files |
-| Phase 04 P02 | 3 | 2 tasks | 2 files |
-| Phase 05 P01 | 3 | 2 tasks | 6 files |
-| Phase 05 P02 | 8 | 3 tasks | 5 files |
-| Phase 06 P01 | 2 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -62,20 +62,11 @@ Last activity: 2026-03-29 — Milestone v2.1 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v2.0 Roadmap]: 3-phase structure for Web UI — Foundation+Generation (Phase 4), Editor (Phase 5), Library (Phase 6)
-- [v2.0 Roadmap]: AI backend via Vercel AI SDK + Anthropic API key, NOT Max subscription OAuth (ToS ban Feb 2026)
-- [v2.0 Roadmap]: Custom beat-card editor with paired textareas, NOT block editor library (BlockNote/TipTap overkill)
-- [v2.0 Roadmap]: SQLite with separate beats table from day one, NOT blob storage (migration cost too high)
-- [v2.0 Roadmap]: Reference files read from .claude/skills/ at runtime, never duplicated into database
-- [Phase 04]: better-sqlite3 compiles natively on Windows without fallback to sql.js
-- [Phase 04]: drizzle-kit push for dev-mode schema sync (no migration files)
-- [Phase 04]: Used z.toJSONSchema() for Agent SDK outputFormat schema conversion
-- [Phase 04]: Rewrote agent.ts from markdown-parsing to JSON-prompt approach after checkpoint revealed parsing failures
-- [Phase 04]: GenerationPage client wrapper owns form/display toggle state; page.tsx stays as server component fetching formats and latest script
-- [Phase 05]: base-ui Tabs via shadcn for hook variant switching; local beat state for optimistic updates
-- [Phase 05]: Score panel scrolls with page (not sticky) for layout simplicity
-- [Phase 05]: Regenerate button always visible (not hover-only) for discoverability; onMouseDown preventDefault prevents blur race condition
-- [Phase 06]: Native HTML select for inline table status editing; optimistic updates for status changes
+- [v2.1 Research]: Use `googleapis` npm directly, NOT MCP server — simpler, server-side, native to Next.js
+- [v2.1 Research]: Manual "Sync Now" button, NOT auto-sync — 1 video/week does not justify cron
+- [v2.1 Research]: Token storage in local JSON file (`data/.youtube-tokens.json`), NOT in SQLite
+- [v2.1 Research]: OAuth consent screen must be "In production" mode + fresh credentials to avoid 7-day token expiry
+- [v2.1 Research]: Only `recharts` added for charts — no tanstack-query, no cron, no separate google-auth-library
 
 ### Pending Todos
 
@@ -83,12 +74,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 3 (v1.0 Feedback Loop) still paused — needs 3+ published videos
-- Anthropic API key must be provisioned before Phase 4 execution (research says ~$0.08/month at current volume)
-- better-sqlite3 requires native build tools on Windows — verify Python 3.x + VS Build Tools during Phase 4 setup
+- GCP project setup required before Phase 7 coding: enable YouTube Data API v3 + Analytics API, create OAuth credentials, set consent screen to Production
+- Brand Account channel listing may behave differently — verify during Phase 7
+- Phase 3 (v1.0 Feedback Loop) still paused — superseded by v2.1 automated approach
 
 ## Session Continuity
 
-Last session: 2026-03-28T15:57:49.515Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-29
+Stopped at: Roadmap created for v2.1 milestone
 Resume file: None

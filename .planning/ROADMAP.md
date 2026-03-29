@@ -3,7 +3,8 @@
 ## Milestones
 
 - ✅ **v1.0 CLI Pipeline** - Phases 1-3 (shipped 2026-03-27, Phase 3 paused)
-- 🚧 **v2.0 Web UI** - Phases 4-6 (in progress)
+- ✅ **v2.0 Web UI** - Phases 4-6 (shipped 2026-03-28)
+- 🚧 **v2.1 YouTube Analytics** - Phases 7-9 (in progress)
 
 ## Phases
 
@@ -14,7 +15,7 @@
 Decimal phases appear between their surrounding integers in numeric order.
 
 <details>
-<summary>v1.0 CLI Pipeline (Phases 1-3) - SHIPPED 2026-03-27</summary>
+<summary>✅ v1.0 CLI Pipeline (Phases 1-3) - SHIPPED 2026-03-27</summary>
 
 - [x] **Phase 1: Foundation** - Audit ecosystem, extract brand voice, build and install the custom skill with companions
 - [x] **Phase 2: Script Generation** - Generate publish-ready scripts with format templates, hook structure, and anti-slop quality gates
@@ -67,15 +68,12 @@ Plans:
 
 </details>
 
-### 🚧 v2.0 Web UI (In Progress)
-
-**Milestone Goal:** Local web application that wraps the CLI scriptwriting pipeline in a visual interface with dual-track editor and script library.
+<details>
+<summary>✅ v2.0 Web UI (Phases 4-6) - SHIPPED 2026-03-28</summary>
 
 - [x] **Phase 4: Foundation & Generation** - Next.js app with AI backend, database, and end-to-end script generation flow
-- [x] **Phase 5: Script Editor** - Dual-track beat editor with inline editing, hook variants, per-beat regeneration, and anti-slop scoring (completed 2026-03-28)
-- [x] **Phase 6: Library & Workflow** - Script browsing, status management, and clipboard export for recording (completed 2026-03-28)
-
-## Phase Details
+- [x] **Phase 5: Script Editor** - Dual-track beat editor with inline editing, hook variants, per-beat regeneration, and anti-slop scoring
+- [x] **Phase 6: Library & Workflow** - Script browsing, status management, and clipboard export for recording
 
 ### Phase 4: Foundation & Generation
 **Goal**: Pavlo can open the web app, pick a script format, enter dev context, and receive a fully structured script saved to the database
@@ -126,10 +124,57 @@ Plans:
 Plans:
 - [x] 06-01-PLAN.md — Scripts list page with table layout, inline status dropdown, clipboard copy, and header navigation
 
+</details>
+
+### 🚧 v2.1 YouTube Analytics (In Progress)
+
+**Milestone Goal:** Automatic YouTube metrics collection, in-app display alongside scripts, and data-aware generation where AI sees metrics as context without drawing conclusions on small sample sizes.
+
+- [ ] **Phase 7: OAuth & Schema** - YouTube OAuth2 connection flow, token persistence, connection status UI, and database schema for videos and metrics
+- [ ] **Phase 8: Metrics & Dashboard** - Sync engine, metrics dashboard with retention curves, script-video linking, and metrics display across app pages
+- [ ] **Phase 9: Data-Aware Generation** - Inject metrics context into AI prompts with small-sample guardrails and user toggle
+
+## Phase Details
+
+### Phase 7: OAuth & Schema
+**Goal**: Pavlo can connect his YouTube channel via OAuth2 from a settings page, see connection status at all times, and the database is ready to store video metrics
+**Depends on**: Phase 6 (existing Next.js app with SQLite/Drizzle)
+**Requirements**: YTUB-01, YTUB-02, YTUB-03, YTUB-04, YTUB-05
+**Success Criteria** (what must be TRUE):
+  1. Pavlo can click "Connect YouTube" on the settings page, complete Google OAuth consent, and return to the app with a confirmed connection
+  2. OAuth tokens persist across app restarts and auto-refresh without Pavlo re-authenticating (no 7-day expiry)
+  3. Connection status indicator (disconnected/connected/expired) is visible from any page in the app
+  4. Pavlo can disconnect YouTube from the settings page and the status updates immediately
+  5. Database has `videos` and `video_metrics` tables migrated and queryable (verified by running a test insert from REPL)
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 8: Metrics & Dashboard
+**Goal**: Pavlo can sync his YouTube channel data with one click, see per-video metrics and retention curves in the app, and link scripts to their published videos
+**Depends on**: Phase 7
+**Requirements**: SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, DASH-01, DASH-02, DASH-03, DASH-04, LINK-01, LINK-02
+**Success Criteria** (what must be TRUE):
+  1. Clicking "Sync Now" fetches all channel videos and their metrics (views, retention %, likes, comments, subs gained) into the database without manual entry
+  2. A metrics dashboard shows per-video cards with key numbers and a retention curve line chart for each video
+  3. Sync staleness indicator shows how fresh the data is (green under 1 hour, yellow under 24 hours, red over 24 hours)
+  4. Pavlo can link any script to a YouTube video via a dropdown, and unlink it — linked scripts show metrics mini-cards in the library and a detail panel in the editor
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 9: Data-Aware Generation
+**Goal**: Pavlo's script generation uses real channel performance data as context, referencing actual numbers without the AI making strategic recommendations from a small sample
+**Depends on**: Phase 8
+**Requirements**: DATA-01, DATA-02, DATA-03
+**Success Criteria** (what must be TRUE):
+  1. When generating a script with metrics enabled, the AI naturally references real view counts and retention percentages (e.g., "your last video got 8.7K views") instead of generic openers
+  2. A toggle checkbox on the generation form lets Pavlo enable or disable metrics context injection — default is on
+  3. The AI never makes recommendations like "your audience prefers X" or "you should do more Y" — it uses numbers for specificity only, with an explicit small-sample guardrail (N<20)
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 4 -> 5 -> 6
+Phases execute in numeric order: 7 -> 8 -> 9
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -137,5 +182,8 @@ Phases execute in numeric order: 4 -> 5 -> 6
 | 2. Script Generation | v1.0 | 1/1 | Complete | 2026-03-27 |
 | 3. Feedback Loop | v1.0 | 0/1 | Paused | - |
 | 4. Foundation & Generation | v2.0 | 3/3 | Complete | 2026-03-28 |
-| 5. Script Editor | v2.0 | 2/2 | Complete    | 2026-03-28 |
-| 6. Library & Workflow | v2.0 | 0/1 | Complete    | 2026-03-28 |
+| 5. Script Editor | v2.0 | 2/2 | Complete | 2026-03-28 |
+| 6. Library & Workflow | v2.0 | 1/1 | Complete | 2026-03-28 |
+| 7. OAuth & Schema | v2.1 | 0/? | Not started | - |
+| 8. Metrics & Dashboard | v2.1 | 0/? | Not started | - |
+| 9. Data-Aware Generation | v2.1 | 0/? | Not started | - |
