@@ -146,8 +146,12 @@ Plans:
   3. Connection status indicator (disconnected/connected/expired) is visible from any page in the app
   4. Pavlo can disconnect YouTube from the settings page and the status updates immediately
   5. Database has `videos` and `video_metrics` tables migrated and queryable (verified by running a test insert from REPL)
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 07-01-PLAN.md — Install googleapis, add videos + video_metrics schema, create youtube-client.ts with OAuth2 and token persistence
+- [ ] 07-02-PLAN.md — OAuth callback route, server actions, settings page with connect/disconnect UI, header status icons
 
 ### Phase 8: Metrics & Dashboard
 **Goal**: Pavlo can sync his YouTube channel data with one click, see per-video metrics and retention curves in the app, and link scripts to their published videos
@@ -184,6 +188,6 @@ Phases execute in numeric order: 7 -> 8 -> 9
 | 4. Foundation & Generation | v2.0 | 3/3 | Complete | 2026-03-28 |
 | 5. Script Editor | v2.0 | 2/2 | Complete | 2026-03-28 |
 | 6. Library & Workflow | v2.0 | 1/1 | Complete | 2026-03-28 |
-| 7. OAuth & Schema | v2.1 | 0/? | Not started | - |
+| 7. OAuth & Schema | v2.1 | 0/2 | In progress | - |
 | 8. Metrics & Dashboard | v2.1 | 0/? | Not started | - |
 | 9. Data-Aware Generation | v2.1 | 0/? | Not started | - |
