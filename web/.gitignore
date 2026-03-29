@@ -41,6 +41,9 @@ data/*.db
 data/*.db-wal
 data/*.db-shm
 
+# YouTube OAuth tokens
+data/.youtube-tokens.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
