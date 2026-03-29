@@ -91,9 +91,16 @@ export function VideoGrid({ videos }: VideoGridProps) {
                   />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">
-                    {cleanTitle(video.title)}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate flex-1 min-w-0">
+                      {cleanTitle(video.title)}
+                    </p>
+                    {linkedScriptTitle && (
+                      <span className="shrink-0 text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">
+                        Linked
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(video.publishedAt)}
                   </p>
@@ -109,11 +116,6 @@ export function VideoGrid({ videos }: VideoGridProps) {
                         className={retentionColor(metrics.averageViewPercentage ?? 0)}
                       />
                     </div>
-                  )}
-                  {linkedScriptTitle && (
-                    <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">
-                      Linked
-                    </span>
                   )}
                 </div>
               </div>
