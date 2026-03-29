@@ -66,15 +66,19 @@ export default async function ScriptPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-4">
         <Link
           href="/scripts"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
         >
           &larr; Back
         </Link>
-        <DeleteScriptButton scriptId={scriptId} />
-        <div className="max-w-xs ml-auto">
+        <div className="ml-auto">
+          <DeleteScriptButton scriptId={scriptId} />
+        </div>
+      </div>
+      <div className="mb-6">
+        <div className="max-w-xs">
           <VideoLinkSelector
             scriptId={scriptId}
             linkedVideo={serializedLinkedVideo as any}
