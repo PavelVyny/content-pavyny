@@ -78,7 +78,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
                   <img
                     src={video.thumbnailUrl}
                     alt=""
-                    className="w-20 h-14 rounded object-cover shrink-0"
+                    className="w-28 h-20 rounded object-cover shrink-0"
                   />
                 )}
                 <div className="min-w-0 flex-1">
