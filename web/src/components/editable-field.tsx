@@ -7,6 +7,7 @@ interface EditableFieldProps {
   onSave: (newValue: string) => void;
   className?: string;
   placeholder?: string;
+  onEditingChange?: (editing: boolean) => void;
 }
 
 export function EditableField({
@@ -14,6 +15,7 @@ export function EditableField({
   onSave,
   className = "",
   placeholder = "Click to edit...",
+  onEditingChange,
 }: EditableFieldProps) {
   const [editing, setEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
@@ -26,6 +28,7 @@ export function EditableField({
 
   function handleBlur() {
     setEditing(false);
+    onEditingChange?.(false);
     if (localValue !== value) {
       onSave(localValue);
     }
@@ -45,7 +48,7 @@ export function EditableField({
 
   return (
     <p
-      onClick={() => setEditing(true)}
+      onClick={() => { setEditing(true); onEditingChange?.(true); }}
       className={`cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors ${className}`}
     >
       {value || placeholder}

@@ -39,6 +39,7 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
     script.antiSlopScore ?? null
   );
   const [regeneratingBeatId, setRegeneratingBeatId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(script.title);
   const [localTitles, setLocalTitles] = useState<string[]>(script.titles ?? []);
   const [selectedTitleIndex, setSelectedTitleIndex] = useState<number>(
@@ -100,9 +101,12 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
                   selectTitle(script.id, val);
                 });
               }}
+              onEditingChange={setEditingTitle}
               className="text-2xl font-semibold text-foreground"
             />
-            <Badge variant={statusColor(script.status)} className="shrink-0">{script.status}</Badge>
+            {!editingTitle && (
+              <Badge variant={statusColor(script.status)} className="shrink-0">{script.status}</Badge>
+            )}
           </div>
           {deleteSlot}
         </div>
