@@ -7,6 +7,7 @@ import { ScriptEditor } from "@/components/script-editor";
 import { getVideoForScript, getUnlinkedVideos } from "@/app/actions/metrics";
 import { VideoLinkSelector } from "@/components/video-link-selector";
 import { EditorMetricsPanel } from "@/components/editor-metrics-panel";
+import { DeleteScriptButton } from "@/components/delete-script-button";
 
 export default async function ScriptPage({
   params,
@@ -72,6 +73,7 @@ export default async function ScriptPage({
         >
           &larr; Back
         </Link>
+        <DeleteScriptButton scriptId={scriptId} />
         <div className="max-w-xs ml-auto">
           <VideoLinkSelector
             scriptId={scriptId}

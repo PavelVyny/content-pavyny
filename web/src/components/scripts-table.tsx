@@ -3,9 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { updateScriptStatus } from "@/app/actions/library";
-import { deleteScript } from "@/app/actions/generate";
 import { MetricsCard } from "./metrics-card";
 import type { ScriptWithVideo } from "@/lib/types";
 
@@ -82,7 +81,6 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
             <th className="text-left py-3 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               YT Stats
             </th>
-            <th className="py-3 px-2 w-8"></th>
           </tr>
         </thead>
         <tbody>
@@ -154,24 +152,10 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="py-3 px-2">
-                  <button
-                    onClick={async () => {
-                      if (confirm("Delete this script?")) {
-                        await deleteScript(script.id);
-                        setScripts((prev) => prev.filter((s) => s.id !== script.id));
-                      }
-                    }}
-                    className="text-muted-foreground/40 hover:text-red-500 transition-colors cursor-pointer"
-                    title="Delete script"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </td>
               </tr>
               {expandedId === script.id && script.metrics && (
                 <tr>
-                  <td colSpan={7} className="py-3 px-4 bg-zinc-50/50">
+                  <td colSpan={6} className="py-3 px-4 bg-zinc-50/50">
                     <MetricsCard metrics={script.metrics} />
                   </td>
                 </tr>
