@@ -79,7 +79,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
               Score
             </th>
             <th className="text-left py-3 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Actions
+              YT Stats
             </th>
           </tr>
         </thead>
@@ -135,18 +135,21 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
                           expandedId === script.id ? null : script.id
                         )
                       }
-                      className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
+                      <span className="text-xs font-medium">
+                        {script.metrics.views >= 1000
+                          ? `${(script.metrics.views / 1000).toFixed(1)}K`
+                          : script.metrics.views}
+                      </span>
                       {expandedId === script.id ? (
-                        <ChevronUp className="w-4 h-4" />
+                        <ChevronUp className="w-3.5 h-3.5" />
                       ) : (
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown className="w-3.5 h-3.5" />
                       )}
                     </button>
                   ) : (
-                    <span className="text-xs text-muted-foreground">
-                      No video
-                    </span>
+                    <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </td>
               </tr>
