@@ -27,6 +27,9 @@ export function RetentionChart({ data, expanded = false }: RetentionChartProps) 
     retention: value,
   }));
 
+  const maxRetention = Math.max(...data);
+  const topLabel = `${Math.round(maxRetention * 100)}%`;
+
   if (expanded) {
     return (
       <div style={{ width: "100%", height: 200 }}>
@@ -37,13 +40,12 @@ export function RetentionChart({ data, expanded = false }: RetentionChartProps) 
               dataKey="pct"
               tickFormatter={(v: number) => `${v}%`}
               tick={{ fontSize: 11 }}
-              label={{ value: "Progress", position: "insideBottom", offset: -2, fontSize: 10, fill: "#a1a1aa" }}
+              ticks={[0, 25, 50, 75, 100]}
             />
             <YAxis
               domain={[0, "auto"]}
               tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
               tick={{ fontSize: 11 }}
-              label={{ value: "Watching", angle: -90, position: "insideLeft", offset: 10, fontSize: 10, fill: "#a1a1aa" }}
             />
             <Tooltip
               formatter={(value: unknown) => [
@@ -67,12 +69,13 @@ export function RetentionChart({ data, expanded = false }: RetentionChartProps) 
     );
   }
 
-  // Sparkline: 400px with tiny axis labels
+  // Sparkline: 400px with Y labels (top% and 0) outside chart
   return (
-    <div className="flex items-end gap-1">
-      <span className="text-[9px] text-muted-foreground leading-none mb-3" style={{ writingMode: "vertical-lr", transform: "rotate(180deg)" }}>
-        Watching
-      </span>
+    <div className="flex items-stretch gap-1">
+      <div className="flex flex-col justify-between text-[9px] text-muted-foreground py-0.5">
+        <span>{topLabel}</span>
+        <span>0</span>
+      </div>
       <div>
         <div style={{ width: 400, height: 48 }}>
           <ResponsiveContainer width="100%" height="100%">
