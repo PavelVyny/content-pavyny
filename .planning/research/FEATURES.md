@@ -1,207 +1,196 @@
 # Feature Research
 
-**Domain:** Web UI for AI-assisted devlog scriptwriting (YouTube Shorts)
-**Researched:** 2026-03-27
-**Confidence:** MEDIUM-HIGH
+**Domain:** YouTube Analytics integration, metrics dashboard, and data-aware generation for existing Next.js scriptwriting app
+**Researched:** 2026-03-29
+**Confidence:** HIGH
 
-This research focuses on what features a **web interface** needs for the existing CLI-based scriptwriting pipeline. The CLI already handles: ideation (5-7 angles), script generation (dual-track, hooks, anti-slop), metrics analysis, brand voice, and anti-slop rules. This milestone wraps that pipeline in a local web app.
+This research focuses on NEW features for the v2.1 milestone. The existing app (v2.0) already has: script generation with 7 formats, dual-track beat editor, hook variant switching, per-beat AI regeneration, anti-slop scoring, script library with status workflow, and voiceover clipboard copy. This milestone adds YouTube metrics pull, dashboard display, and data-aware generation.
+
+**Important context:** Channel has 6 videos and 55 subscribers. "Data-aware" means the AI sees raw metrics as context -- NOT statistical analysis (sample too small). User already has YouTube Data API v3 key. OAuth2 required for Analytics API (retention curves). Channel is under a Brand Account.
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Features that any web-based scriptwriting interface needs. Without these, the web UI is worse than the CLI.
+Features that any YouTube analytics integration needs to feel complete. Missing these makes the integration feel half-baked.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **Script generation form** | Core purpose of the app. Format selector + context textarea + "Generate" button. Must be faster than typing a CLI command. | LOW | Dropdown/card picker for 7 script formats (The Bug, The Satisfaction, Before/After, etc.). Context field for "what I worked on." One-click generation. |
-| **Visual dual-track script display** | The CLI outputs interleaved visual/voiceover text. Web UI must render this as two clear tracks side-by-side or stacked blocks. This is the primary reason to build a UI. | MEDIUM | Each beat = a block with two lanes: left = screen direction (what viewer sees), right = voiceover text. Color-coded. The visual lane and audio lane must be visually distinct. |
-| **Inline script editing** | Generated scripts always need human polish. Click any text to edit in-place. No separate "edit mode" -- text is always editable. | LOW | Standard contenteditable or rich text editor on each block. Markdown not needed -- scripts are plain text with simple structure. |
-| **Anti-slop score display** | The CLI scores scripts 35+/50. UI must show this score prominently with a pass/fail indicator. Without visible scoring, the user loses the quality gate. | LOW | Score badge (e.g., "42/50") with color: red (<35), yellow (35-42), green (43+). Show breakdown of 5 dimensions (vocabulary, structure, specificity, rhythm, authenticity) as sub-scores. |
-| **Script library (list view)** | Scripts accumulate. Need to browse past scripts, see their format/date/score at a glance. A flat list with basic metadata. | LOW | Table or card list: title, format type, date created, anti-slop score, status (draft/final/recorded). Sorted by date descending. |
-| **Script persistence (save/load)** | Scripts must survive page refresh. Local database storage. Auto-save on edit. | LOW | SQLite or JSON file storage. Auto-save with debounce on every edit. No manual "save" button needed. |
-| **Hook section prominence** | First 3 seconds are the most important part. UI must visually emphasize the hook block -- larger, highlighted, or pinned at top. | LOW | First beat/block gets a distinct visual treatment: accent border, "HOOK" label, slightly larger text. Separates hook from body visually. |
-| **Copy-to-clipboard** | After editing, user needs to get the final script text out. One-click copy of the voiceover track only (what Pavlo reads during recording). | LOW | "Copy script" button that extracts only the voiceover text, formatted for reading (no visual directions). Also option to copy full dual-track. |
-| **Responsive layout** | Pavlo uses both Windows PC and MacBook. UI must work on different screen sizes. | LOW | Standard responsive design. Desktop-first (primary use case is at the workstation where recording happens). Mobile not needed -- Pavlo records at his desk. |
+| **YouTube OAuth connection flow** | Must connect the channel before anything else works. User expects a single "Connect YouTube" button, Google consent screen, and done. | MEDIUM | One-time setup. Needs: settings page, OAuth2 redirect handler, token storage, connection status indicator. The complexity is in Google's OAuth requirements (consent screen setup, redirect URIs, token refresh), not in the UI. Must handle token expiry gracefully -- show banner, never interrupt active work. |
+| **Video list auto-discovery** | After connecting, user expects to see their videos without manually entering IDs or URLs. The app should know what videos exist on the channel. | LOW | YouTube Data API v3 `search.list` with `forMine=true` and `type=video`. Returns video IDs, titles, publish dates. At 6 videos this is a single API call. Store in `videos` table. |
+| **Basic metrics per video** | Views, likes, comments, subscriber change. The minimum someone expects when they connect YouTube analytics. These are the numbers YouTube Studio shows at a glance. | LOW | YouTube Analytics API `reports.query` with `metrics=views,likes,comments,subscribersGained`. One call per video or batch by date range. Store as time-series snapshots in `video_metrics` table. |
+| **Retention curve per video** | The single most valuable metric for Shorts creators. Shows exactly where viewers drop off. YouTube Studio displays this prominently -- any analytics tool that lacks it feels incomplete. | MEDIUM | Requires separate API call per video: `audienceWatchRatio` with `dimensions=elapsedVideoTimeRatio`. Returns 100 data points. Must be fetched one video at a time (API limitation). Cache aggressively -- retention for old videos does not change. Display as a sparkline or small line chart. |
+| **Manual sync button** | At 1 video/week, auto-sync is unnecessary. User expects to click "Sync" and see fresh data. Must show "last synced" timestamp so the user knows if data is stale. | LOW | Button triggers fetch of all video metadata + metrics. Shows spinner during sync. Updates "Last synced: X minutes ago" on completion. Color-code staleness: green (<1h), yellow (<24h), red (>24h). |
+| **Connection status indicator** | User must know at a glance whether YouTube is connected, when data was last fetched, and if there is a problem (expired token, API error). | LOW | Persistent indicator in settings and/or dashboard header. States: disconnected (gray), connected (green), token expired (red with "Reconnect" action), syncing (spinner). Non-blocking banner for token expiry -- never redirect away from active work. |
+| **Script-to-video linking** | The whole point of data-aware generation is knowing which script became which video. User needs to connect them. | LOW | Dropdown on script detail page showing unlinked YouTube videos. Select one to link. `videos.scriptId` foreign key. At 1 video/week, manual linking takes 2 seconds and avoids unreliable auto-matching by title. |
+| **Metrics display alongside scripts** | The feedback loop only works if metrics are visible in the same context as scripts. Seeing the script library with zero performance data defeats the purpose. | MEDIUM | Mini metrics card per script in the library view (when linked to a video). Shows: views, retention %, subs gained. Clicking expands to full metrics + retention curve. On the script editor page, linked video metrics appear in a sidebar or panel. |
 
 ### Differentiators (Competitive Advantage)
 
-Features that make this web UI genuinely better than the CLI or than generic AI writing tools. These are what justify building a custom app.
+Features that make this tool genuinely better than just checking YouTube Studio and writing scripts separately. These justify the integration effort.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Anti-slop inline highlighting** | Grammarly-style: flagged words/phrases get colored underlines in the editor. Hover to see why it was flagged and a suggested replacement. This is the killer feature -- no other scriptwriting tool does anti-slop inline. | MEDIUM | Map 90+ banned phrases to regex patterns. Run on script text, highlight matches with red/orange underlines. Tooltip shows: "AI slop detected: 'game-changer' -- try a specific description instead." Clicking suggestion replaces inline. |
-| **Beat-block editor (drag-and-drop)** | Script beats as draggable blocks (like Notion). Reorder beats by dragging. Add/remove beats. Each block = visual direction + voiceover. Structural editing, not just text editing. | HIGH | Notion-style block editor. Each beat is a discrete block. Drag handle on left. Add beat (+) button between blocks. Delete beat (x) on hover. BlockNote or Tiptap for the underlying editor. Complex because it combines block structure with dual-track content per block. |
-| **Format template preview** | When selecting a script format, show a visual preview of the beat structure (e.g., "The Bug" = 5 beats: Hook > Setup > Discovery > Fix > Punchline). User sees the skeleton before generating. | LOW | Static preview cards per format. Each card shows the beat names in order. Helps user pick the right format before committing. Could include a mini-example per format. |
-| **Script comparison view** | Side-by-side two versions of the same script (e.g., before/after anti-slop rewrite, or two hook variants). Diff-highlighted. | MEDIUM | Split-pane view. Text diffs highlighted in green/red. Useful for hook A/B variants and for reviewing anti-slop rewrites. Not needed for v1 but high value once scripts accumulate. |
-| **Score breakdown visualization** | Instead of just "42/50", show a radar chart or bar chart of the 5 anti-slop dimensions. At a glance: "my specificity is always low" becomes visible. | LOW | Five horizontal bars or a small radar chart. Each dimension labeled: Vocabulary (8/10), Structure (9/10), etc. Simple SVG or chart component. |
-| **Script search and filter** | Beyond basic list: search by keyword in script text, filter by format type, filter by score range, filter by status. | LOW | Search input + filter dropdowns above the script list. Full-text search on script content. Filter chips for format type. Score range slider. |
-| **Generation history / undo** | Track each generation and edit. "Show me the original generated version" vs "my current edited version." | MEDIUM | Store each version (generated, after anti-slop pass, after manual edits) as snapshots. Version selector dropdown. Not full undo -- just discrete snapshots at key moments. |
-| **Quick re-generate with tweak** | "Regenerate this script but more casual" or "try a different hook." Modify the generation prompt without starting from scratch. | LOW | "Regenerate" button on each script with an optional text field for adjustment instructions. Keeps the same format and context, adds the tweak as an additional instruction. |
-| **Keyboard shortcuts** | Power user feature. Cmd+Enter to generate, Cmd+S to save, Cmd+Shift+C to copy script, Tab to move between beats. | LOW | Standard keyboard shortcut handler. Important because Pavlo is a developer and expects keyboard-driven workflows. |
+| **Data-aware script generation** | When generating a new script, the AI sees metrics from past videos as context. It naturally gravitates toward patterns that worked (destruction content, physics humor) without being told "make more of X." No other scriptwriting tool does this. | MEDIUM | Query SQLite for latest metrics per video, format as readable text, inject into Claude prompt. Must explicitly instruct AI: "small sample, do NOT draw conclusions." The AI uses numbers for specificity ("your last video got 8.7K views") and lets patterns inform creative choices subconsciously. This is the core innovation of v2.1. |
+| **Format-to-performance mapping** | Dashboard shows which script formats (The Bug, The Satisfaction, etc.) correlate with which metrics. Not AI conclusions -- raw data: "The Bug: 2 videos, avg 5.4K views. The Satisfaction: 1 video, 8.7K views." Pavlo draws his own conclusions. | LOW | Group metrics by `scripts.format` via SQL join. Display as a simple table or grouped bar chart. Trivial query once script-video linking exists. Becomes more valuable as video count grows. |
+| **Retention curve overlay with beat timestamps** | Show retention curve with vertical markers where each script beat transitions. Reveals which BEAT caused drop-offs or spikes. YouTube Studio shows retention but cannot map it to script structure. | HIGH | Requires knowing beat durations (not currently tracked). Would need Pavlo to enter approximate timestamps post-recording, or infer from video duration / beat count. Defer to v2.2 unless beat timing is easy to add. The concept is unique -- no competitor connects script structure to retention data. |
+| **Metrics trend over time** | For each video, show how metrics changed: 48h views vs 7d views vs 30d views. Time-series snapshots reveal whether a video is still growing or peaked. | LOW | Already built into the architecture (time-series `video_metrics` table with `fetchedAt`). Display as a mini sparkline per metric. At 1 sync/day, each video accumulates 30 data points in a month. Trivial to render. |
+| **"Generate like my best video"** | One-click generation that automatically uses the same format and similar context as the highest-performing video. Shortcut for "more of what works." | LOW | Query: find video with highest `averageViewPercentage`, get linked script's format and context, pre-fill the generation form. Button on dashboard: "Generate like #6 (8.7K views)." Simple DB query + form pre-fill, zero AI complexity. |
+| **Metrics context toggle on generation** | Checkbox on the generation form: "Include channel metrics as context." When off, generation works exactly as v2.0. When on, injects metrics. Lets Pavlo A/B test whether data-aware generation actually improves scripts. | LOW | Boolean flag passed to `generateScript()`. When true, calls `getMetricsContextForGeneration()` and appends to prompt. Default: on. Important for Pavlo to feel in control and to evaluate whether the feature helps. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-Features that seem useful but add complexity without matching Pavlo's actual workflow.
+Features that seem logical for a YouTube analytics integration but create problems at this scale or in this context.
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **Real-time collaborative editing** | Standard in modern editors (Google Docs, Notion) | Solo creator. Zero use case for collaboration. Adds WebSocket complexity, conflict resolution, auth system. | Single-user app, no auth needed. |
-| **WYSIWYG rich text formatting** | Bold, italic, headers, lists seem standard | Scripts are voiceover text -- they get READ ALOUD, not formatted. Rich formatting creates false complexity. The script is spoken words + screen directions. | Plain text editing with structural blocks. Minimal formatting (maybe bold for emphasis during recording). |
-| **AI chat sidebar** | ChatGPT/Cursor pattern: chat with AI about the script | Overengineered for the use case. Pavlo needs scripts generated and scored, not a conversation. Chat UI implies open-ended interaction; the pipeline is structured (format + context = script). | Structured form inputs (format picker, context field, tweak field). Specific buttons for specific actions (regenerate, anti-slop pass, hook variants). |
-| **Template builder / custom format editor** | Let users create their own script formats | 7 formats were researched and validated. Adding a meta-editor for formats is complex and premature. Pavlo should use the 7 for 20+ videos before custom formats matter. | Hardcode the 7 formats. If Pavlo needs a new one, add it in code -- he's a developer. |
-| **Dashboard with analytics charts** | Views, retention, subscriber trends over time | Metrics collection is paused (needs 3+ videos). Building a dashboard before data exists is waste. Manual metrics-log.md works at current volume. | Simple metrics table view. Add charts when there are 15+ data points. |
-| **Dark mode / theme system** | Expected in modern apps | Scope creep. Pick one theme and ship. Pavlo can request dark mode later -- it's CSS, not architecture. | Start with dark mode (developer preference, matches terminal aesthetic). No theme switcher. |
-| **Export to PDF / Google Docs** | "What if I need to share?" | Sharing is not in the workflow. Scripts go from UI to Pavlo's voice. Copy-to-clipboard is sufficient. | Copy-to-clipboard covers the only export use case. |
-| **Prompt engineering UI** | Let user tweak the system prompt, temperature, etc. | Exposes implementation details. The skill and anti-slop rules ARE the prompt engineering, already done. Tweaking prompts per-script will degrade quality. | Hide AI internals. Expose only: format, context, and optional tweak instruction. |
-| **Mobile app / PWA** | "Write scripts on the go" | Pavlo writes scripts at his desk where he records. Screen recording workflow is desktop-only. Mobile adds responsive complexity for zero workflow value. | Desktop-only web app. Responsive enough for laptop vs monitor, not for phones. |
+| **AI-generated content recommendations** | "Based on your analytics, you should make more destruction content." Seems like the obvious use of data + AI. | With 6 videos, any "recommendation" is noise dressed as signal. AI will confidently identify patterns in random variation. Pavlo changes content strategy based on meaningless correlations. PROJECT.md explicitly forbids this. | Show raw data. Let Pavlo interpret. Revisit AI recommendations at 20+ videos with a disclaimer about sample size. |
+| **"Viewed vs Swiped Away" metric** | Key Shorts metric in YouTube Studio. Shows what percentage of Shorts feed viewers chose to watch vs scroll past. Directly measures hook effectiveness. | NOT available through the YouTube Analytics API. This metric exists only in YouTube Studio's web and mobile UI. Building the feature would require scraping Studio (fragile, against ToS) or manual entry (defeats automation). | Display `averageViewPercentage` and `engagedViews` as proxies. Note in the UI that "Viewed vs Swiped Away" is only available in YouTube Studio. Link directly to Studio for that metric. |
+| **Real-time analytics streaming** | "See views update live as they come in." Dashboard auto-refreshes every minute. | YouTube Analytics data has a 24-48 hour processing delay. Real-time polling wastes API quota on stale data. Creates false expectation of freshness. At 1 video/week, checking once daily is plenty. | Manual sync button with "last synced" timestamp. Consider auto-sync on dashboard load if data is >24h stale. |
+| **Demographic breakdowns (age, gender, country)** | Standard in enterprise analytics dashboards. Seems like useful audience insight. | YouTube suppresses demographic data below undocumented thresholds. At 55 subscribers, most dimension queries return empty results. Building a demographics panel that shows "No data" for everything erodes trust in the tool. | Skip entirely. Focus on metrics that work at small scale: views, retention, subs, engagement. Revisit demographics at 1K+ subscribers. |
+| **Automated posting schedule optimization** | "Post at the optimal time based on your audience activity." | Zero statistical significance with 6 videos. YouTube does not expose audience online-time data via API for small channels. Optimal posting time for Shorts is largely irrelevant -- the Shorts shelf serves content algorithmically, not chronologically. | Pavlo posts when the video is ready. No scheduling needed at this cadence. |
+| **Multi-channel / competitor comparison** | "Compare your metrics against similar channels." | Requires YouTube Data API access to other channels (limited to public data). Comparing a 55-subscriber channel to established devlog channels is demoralizing and actionless. The gap is too large for meaningful comparison. | Focus on self-comparison: "This video vs your previous video." Personal growth trajectory is motivating and actionable. |
+| **Impressions and CTR metrics** | Standard YouTube metrics. Show how many times the thumbnail was shown and click-through rate. | For Shorts, impressions work differently than for regular videos. Shorts are served in the Shorts shelf where CTR is not the primary discovery mechanism (viewers swipe, not click). The `impressions` metric via API may undercount Shorts shelf impressions. | Fetch and store if available, but do not make it a primary dashboard metric. `averageViewPercentage` is a better performance signal for Shorts. |
+| **Automatic script-video matching** | "App should automatically detect which YouTube video corresponds to which script." | Script titles and video titles often differ. Matching by date is unreliable (script created days before upload). Fuzzy matching creates false links. Wrong links corrupt the feedback loop. | Manual dropdown linking. Takes 2 seconds at 1 video/week. Reliable and explicit. |
+| **Full YouTube Studio replacement** | "Since we're pulling data, show everything Studio shows." | YouTube Studio has 100+ features built by hundreds of engineers. Recreating even 10% is months of work. The goal is not to replace Studio -- it is to put key metrics next to scripts. | Show the 5 metrics that matter for scriptwriting (views, retention, subs, engaged views, avg view %). Link to YouTube Studio for everything else. |
 
 ## Feature Dependencies
 
 ```
-Script Generation Form
+YouTube OAuth Connection
     |
-    +--requires--> Format Templates (must have 7 formats defined)
-    |
-    +--requires--> AI Backend (Claude API or CLI bridge)
-    |
-    +--produces--> Script Document (dual-track beats)
-                      |
-                      +--enables--> Inline Editing (edit the generated script)
-                      |
-                      +--enables--> Anti-Slop Score Display (score the script)
-                      |                 |
-                      |                 +--enables--> Anti-Slop Inline Highlighting
-                      |                 |              (requires score + flagged phrases)
-                      |                 |
-                      |                 +--enables--> Score Breakdown Visualization
-                      |
-                      +--enables--> Copy-to-Clipboard
-                      |
-                      +--stored-in--> Script Library
-                                        |
-                                        +--enables--> Script Search & Filter
-                                        |
-                                        +--enables--> Script Comparison View
+    +--enables--> Video List Auto-Discovery
+    |                 |
+    |                 +--enables--> Basic Metrics Fetch
+    |                 |                 |
+    |                 |                 +--enables--> Retention Curve Fetch
+    |                 |                 |
+    |                 |                 +--enables--> Metrics Display (dashboard + cards)
+    |                 |                 |                 |
+    |                 |                 |                 +--enables--> Metrics Trend Over Time
+    |                 |                 |                 |
+    |                 |                 |                 +--enables--> Format-to-Performance Mapping
+    |                 |                 |
+    |                 |                 +--enables--> Data-Aware Script Generation
+    |                 |                                   |
+    |                 |                                   +--enhances--> Metrics Context Toggle
+    |                 |                                   |
+    |                 |                                   +--enhances--> "Generate Like My Best"
+    |                 |
+    |                 +--enables--> Script-to-Video Linking
+    |                                   |
+    |                                   +--required-by--> Data-Aware Generation
+    |                                   |                   (needs to know which metrics
+    |                                   |                    go with which format/script)
+    |                                   |
+    |                                   +--required-by--> Format-to-Performance Mapping
 
-Beat-Block Editor (drag-and-drop)
-    |
-    +--requires--> Script Document model (beats as discrete units)
-    |
-    +--requires--> Block editor library (BlockNote/Tiptap)
-    |
-    +--enhances--> Inline Editing (adds structural editing to text editing)
+Connection Status Indicator
+    +--independent-- (always visible, shows state of OAuth)
 
-Generation History
-    |
-    +--requires--> Script Persistence (must store versions)
-    |
-    +--enhances--> Script Comparison View (compare versions)
-
-Quick Re-generate
-    |
-    +--requires--> Script Generation Form
-    |
-    +--requires--> AI Backend
+Manual Sync Button
+    +--requires--> YouTube OAuth Connection
+    +--triggers--> Video List + Metrics Fetch
 ```
 
 ### Dependency Notes
 
-- **Anti-Slop Inline Highlighting requires Anti-Slop Score Display:** The highlighting uses the same flagging engine that produces the score. Score must work first, then highlighting visualizes the individual flags.
-- **Beat-Block Editor requires a block editor library:** This is the highest-complexity feature. BlockNote or Tiptap are the viable options (see STACK.md). Building custom drag-and-drop is not worth it.
-- **Script Comparison View requires Script Persistence:** Can only compare versions if versions are stored. This chains to Generation History.
-- **Script Search requires Script Library:** Must have stored scripts before search makes sense. But both are low complexity and can ship together.
+- **Data-Aware Generation requires Script-to-Video Linking:** The AI needs to know which format produced which performance. Without linking, metrics are just channel-level numbers with no script context. Linking must be built before data-aware generation can be meaningful.
+- **Retention Curves require separate API calls:** Cannot be batched with basic metrics. Must be fetched per-video. This means the sync flow has two stages: batch basic metrics, then iterate for retention. Dashboard should show basic metrics immediately while retention loads.
+- **Format-to-Performance Mapping requires both Linking and Metrics:** This is a derived feature -- a SQL JOIN between scripts (format column) and video_metrics. No additional API calls, just a query. But both tables must be populated and linked.
+- **Connection Status is independent:** Shows OAuth state regardless of whether data has been fetched. Should work even when YouTube API is down.
 
 ## MVP Definition
 
-### Launch With (v1)
+### Launch With (v2.1 Core)
 
-Minimum viable web UI -- must be better than the CLI for the core workflow.
+Minimum viable analytics integration -- the feedback loop must be functional end-to-end.
 
-- [ ] **Script Generation Form** -- format picker (7 cards) + context textarea + generate button. This is the entry point.
-- [ ] **Visual Dual-Track Display** -- render generated script as beat blocks with visual | voiceover lanes. This is why we're building a UI at all.
-- [ ] **Inline Script Editing** -- click to edit any text in the dual-track display. No mode switching.
-- [ ] **Anti-Slop Score Display** -- score badge with pass/fail color. Dimension breakdown.
-- [ ] **Script Persistence** -- auto-save to local DB. Scripts survive refresh.
-- [ ] **Script Library (list)** -- browse saved scripts. Title, format, date, score.
-- [ ] **Copy-to-Clipboard** -- one-click copy of voiceover text.
-- [ ] **Hook Section Prominence** -- visual emphasis on the first beat.
+- [ ] **YouTube OAuth connection flow** -- Settings page, connect button, Google consent, token storage. Without this, nothing else works.
+- [ ] **Video list auto-discovery** -- After connecting, all channel videos appear in the app. No manual entry.
+- [ ] **Basic metrics per video** -- Views, likes, comments, subs gained, average view percentage. Stored as snapshots.
+- [ ] **Retention curve per video** -- Fetched per-video, displayed as a small line chart. Cached in SQLite.
+- [ ] **Manual sync button** -- "Sync Now" with last-synced timestamp and staleness indicator.
+- [ ] **Connection status indicator** -- Visible on dashboard. Shows connected/disconnected/expired states.
+- [ ] **Script-to-video linking** -- Dropdown on script page to link to a YouTube video.
+- [ ] **Metrics display alongside scripts** -- Mini cards in library view, detail panel in editor view.
+- [ ] **Data-aware script generation** -- Metrics injected into Claude prompt with "small sample" guardrail.
+- [ ] **Metrics context toggle** -- Checkbox on generation form to enable/disable metrics injection.
 
-### Add After Validation (v1.x)
+### Add After Validation (v2.1.x)
 
-Features to add once the core generation-edit-save loop works.
+Features to add once the core feedback loop is running and Pavlo has used it for 3+ videos.
 
-- [ ] **Anti-Slop Inline Highlighting** -- trigger: when users want to fix slop manually instead of re-generating
-- [ ] **Format Template Preview** -- trigger: when users hesitate on format selection
-- [ ] **Script Search & Filter** -- trigger: when script library exceeds ~15 scripts
-- [ ] **Quick Re-generate with Tweak** -- trigger: when users frequently discard full scripts and regenerate
-- [ ] **Keyboard Shortcuts** -- trigger: when Pavlo requests faster workflow
-- [ ] **Score Breakdown Visualization** -- trigger: when understanding which dimension fails becomes important
+- [ ] **Format-to-performance mapping** -- trigger: when 10+ videos exist with linked scripts, the grouping becomes meaningful
+- [ ] **Metrics trend sparklines** -- trigger: when 3+ sync snapshots exist per video, trends become visible
+- [ ] **"Generate like my best video"** -- trigger: when Pavlo has a clear best-performer and wants to replicate the approach
+- [ ] **Auto-sync on dashboard load** -- trigger: when manual sync becomes a chore (if stale >24h, auto-trigger)
 
-### Future Consideration (v2+)
+### Future Consideration (v2.2+)
 
-Features to defer until the web UI is proven useful and scripts accumulate.
+Features to defer until the feedback loop proves valuable and video count grows.
 
-- [ ] **Beat-Block Editor (drag-and-drop)** -- defer because: HIGH complexity, needs block editor library integration, and the simpler inline editing covers 80% of editing needs. Only worth it if Pavlo frequently restructures beat order.
-- [ ] **Script Comparison View** -- defer because: needs version history, and comparing scripts is a rare action at 1 video/week.
-- [ ] **Generation History / Undo** -- defer because: version tracking adds storage and UI complexity. At v1 cadence, regenerating is cheap.
-- [ ] **Metrics Dashboard** -- defer because: metrics collection is paused, needs 10+ data points to be meaningful.
+- [ ] **Retention curve overlay with beat timestamps** -- defer because: requires beat timing data that does not exist yet, HIGH complexity
+- [ ] **AI content recommendations** -- defer until: 20+ videos published, explicit unlock with sample-size disclaimer
+- [ ] **Demographic breakdowns** -- defer until: 1K+ subscribers where data thresholds are reliably met
+- [ ] **Impressions/CTR display** -- defer because: less meaningful for Shorts than for regular videos
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Script Generation Form | HIGH | LOW | P1 |
-| Visual Dual-Track Display | HIGH | MEDIUM | P1 |
-| Inline Script Editing | HIGH | LOW | P1 |
-| Anti-Slop Score Display | HIGH | LOW | P1 |
-| Script Persistence | HIGH | LOW | P1 |
-| Script Library (list) | MEDIUM | LOW | P1 |
-| Copy-to-Clipboard | MEDIUM | LOW | P1 |
-| Hook Section Prominence | MEDIUM | LOW | P1 |
-| Anti-Slop Inline Highlighting | HIGH | MEDIUM | P2 |
-| Format Template Preview | MEDIUM | LOW | P2 |
-| Script Search & Filter | MEDIUM | LOW | P2 |
-| Quick Re-generate | MEDIUM | LOW | P2 |
-| Keyboard Shortcuts | LOW | LOW | P2 |
-| Score Breakdown Visualization | LOW | LOW | P2 |
-| Beat-Block Editor (drag-drop) | MEDIUM | HIGH | P3 |
-| Script Comparison View | LOW | MEDIUM | P3 |
-| Generation History | LOW | MEDIUM | P3 |
-| Metrics Dashboard | MEDIUM | MEDIUM | P3 |
+| YouTube OAuth connection | HIGH (blocker) | MEDIUM | P1 |
+| Video list auto-discovery | HIGH (blocker) | LOW | P1 |
+| Basic metrics per video | HIGH | LOW | P1 |
+| Retention curve per video | HIGH | MEDIUM | P1 |
+| Manual sync button + staleness | MEDIUM | LOW | P1 |
+| Connection status indicator | MEDIUM | LOW | P1 |
+| Script-to-video linking | HIGH (blocker for data-aware) | LOW | P1 |
+| Metrics display alongside scripts | HIGH | MEDIUM | P1 |
+| Data-aware script generation | HIGH (core innovation) | MEDIUM | P1 |
+| Metrics context toggle | MEDIUM | LOW | P1 |
+| Format-to-performance mapping | MEDIUM | LOW | P2 |
+| Metrics trend sparklines | LOW | LOW | P2 |
+| "Generate like my best video" | MEDIUM | LOW | P2 |
+| Auto-sync on dashboard load | LOW | LOW | P2 |
+| Retention + beat timestamp overlay | HIGH (unique) | HIGH | P3 |
+| AI content recommendations | MEDIUM | LOW (code), HIGH (risk) | P3 |
+| Demographic breakdowns | LOW | MEDIUM | P3 |
 
 **Priority key:**
-- P1: Must have for launch -- the web UI is pointless without these
-- P2: Should have, add after core loop works
-- P3: Nice to have, defer until workflow proves the need
+- P1: Must have for v2.1 -- the analytics integration is pointless without these
+- P2: Should have, add after the feedback loop is validated with real usage
+- P3: Nice to have, defer until channel growth justifies the effort or complexity
 
 ## Competitor Feature Analysis
 
-| Feature | Maekersuite | Squibler | VEED Script Gen | Kapwing | Our Approach |
-|---------|-------------|----------|-----------------|---------|--------------|
-| Script generation | AI from title + audience + tone | AI from draft/outline | AI from topic + length | AI script to video | AI from format template + dev context + brand voice |
-| Editor type | Basic text editor | Chapter-based sidebar + editor | Simple textarea | Chat-based storyboard | Beat-block dual-track (visual + voiceover) |
-| AI quality control | None visible | None visible | None visible | None visible | Anti-slop scoring (35+/50) with inline highlights |
-| Script storage | Cloud, per account | Cloud, organized by project | Ephemeral (no save) | Per-project | Local DB, searchable library |
-| Visual/audio tracks | Single track (text only) | Single track (prose) | Single track | Visual storyboard + voiceover | Explicit dual-track per beat |
-| Customization | Tone selector, language | Genre templates | Video length, style | Iterate via chat | 7 devlog-specific formats, brand voice, pronunciation |
-| Unique strength | SEO integration | Long-form story tools | Video generation | Script-to-video pipeline | Anti-slop + devlog-specific formats + dual-track |
+| Feature | YouTube Studio | VidIQ | TubeBuddy | Subscribr | ContentStudio | Our Approach |
+|---------|---------------|-------|-----------|-----------|---------------|--------------|
+| Retention curves | Full detail, interactive scrub, "typical" overlay | Basic via Studio embed | Basic via Studio embed | Not available | Not available | Sparkline per video, detail view on click. Simpler than Studio but co-located with scripts. |
+| Metrics dashboard | Comprehensive, 100+ metrics | Channel-level + competitor tracking | SEO-focused metrics | Video idea scoring, no analytics | Multi-platform dashboard | Minimal: 5 key metrics per video. Not trying to replace Studio. |
+| Script connection | None (Studio has no script concept) | None | None | Generates scripts from ideas, no post-publish tracking | None | Script-to-video linking. Only tool that connects what you wrote to how it performed. |
+| Data-aware generation | N/A | Keyword suggestions based on trends | Tag/title optimization | Analyzes viral videos for script ideas | AI suggests optimizations from metrics | Injects YOUR channel's raw metrics into generation. Not generic trends -- personal performance data. |
+| Performance-to-content feedback | Viewer retention graph + "Key moments" labels | Competitor benchmarking | A/B test thumbnails | Viral score prediction | Pattern suggestions | Format-to-performance mapping. Which script FORMAT works best, not just which video. |
+| Small channel focus | Generic (same UI for 55 and 55M subs) | Mostly targets growth-stage channels | Mostly targets growth-stage channels | Targets idea generation | Targets marketing teams | Purpose-built for small creator: no empty dashboards, no suppressed data panels, honest "not enough data yet" messaging. |
 
-**Key insight:** No existing tool combines anti-slop quality scoring with a visual/voiceover dual-track editor. Generic script tools output single-track text. Our dual-track display with per-beat visual directions is the structural differentiator. Anti-slop inline highlighting is the quality differentiator.
+**Key insight:** No existing tool connects script content to video performance in a feedback loop. YouTube Studio shows metrics but has no concept of "script." Subscribr generates scripts from viral trends but does not track YOUR performance. Our integration is the only one where script format + metrics + AI generation form a closed loop.
 
 ## Sources
 
-- [Maekersuite Script Editor](https://maekersuite.com/tools/script-editor) -- AI script generation with step-by-step outline approach
-- [Squibler AI Script Writer](https://www.squibler.io/ai-script-writer/) -- chapter-based sidebar editor with Smart Writer AI
-- [BlockNote.js](https://www.blocknotejs.org/) -- block-based React rich text editor, Notion-style
-- [Tiptap Notion-like Editor](https://tiptap.dev/docs/ui-components/templates/notion-like-editor) -- Notion-style block editor template
-- [De-Slop Chrome Extension](https://github.com/HxHippy/DeSlop) -- pattern-matching slop detection with inline highlights and hover tooltips
-- [Grammarly Writing Score](https://www.grammarly.com/readability) -- color-coded inline highlights (red/blue/green/purple) for writing quality
-- [Originality.ai AI Detection](https://originality.ai/blog/highlight-ai-text) -- inline highlighting of AI-detected text
-- [Kapwing Script to Video](https://www.kapwing.com/ai/script-to-video) -- script-to-storyboard with voiceover customization
-- [Filter UI Patterns - UXPin](https://www.uxpin.com/studio/blog/filter-ui-and-ux/) -- filter UI/UX best practices
-- [Notion-style Editors for React - Wisp](https://www.wisp.blog/blog/top-notion-style-wysiwyg-editors-for-react) -- comparison of block editor libraries
+- [YouTube Analytics API metrics reference (official)](https://developers.google.com/youtube/analytics/metrics) -- metric definitions and availability (HIGH confidence)
+- [YouTube Analytics channel reports (official)](https://developers.google.com/youtube/analytics/channel_reports) -- report types including retention (HIGH confidence)
+- [YouTube Analytics data model (official)](https://developers.google.com/youtube/analytics/data_model) -- data thresholds for small channels (HIGH confidence)
+- [YouTube Studio: Measure key moments for audience retention](https://support.google.com/youtube/answer/9314415) -- how Studio displays retention curves (HIGH confidence)
+- [YouTube Content tab analytics - Shorts](https://support.google.com/youtube/answer/12942217) -- Shorts-specific metrics in Studio (HIGH confidence)
+- [YouTube Blog: 4 metrics to help grow your channel](https://blog.youtube/creator-and-artist-stories/master-these-4-metrics/) -- YouTube's own metric recommendations (HIGH confidence)
+- [TubeBuddy: YouTube Analytics for Small Channels](https://www.tubebuddy.com/blog/youtube-analytics-for-small-channels-which-ones-matter-and-what-they-mean) -- which metrics matter under 1K subs (MEDIUM confidence)
+- [Joyspace: YouTube Shorts Analytics 2026 - 3 Metrics That Predict Growth](https://joyspace.ai/youtube-shorts-analytics-metrics-growth) -- APV thresholds for Shorts (MEDIUM confidence)
+- [Buffer: The Creator's Guide to YouTube Shorts Analytics](https://buffer.com/resources/the-creators-guide-to-youtube-shorts-analytics/) -- Shorts analytics overview (MEDIUM confidence)
+- [TubeBuddy: YouTube Shorts View Count Update](https://www.tubebuddy.com/blog/youtube-shorts-view-count-update-what-creators-need-to-know-about-the-new-metrics/) -- March 2025 views vs engaged views change (MEDIUM confidence)
+- [Zapier: 14 YouTube Metrics You Should Focus On in 2026](https://zapier.com/blog/youtube-metrics/) -- metric prioritization guidance (MEDIUM confidence)
+- [VidIQ: YouTube Shorts Algorithm 2026](https://vidiq.com/blog/post/youtube-shorts-algorithm/) -- algorithm signals for Shorts (MEDIUM confidence)
+- [Virvid: How to Read Retention Graphs 2026](https://virvid.ai/blog/retention-graphs-how-to-read-youtube-analytics-2026) -- retention graph UX patterns (MEDIUM confidence)
 
 ---
-*Feature research for: Web UI for devlog scriptwriting pipeline*
-*Researched: 2026-03-27*
+*Feature research for: YouTube Analytics integration into Devlog Scriptwriter Pipeline (v2.1)*
+*Researched: 2026-03-29*

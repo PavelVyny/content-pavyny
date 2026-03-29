@@ -1,498 +1,521 @@
 # Architecture Research
 
-**Domain:** Local web app wrapping AI scriptwriting pipeline
-**Researched:** 2026-03-26
+**Domain:** YouTube Analytics integration into existing Next.js scriptwriting app
+**Researched:** 2026-03-29
 **Confidence:** HIGH
 
 ## System Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Browser (localhost:3000)                      │
-│  ┌──────────┐  ┌───────────┐  ┌──────────┐  ┌──────────────┐    │
-│  │ Generate │  │  Script   │  │  Script  │  │  Anti-Slop   │    │
-│  │   Form   │  │  Editor   │  │  Library │  │   Display    │    │
-│  └────┬─────┘  └─────┬─────┘  └────┬─────┘  └──────┬───────┘    │
-│       │              │             │               │             │
-├───────┴──────────────┴─────────────┴───────────────┴─────────────┤
-│                     Next.js App Router                            │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐    │
-│  │ Server       │  │ API Routes   │  │ Reference File       │    │
-│  │ Actions      │  │ (streaming)  │  │ Loader               │    │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘    │
-│         │                │                     │                 │
-├─────────┴────────────────┴─────────────────────┴─────────────────┤
-│                     Service Layer                                 │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────────┐     │
-│  │ AI Service  │  │ Script Store │  │ Reference Manager    │     │
-│  │ (Claude)    │  │ (SQLite)     │  │ (reads .md files)    │     │
-│  └──────┬──────┘  └──────┬───────┘  └──────────┬───────────┘     │
-│         │                │                     │                 │
-├─────────┴────────────────┴─────────────────────┴─────────────────┤
-│                     External / Filesystem                         │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────────┐     │
-│  │ Claude API  │  │ scripts.db   │  │ .claude/skills/      │     │
-│  │ (Anthropic) │  │ (local file) │  │ devlog-scriptwriter/  │     │
-│  └─────────────┘  └──────────────┘  └──────────────────────┘     │
-└─────────────────────────────────────────────────────────────────┘
+│                      Next.js App (existing)                      │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐  │
+│  │ Script Editor │  │ Script List  │  │ Metrics Dashboard     │  │
+│  │  (existing)   │  │  (existing)  │  │  (NEW)                │  │
+│  └──────┬───────┘  └──────┬───────┘  └───────────┬───────────┘  │
+│         │                 │                       │              │
+├─────────┴─────────────────┴───────────────────────┴──────────────┤
+│                      Server Actions Layer                        │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐  │
+│  │ editor.ts    │  │ library.ts   │  │ metrics.ts (NEW)      │  │
+│  │ generate.ts  │  │  (existing)  │  │ youtube.ts (NEW)      │  │
+│  │ (MODIFIED)   │  │              │  │                       │  │
+│  └──────┬───────┘  └──────┬───────┘  └───────────┬───────────┘  │
+│         │                 │                       │              │
+├─────────┴─────────────────┴───────────────────────┴──────────────┤
+│                      Service Layer                               │
+│                                                                  │
+│  ┌──────────────┐  ┌───────────────────┐  ┌──────────────────┐  │
+│  │ agent.ts     │  │ youtube-client.ts  │  │ metrics-query.ts │  │
+│  │ (MODIFIED)   │  │ (NEW)             │  │ (NEW)            │  │
+│  └──────┬───────┘  └─────────┬─────────┘  └────────┬─────────┘  │
+│         │                    │                      │            │
+├─────────┴────────────────────┴──────────────────────┴────────────┤
+│                      Data Layer                                  │
+│                                                                  │
+│  ┌──────────────┐  ┌───────────────────┐  ┌──────────────────┐  │
+│  │ scripts      │  │ videos (NEW)      │  │ video_metrics    │  │
+│  │ beats        │  │                   │  │ (NEW)            │  │
+│  │ (existing)   │  │                   │  │                  │  │
+│  └──────────────┘  └───────────────────┘  └──────────────────┘  │
+│                                                                  │
+│                      SQLite + Drizzle ORM                        │
+└──────────────────────┬───────────────────────────────────────────┘
+                       │
+        ┌──────────────┴──────────────┐
+        │   Google OAuth2 Tokens      │
+        │   (file-based, local-only)  │
+        └──────────────┬──────────────┘
+                       │
+        ┌──────────────┴──────────────┐
+        │   YouTube Analytics API     │
+        │   YouTube Data API v3       │
+        └─────────────────────────────┘
 ```
+
+## Decision: Direct googleapis Client, Not MCP Server
+
+**Recommendation:** Use the `googleapis` npm package directly from server actions. Do NOT use an MCP server for YouTube Analytics.
+
+**Rationale:**
+
+1. **MCP adds unnecessary indirection.** MCP servers are designed to give LLM agents access to tools. This app needs to fetch metrics on a schedule or button press and display them in a dashboard. That is a standard API call, not an agent tool invocation.
+
+2. **Existing MCP servers are Python-based.** The best YouTube Analytics MCP server (pauling-ai/youtube-mcp-server) is Python + FastMCP. Running a Python subprocess from a Node.js/Next.js app adds cross-language complexity, process management, and debugging pain for zero architectural benefit.
+
+3. **The googleapis npm package is mature.** `@googleapis/youtubeanalytics` provides typed access to `reports.query()` with built-in token refresh via `google-auth-library`. This is Google's officially maintained client. One `npm install` vs. managing a separate Python process.
+
+4. **Data-aware generation only needs DB access.** The AI agent (Claude Agent SDK) already runs in Node.js. Feeding metrics into generation means querying SQLite for stored metrics and injecting them into the prompt string -- no MCP needed.
+
+**When MCP would make sense (and does not here):**
+- If Claude needed to dynamically query YouTube during generation (it does not -- metrics are fetched separately and stored)
+- If multiple LLM agents needed YouTube access (single user, single agent)
+- If the app were a Claude Desktop plugin (it is a Next.js web app)
+
+**Confidence:** HIGH -- this matches the existing pattern where the app uses `googleapis` via server actions, same as any other API integration.
 
 ### Component Responsibilities
 
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| Generate Form | Collect user input (format, context, dev progress) and trigger script generation | React client component with controlled form + format selector dropdown |
-| Script Editor | Display and edit dual-track scripts (visual | voiceover) as block rows | React client component with contentEditable blocks or textarea per cell |
-| Script Library | List, search, filter, delete saved scripts | Server component for initial load + client search/filter |
-| Anti-Slop Display | Show scoring breakdown (5 dimensions), highlight banned phrases in script text | Pure client component receiving score data from AI response |
-| Server Actions | Handle form submissions (save, delete, update scripts) | Next.js `'use server'` functions in `app/actions/` |
-| API Routes (streaming) | Stream AI-generated scripts token by token to the client | Route handler at `app/api/generate/route.ts` using Vercel AI SDK |
-| Reference File Loader | Read brand-voice.md, anti-slop-rules.md, video-formats.md, metrics-log.md at generation time | Node.js `fs.readFileSync` on server side, content injected into system prompt |
-| AI Service | Build prompts from skill + reference files, call Claude API, parse structured responses | Vercel AI SDK with `@ai-sdk/anthropic` provider |
-| Script Store | Persist scripts with metadata (title, format, score, dates) | SQLite via `better-sqlite3` |
-| Reference Manager | CRUD operations on reference files (edit brand voice, update metrics log) | Direct filesystem read/write with markdown parsing |
-
-## AI Backend: The Critical Decision
-
-The PROJECT.md states: "AI Backend: Requires research -- must work with Claude Max subscription without additional costs."
-
-**Finding:** Claude Max subscription does NOT include API access. The Claude API requires separate billing through the Anthropic Console. This is confirmed by Anthropic's help center.
-
-**Three options, in order of recommendation:**
-
-### Option 1: Anthropic API with minimal spend (RECOMMENDED)
-
-Use `@ai-sdk/anthropic` with a separate API key. Script generation is low-volume (5-10 scripts/week). With Claude 3.5 Haiku for generation:
-
-- Input: ~4K tokens (system prompt with reference files + user input)
-- Output: ~1K tokens (script + score)
-- Cost per script: ~$0.005-0.01
-- Monthly cost for 40 scripts: ~$0.20-0.40
-
-This is negligible. Use Haiku for drafts, Sonnet for final polish if needed. Set a $5/month spend limit in Console.
-
-**Confidence:** HIGH -- based on official Anthropic pricing and SDK documentation.
-
-### Option 2: CLIProxyAPI (Max subscription as API)
-
-Open-source proxy that exposes Claude Max subscription as an OpenAI-compatible API endpoint. Uses the OAuth token from Claude Code CLI.
-
-**Pros:** Zero additional cost if you already pay for Max.
-**Cons:** Terms of Service gray area -- Anthropic has blocked subscription usage outside Claude Code before. Could break at any time. Requires running a separate proxy process. Only confirmed working on Linux/macOS (Pavlo uses Windows primarily).
-
-**Confidence:** LOW -- relies on unofficial workaround that may violate ToS.
-
-### Option 3: Direct Anthropic SDK without Vercel AI SDK
-
-Use `@anthropic-ai/sdk` directly. More control, less abstraction. But you lose the unified streaming helpers and would need to implement streaming manually.
-
-**Verdict:** Use Option 1 (Anthropic API + Vercel AI SDK). The cost is effectively zero for this use case. The Vercel AI SDK provides streaming, structured output, and provider abstraction out of the box.
+| Component | Responsibility | Status |
+|-----------|----------------|--------|
+| `youtube-client.ts` | OAuth2 flow, token storage/refresh, API wrapper for Analytics + Data API | NEW |
+| `metrics.ts` (action) | Fetch/sync metrics, expose to UI components | NEW |
+| `youtube.ts` (action) | OAuth setup flow, connection status check | NEW |
+| `videos` table | Store video metadata (YouTube ID, title, publish date, linked script) | NEW |
+| `video_metrics` table | Store time-series metrics snapshots per video | NEW |
+| `agent.ts` | Generate scripts with optional metrics context injected into prompt | MODIFIED |
+| `generate.ts` | Pass metrics context to agent when generating/regenerating | MODIFIED |
+| Metrics Dashboard | Display per-video metrics cards alongside script library | NEW |
 
 ## Recommended Project Structure
 
+New and modified files only (existing structure preserved):
+
 ```
-content-pavyny/
-├── .claude/skills/devlog-scriptwriter/    # EXISTING -- skill files (read-only for web app)
-│   ├── SKILL.md
-│   └── references/
-│       ├── anti-slop-rules.md
-│       ├── brand-voice.md
-│       ├── video-formats.md
-│       └── metrics-log.md
-├── scripts/                               # EXISTING -- generated scripts as markdown
-│   └── 007-dead-world-to-living-forest.md
-├── app/                                   # NEW -- Next.js app
-│   ├── layout.tsx                         # Root layout with nav
-│   ├── page.tsx                           # Dashboard / script library
-│   ├── generate/
-│   │   └── page.tsx                       # Script generation form
-│   ├── scripts/
-│   │   └── [id]/
-│   │       └── page.tsx                   # Script editor view
-│   ├── api/
-│   │   └── generate/
-│   │       └── route.ts                   # Streaming AI endpoint
-│   └── actions/
-│       ├── scripts.ts                     # CRUD server actions for scripts
-│       └── references.ts                  # Read/update reference files
+web/src/
+├── app/
+│   ├── actions/
+│   │   ├── editor.ts         # (existing, unchanged)
+│   │   ├── generate.ts       # (MODIFIED: inject metrics context)
+│   │   ├── library.ts        # (existing, unchanged)
+│   │   ├── metrics.ts        # (NEW: sync metrics, get metrics for video)
+│   │   └── youtube.ts        # (NEW: OAuth flow, connection status)
+│   ├── scripts/page.tsx      # (MODIFIED: add metrics mini-cards)
+│   ├── script/[id]/page.tsx  # (MODIFIED: show linked video metrics)
+│   ├── settings/page.tsx     # (NEW: YouTube connection, OAuth setup)
+│   └── api/
+│       └── youtube/
+│           └── callback/
+│               └── route.ts  # (NEW: OAuth2 callback handler)
 ├── components/
-│   ├── generate-form.tsx                  # Format picker + context input
-│   ├── script-editor.tsx                  # Dual-track block editor
-│   ├── script-block.tsx                   # Single visual|voiceover row
-│   ├── script-card.tsx                    # Library list item
-│   ├── anti-slop-panel.tsx                # Score display + phrase highlights
-│   ├── format-selector.tsx                # Video format dropdown with descriptions
-│   └── hook-variants.tsx                  # Display 2-3 hook options
+│   ├── metrics-card.tsx      # (NEW: mini metrics display per video)
+│   ├── metrics-dashboard.tsx # (NEW: overview of all video metrics)
+│   ├── youtube-connect.tsx   # (NEW: OAuth connect button + status)
+│   └── retention-chart.tsx   # (NEW: simple retention curve display)
 ├── lib/
-│   ├── ai/
-│   │   ├── client.ts                      # Vercel AI SDK setup + anthropic provider
-│   │   ├── prompts.ts                     # System prompt builder (loads reference files)
-│   │   └── parser.ts                      # Parse AI response into Script structure
-│   ├── db/
-│   │   ├── index.ts                       # SQLite connection (better-sqlite3)
-│   │   ├── schema.ts                      # Table definitions
-│   │   └── migrations/                    # Schema migrations
-│   ├── references.ts                      # Read/write .claude/skills/ reference files
-│   ├── anti-slop.ts                       # Client-side banned phrase scanner
-│   └── types.ts                           # Shared TypeScript types
-├── public/
-├── next.config.ts
-├── package.json
-└── tsconfig.json
+│   ├── agent.ts              # (MODIFIED: accept metrics context param)
+│   ├── youtube-client.ts     # (NEW: googleapis wrapper + token management)
+│   ├── metrics-query.ts      # (NEW: SQLite queries for metrics data)
+│   └── db/
+│       ├── index.ts          # (existing, unchanged)
+│       └── schema.ts         # (MODIFIED: add videos + video_metrics tables)
 ```
 
 ### Structure Rationale
 
-- **`app/` stays thin:** Pages are routing shells. Business logic lives in `lib/`, UI in `components/`. This keeps the App Router pages focused on layout and data loading.
-- **`lib/ai/` encapsulates all AI logic:** The prompt builder reads reference files and constructs the system prompt. The parser turns AI text output into typed Script objects. This is the bridge between the existing skill files and the web app.
-- **`lib/references.ts` reads existing files in-place:** Reference files stay in `.claude/skills/devlog-scriptwriter/references/`. The web app reads them directly via filesystem. No duplication. When Pavlo edits brand-voice.md through Claude Code CLI or the web UI, both tools see the same data.
-- **`components/` is flat:** With only 7-8 components, nesting into subfolders adds friction without value.
-- **`scripts/` directory is the source of truth for exported scripts:** The database stores working drafts and metadata. Export writes a markdown file to `scripts/` matching the existing format (see script #7 for the template).
+- **youtube-client.ts in lib/:** Service layer, same pattern as `agent.ts`. Handles OAuth tokens and API calls. No UI logic.
+- **metrics.ts + youtube.ts as separate actions:** Metrics actions (fetch/display data) are used frequently. YouTube actions (OAuth setup) are used once. Separate files keep imports clean.
+- **api/youtube/callback/route.ts:** OAuth2 requires a redirect URI. This is the only API route needed. Google redirects here after consent, the handler exchanges code for tokens and stores them.
+- **settings/page.tsx:** One-time OAuth setup lives separate from daily workflow pages.
 
 ## Architectural Patterns
 
-### Pattern 1: Reference Files as System Prompt Context
+### Pattern 1: File-Based OAuth Token Storage
 
-**What:** At generation time, the server reads all 4 reference markdown files from disk, concatenates them into a structured system prompt, and sends to Claude. This replicates what SKILL.md does in Claude Code -- the skill instructs Claude to "read brand-voice.md" etc. The web app does this reading programmatically.
-
-**When to use:** Every AI generation request.
-
-**Trade-offs:** Reads files from disk on every request (negligible for local app). Reference files are ~10KB total -- well within Claude's context window. No caching needed for this scale.
+**What:** Store OAuth2 refresh token in a local JSON file (`web/data/.youtube-tokens.json`), not in SQLite.
+**When to use:** Single-user local-only apps where tokens are sensitive but don't need relational queries.
+**Trade-offs:** Simpler than DB column, easy to gitignore, but does not survive if `data/` is wiped.
 
 ```typescript
-// lib/ai/prompts.ts
-import { readFileSync } from 'fs';
-import { join } from 'path';
+// lib/youtube-client.ts
+import { google } from "googleapis";
+import fs from "fs";
+import path from "path";
 
-const REFS_DIR = join(process.cwd(), '.claude/skills/devlog-scriptwriter/references');
+const TOKEN_PATH = path.join(process.cwd(), "data", ".youtube-tokens.json");
+const SCOPES = [
+  "https://www.googleapis.com/auth/yt-analytics.readonly",
+  "https://www.googleapis.com/auth/youtube.readonly",
+];
 
-export function buildSystemPrompt(format: string): string {
-  const brandVoice = readFileSync(join(REFS_DIR, 'brand-voice.md'), 'utf-8');
-  const antiSlop = readFileSync(join(REFS_DIR, 'anti-slop-rules.md'), 'utf-8');
-  const videoFormats = readFileSync(join(REFS_DIR, 'video-formats.md'), 'utf-8');
-  const metrics = readFileSync(join(REFS_DIR, 'metrics-log.md'), 'utf-8');
+// OAuth2 client singleton
+let oauth2Client: InstanceType<typeof google.auth.OAuth2> | null = null;
 
-  return `You are a devlog scriptwriter for Pavlo's YouTube Shorts channel.
-
-## Brand Voice
-${brandVoice}
-
-## Anti-Slop Rules
-${antiSlop}
-
-## Video Format to Use: ${format}
-${videoFormats}
-
-## Performance Metrics (for context)
-${metrics}
-
-## Output Format
-Return the script as structured JSON matching this schema:
-{
-  "hooks": [{ "variant": "A", "visual": "...", "voiceover": "..." }],
-  "beats": [{ "visual": "...", "voiceover": "..." }],
-  "titles": ["...", "...", "..."],
-  "thumbnail": "...",
-  "duration_estimate": "~42 seconds",
-  "anti_slop_score": {
-    "directness": 8, "rhythm": 7, "trust": 8, "authenticity": 7, "density": 8,
-    "total": 38, "notes": "..."
+export function getOAuth2Client() {
+  if (!oauth2Client) {
+    oauth2Client = new google.auth.OAuth2(
+      process.env.YOUTUBE_CLIENT_ID,
+      process.env.YOUTUBE_CLIENT_SECRET,
+      process.env.YOUTUBE_REDIRECT_URI // http://localhost:3000/api/youtube/callback
+    );
+    // Load stored tokens if they exist
+    if (fs.existsSync(TOKEN_PATH)) {
+      const tokens = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf-8"));
+      oauth2Client.setCredentials(tokens);
+    }
   }
-}`;
+  return oauth2Client;
+}
+
+export function storeTokens(tokens: Record<string, unknown>) {
+  fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
+}
+
+export function isConnected(): boolean {
+  return fs.existsSync(TOKEN_PATH);
 }
 ```
 
-### Pattern 2: Streaming Generation with Structured Output
+### Pattern 2: Time-Series Metrics Snapshots
 
-**What:** Use Vercel AI SDK's `streamText` for the generation endpoint. The AI streams the response token-by-token to the client, giving immediate visual feedback. After streaming completes, parse the full response into the Script structure.
-
-**When to use:** The `/api/generate` route handler.
-
-**Trade-offs:** Streaming gives great UX but structured JSON output can be tricky to parse mid-stream. Two approaches: (a) stream raw text then parse on completion, or (b) use `generateObject` for guaranteed structure but no streaming. Recommend (a) -- stream the text for UX, parse after completion for the editor.
+**What:** Store metrics as dated snapshots, not overwritten values. Each sync creates a new row per video.
+**When to use:** When you want to track how metrics change over time (views at 48h vs 7d vs 30d).
+**Trade-offs:** More rows in SQLite, but enables trend analysis. At 1 video/week with daily syncs, this is ~365 rows/year -- trivial for SQLite.
 
 ```typescript
-// app/api/generate/route.ts
-import { streamText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { buildSystemPrompt } from '@/lib/ai/prompts';
+// In schema.ts (NEW tables)
+export const videos = sqliteTable("videos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  youtubeId: text("youtube_id").notNull().unique(),
+  title: text("title").notNull(),
+  publishedAt: integer("published_at", { mode: "timestamp" }),
+  scriptId: integer("script_id").references(() => scripts.id),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
 
-export async function POST(req: Request) {
-  const { format, context } = await req.json();
+export const videoMetrics = sqliteTable("video_metrics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoId: integer("video_id")
+    .notNull()
+    .references(() => videos.id, { onDelete: "cascade" }),
+  fetchedAt: integer("fetched_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  views: integer("views").notNull().default(0),
+  engagedViews: integer("engaged_views"),
+  likes: integer("likes").default(0),
+  comments: integer("comments").default(0),
+  shares: integer("shares").default(0),
+  subscribersGained: integer("subscribers_gained").default(0),
+  subscribersLost: integer("subscribers_lost").default(0),
+  averageViewPercentage: integer("average_view_percentage"), // 0-100
+  averageViewDuration: integer("average_view_duration"),     // seconds
+  // Retention curve as JSON array of percentages at each second
+  retentionCurve: text("retention_curve", { mode: "json" })
+    .$type<number[]>(),
+});
+```
 
-  const result = streamText({
-    model: anthropic('claude-3-5-haiku-20241022'),
-    system: buildSystemPrompt(format),
-    prompt: `Write a script in "${format}" format.\n\nDev context: ${context}`,
-  });
+### Pattern 3: Metrics Context Injection for Data-Aware Generation
 
-  return result.toDataStreamResponse();
+**What:** When generating a new script, query the DB for recent video metrics and inject them as raw data into the Claude prompt. The AI sees numbers but does NOT make statistical conclusions (sample too small).
+**When to use:** Exactly this project -- data-aware generation where AI uses patterns from metrics as context.
+**Trade-offs:** Adds ~500 tokens to prompt. Worth it for contextual awareness. Must explicitly instruct AI not to over-generalize from 6-10 data points.
+
+```typescript
+// In agent.ts (MODIFIED generateScript)
+export async function generateScript(
+  format: string,
+  devContext: string,
+  metricsContext?: string  // NEW parameter
+): Promise<ScriptOutput> {
+  // ... existing code ...
+
+  const metricsSection = metricsContext
+    ? `\n=== RECENT VIDEO PERFORMANCE (raw data, small sample) ===
+${metricsContext}
+
+NOTE: This is a SMALL sample (under 20 videos). Use these numbers as
+context about what Pavlo's audience responds to, but do NOT draw
+statistical conclusions or say "your audience prefers X". Just let
+the patterns inform your creative choices naturally.`
+    : "";
+
+  const prompt = `You are the devlog-scriptwriter...
+${metricsSection}
+... rest of existing prompt`;
 }
 ```
 
-### Pattern 3: Dual-Track Editor as Block Array
-
-**What:** The script editor represents each beat as an editable block with two cells: visual description and voiceover text. The script is an array of blocks. Blocks can be reordered, added, removed, or edited inline.
-
-**When to use:** The script editing view.
-
-**Trade-offs:** More complex than a single textarea but matches the existing dual-track format perfectly. The existing script format (see script #7) already uses a markdown table with VISUAL | VOICEOVER columns -- this is the same structure, just rendered as editable blocks instead of a table.
-
 ```typescript
-// lib/types.ts
-interface ScriptBeat {
-  id: string;
-  visual: string;
-  voiceover: string;  // can be empty for visual-only beats
-}
+// In metrics-query.ts (NEW)
+export function getMetricsContextForGeneration(): string {
+  const db = getDb();
+  // Get latest metrics snapshot per video, joined with video info
+  const rows = db.select({
+    title: videos.title,
+    format: scripts.format,
+    views: videoMetrics.views,
+    avgViewPct: videoMetrics.averageViewPercentage,
+    subsGained: videoMetrics.subscribersGained,
+    publishedAt: videos.publishedAt,
+  })
+  .from(videoMetrics)
+  // ... joins and ordering ...
+  .all();
 
-interface Script {
-  id: number;
-  title: string;
-  format: string;         // "The Bug", "The Satisfaction", etc.
-  hooks: HookVariant[];   // 2-3 variants
-  beats: ScriptBeat[];
-  titles: string[];       // 3 title options
-  thumbnail: string;
-  durationEstimate: string;
-  antiSlopScore: AntiSlopScore;
-  status: 'draft' | 'ready' | 'recorded' | 'published';
-  createdAt: string;
-  updatedAt: string;
+  return rows.map(r =>
+    `- "${r.title}" (${r.format}): ${r.views} views, ${r.avgViewPct}% retained, +${r.subsGained} subs`
+  ).join("\n");
 }
 ```
 
 ## Data Flow
 
-### Script Generation Flow
+### OAuth2 Setup Flow (one-time)
 
 ```
-[User fills Generate Form]
-    ↓ (format, dev context, optional notes)
-[POST /api/generate]
+User clicks "Connect YouTube" on Settings page
     ↓
-[Server reads reference files from disk]
-    ↓ (brand-voice.md + anti-slop-rules.md + video-formats.md + metrics-log.md)
-[Builds system prompt with all context]
+youtube.ts action → getOAuth2Client() → generates consent URL
     ↓
-[Calls Claude via Vercel AI SDK (streaming)]
-    ↓ (tokens stream back)
-[Client displays streaming text]
-    ↓ (on completion)
-[Parser extracts structured Script from response]
+Browser redirects to Google consent screen
     ↓
-[User reviews: picks hook variant, edits beats]
+User approves → Google redirects to /api/youtube/callback?code=XXX
     ↓
-[Server Action saves to SQLite]
+route.ts handler → exchanges code for tokens → storeTokens() to file
     ↓
-[Script appears in library]
+Redirects to /settings with success message
+    ↓
+Refresh token persists in data/.youtube-tokens.json
+(auto-refreshes access token on each API call)
 ```
 
-### Script Editing Flow
+### Metrics Sync Flow (on-demand or periodic)
 
 ```
-[User opens script from library]
+User clicks "Sync Metrics" button (or app loads dashboard)
     ↓
-[Server loads script from SQLite]
+metrics.ts action: syncAllMetrics()
     ↓
-[Editor renders beats as block array]
+youtube-client.ts: listChannelVideos()
+  → YouTube Data API v3: channels.list + search.list
+  → Returns video IDs, titles, publish dates
     ↓
-[User edits visual/voiceover cells inline]
-    ↓ (on each edit)
-[Client-side anti-slop scanner re-scores voiceover text]
-    ↓ (highlights banned phrases in red)
-[Anti-Slop Panel updates score in real-time]
+For each video not in DB: INSERT into videos table
     ↓
-[User clicks Save → Server Action updates SQLite]
-```
-
-### Script Export Flow
-
-```
-[User clicks Export on a script]
-    ↓
-[Server Action reads script from SQLite]
-    ↓
-[Formats as markdown matching existing script template]
-    ↓ (# Script #N: {title}\n**Format:**\n## Hook Variants\n## Script (Dual-Track)\n| VISUAL | VOICEOVER |)
-[Writes to scripts/{number}-{slug}.md]
-    ↓
-[File is now readable by Claude Code skill + committed to git]
-```
-
-### Key Data Flows
-
-1. **Reference files are read, not duplicated:** The web app reads `.claude/skills/devlog-scriptwriter/references/*.md` directly from disk. Both Claude Code CLI and the web app operate on the same files. Edits in either tool are immediately visible to the other.
-
-2. **SQLite is the draft workspace:** Generated scripts go into SQLite as drafts. They can be edited, re-scored, and polished. Only when exported do they become markdown files in `scripts/`.
-
-3. **Anti-slop scoring happens twice:** First by Claude during generation (full 5-dimension scoring with notes). Second by the client-side scanner during editing (real-time banned phrase highlighting + approximate re-scoring based on pattern matching).
-
-## Database Schema
-
-```sql
-CREATE TABLE scripts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
-  format TEXT NOT NULL,                    -- "The Bug", "The Satisfaction", etc.
-  hooks TEXT NOT NULL,                     -- JSON array of hook variants
-  beats TEXT NOT NULL,                     -- JSON array of {visual, voiceover} blocks
-  titles TEXT NOT NULL,                    -- JSON array of 3 title options
-  thumbnail TEXT,                          -- thumbnail concept description
-  duration_estimate TEXT,                  -- "~42 seconds"
-  anti_slop_score TEXT,                    -- JSON: {directness, rhythm, trust, authenticity, density, total, notes}
-  dev_context TEXT,                        -- original input context
-  status TEXT NOT NULL DEFAULT 'draft',    -- draft | ready | recorded | published
-  exported_path TEXT,                      -- path to exported .md file, null if not exported
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-```
-
-**Why SQLite with JSON columns instead of normalized tables:** This is a single-user local app. Scripts are written and read as units. Normalizing beats into a separate table adds join complexity for zero benefit. JSON columns with TypeScript parsing keep the code simple and the schema flat.
-
-**Why `better-sqlite3` over Prisma/Drizzle:** For a single-user local app with one table, an ORM adds dependency weight without value. `better-sqlite3` is synchronous (simpler in server actions), fast, and zero-config. If the schema grows beyond 2-3 tables, reconsider.
-
-## Anti-Slop Integration
-
-The anti-slop system works at two levels:
-
-### Level 1: AI-side scoring (generation time)
-
-The system prompt includes the full anti-slop-rules.md content. Claude scores its own output on 5 dimensions and rewrites if below 35/50. This is the same behavior as SKILL.md's "Anti-Slop Scoring (Mandatory)" section.
-
-### Level 2: Client-side scanning (editing time)
-
-A lightweight TypeScript module scans voiceover text against the banned phrase list. This provides:
-- Real-time highlighting of banned phrases as the user edits
-- Approximate re-scoring after human edits (catches regressions if Pavlo accidentally adds a banned phrase)
-- Visual feedback in the Anti-Slop Panel
-
-```typescript
-// lib/anti-slop.ts
-const BANNED_WORDS = [
-  'journey', 'dive into', 'deep dive', 'game-changer', 'landscape',
-  'realm', 'leverage', 'utilize', 'harness', 'optimize', 'elevate',
-  'empower', 'seamless', 'robust', 'streamline', 'innovative',
-  'cutting-edge', 'delve', 'navigate', 'ecosystem', 'testament',
-  // ... full list extracted from anti-slop-rules.md
-];
-
-export function scanForSlop(text: string): SlopMatch[] {
-  return BANNED_WORDS
-    .map(phrase => {
-      const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
-      const matches = [...text.matchAll(regex)];
-      return matches.map(m => ({
-        phrase,
-        index: m.index!,
-        length: phrase.length,
-      }));
+youtube-client.ts: getVideoMetrics(videoId, startDate, endDate)
+  → YouTube Analytics API: reports.query({
+      ids: "channel==MINE",
+      metrics: "views,engagedViews,likes,comments,shares,
+               subscribersGained,subscribersLost,
+               averageViewPercentage,averageViewDuration",
+      filters: "video==VIDEO_ID",
+      startDate, endDate
     })
-    .flat();
-}
+    ↓
+youtube-client.ts: getRetentionData(videoId)
+  → YouTube Analytics API: reports.query({
+      ids: "channel==MINE",
+      metrics: "audienceWatchRatio",
+      dimensions: "elapsedVideoTimeRatio",
+      filters: "video==VIDEO_ID",
+    })
+    ↓
+INSERT new row into video_metrics with timestamp
+    ↓
+UI refreshes with latest metrics
 ```
 
-## Build Order Implications
+### Data-Aware Generation Flow
 
-Based on dependencies between components:
+```
+User clicks "Generate Script" (existing flow)
+    ↓
+generate.ts: generateNewScript()
+    ↓
+NEW: metrics-query.ts: getMetricsContextForGeneration()
+  → SELECT latest metrics per video from SQLite
+  → Format as readable text string
+    ↓
+agent.ts: generateScript(format, devContext, metricsContext)
+  → Claude Agent SDK prompt now includes metrics section
+  → AI uses patterns naturally without over-generalizing
+    ↓
+... existing flow continues (parse JSON, save to DB)
+```
 
-### Phase 1: Foundation (build first)
+### Key Data Flows Summary
 
-1. **Next.js project setup** with App Router, TypeScript, Tailwind
-2. **SQLite database** with `better-sqlite3` -- schema + basic CRUD server actions
-3. **Reference file loader** (`lib/references.ts`) -- reads existing .md files from disk
-4. **Type definitions** (`lib/types.ts`) -- Script, ScriptBeat, AntiSlopScore, etc.
+1. **OAuth setup:** One-time browser redirect flow, stores refresh token to file
+2. **Metrics sync:** Button-triggered, fetches from YouTube API, writes snapshots to SQLite
+3. **Metrics display:** Dashboard reads from SQLite, no API calls needed
+4. **Data-aware generation:** Reads stored metrics from SQLite, injects into prompt text
 
-**Rationale:** Everything else depends on the database, types, and file access.
+## YouTube Analytics API: Available Metrics for Shorts
 
-### Phase 2: AI Generation (build second)
+**Confidence:** HIGH -- verified against official Google documentation.
 
-5. **AI service** (`lib/ai/`) -- prompt builder, Vercel AI SDK setup with Anthropic provider
-6. **Streaming API route** (`app/api/generate/route.ts`)
-7. **Generate Form page** (`app/generate/page.tsx` + `components/generate-form.tsx`)
-8. **Response parser** (`lib/ai/parser.ts`) -- structured Script from AI text
+| Metric | API Name | What It Shows | Available for Shorts |
+|--------|----------|---------------|---------------------|
+| Views | `views` | Play/replay count (changed March 2025 for Shorts) | Yes |
+| Engaged Views | `engagedViews` | Views past initial seconds (new metric, 2025) | Yes |
+| Likes | `likes` | Like count | Yes |
+| Comments | `comments` | Comment count | Yes |
+| Shares | `shares` | Share count | Yes |
+| Subs Gained | `subscribersGained` | New subscribers from this video | Yes |
+| Subs Lost | `subscribersLost` | Unsubscribes from this video | Yes |
+| Avg View % | `averageViewPercentage` | Percentage of video watched on average | Yes |
+| Avg View Duration | `averageViewDuration` | Average seconds watched | Yes |
+| Audience Watch Ratio | `audienceWatchRatio` | Per-segment retention curve | Yes |
+| Relative Retention | `relativeRetentionPerformance` | 0-1 vs similar-length videos | Yes |
 
-**Rationale:** This is the core value. Once generation works, scripts flow into the database and everything downstream has data to render.
+**Important API change (March 2025):** For Shorts, `views` now counts play+replay starts. The old behavior (engaged views only) moved to `engagedViews`. Both should be fetched and stored.
 
-### Phase 3: Editor + Library (build third)
+**Retention curve specifics:** `audienceWatchRatio` with `dimensions: "elapsedVideoTimeRatio"` returns an array of ratios at 100 evenly-spaced points through the video. Values can exceed 1.0 (rewatches). For a 30-second Short, each point represents ~0.3 seconds.
 
-9. **Script Library page** (`app/page.tsx`) -- list, search, filter scripts
-10. **Script Editor page** (`app/scripts/[id]/page.tsx`) -- dual-track block editor
-11. **Anti-slop client scanner** (`lib/anti-slop.ts`) + Anti-Slop Panel component
+## OAuth2 Setup Requirements
 
-**Rationale:** Library and editor are read/write views of data that already exists from Phase 2.
+**Google Cloud Console setup (one-time by Pavlo):**
 
-### Phase 4: Polish (build last)
+1. Create project in Google Cloud Console
+2. Enable YouTube Data API v3 + YouTube Analytics API
+3. Configure OAuth consent screen (External, Testing mode -- up to 100 test users, no verification needed)
+4. Create OAuth 2.0 Desktop/Web client credentials
+5. Add `http://localhost:3000/api/youtube/callback` as authorized redirect URI
+6. Store client ID and secret in `.env.local`
 
-12. **Export to markdown** -- write script to `scripts/` directory in existing format
-13. **Reference file editor** -- edit brand-voice.md, metrics-log.md from the web UI
-14. **Status workflow** -- draft -> ready -> recorded -> published transitions
+**Scopes needed:**
 
-**Rationale:** These are quality-of-life features that enhance but don't enable the core workflow.
+| Scope | Why |
+|-------|-----|
+| `yt-analytics.readonly` | Read analytics data (views, retention, etc.) |
+| `youtube.readonly` | List channel videos (titles, IDs, publish dates) |
+
+**Token lifecycle:**
+- Access token: expires in 1 hour, auto-refreshed by `google-auth-library`
+- Refresh token: long-lived, stored in `data/.youtube-tokens.json`
+- If refresh token is revoked: user re-authorizes on Settings page
+- Google's "Testing" consent screen: refresh tokens expire after 7 days. Once app is verified (or set to Internal if using Workspace), tokens persist indefinitely. For a local-only personal tool, Internal type is simplest if Pavlo has Google Workspace; otherwise Testing mode with periodic re-auth.
+
+**Confidence on 7-day expiry:** MEDIUM -- Google documentation states test-mode tokens expire in 7 days, but behavior varies. If this is a problem, setting the app to "Internal" (Workspace accounts only) or going through verification (overkill for personal tool) resolves it. Alternatively, just re-auth weekly -- it takes 10 seconds.
+
+## Script-to-Video Linking
+
+Scripts and videos exist independently and need an explicit link. Two approaches:
+
+**Recommended: Manual link via dropdown.** When viewing a script, Pavlo selects which YouTube video it became. This is reliable (no title-matching heuristics) and takes 2 seconds.
+
+**Implementation:** The `videos` table has an optional `scriptId` column. A dropdown on the script editor page shows unlinked videos. Selecting one writes the `scriptId`.
+
+**Why not automatic matching:** Script titles and YouTube video titles often differ. Matching by date is unreliable (script created days before upload). Manual linking is trivial at 1 video/week.
+
+## Scaling Considerations
+
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| 1-20 videos | Current design. Manual sync button. Metrics snapshots in SQLite. |
+| 20-50 videos | Add "last synced" timestamp, auto-sync on dashboard load if stale (>24h). Consider cron-like background sync via Next.js middleware or external scheduler. |
+| 50+ videos | YouTube API quota (10,000 units/day) becomes relevant. Batch video metrics queries. Add pagination to dashboard. Still fine in SQLite. |
+
+### Scaling Priorities
+
+1. **First concern: API quotas.** YouTube Data API costs 1 unit per search.list call, 1 per channels.list. Analytics API reports.query costs 1 unit. At 6 videos with daily sync: ~12 units/day. 10,000 daily quota is nowhere near a concern at this scale.
+2. **Second concern: Token expiry in test mode.** If Pavlo forgets to re-auth, metrics sync silently fails. The UI must clearly show connection status and time since last successful sync.
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Duplicating Reference Files into the Database
+### Anti-Pattern 1: Using MCP as a Data Bridge
 
-**What people do:** Copy brand-voice.md, anti-slop-rules.md etc. into database tables, then keep them in sync with the filesystem versions.
-**Why it's wrong:** Creates two sources of truth. The Claude Code CLI skill reads from disk. The web app would read from the database. They drift apart. Edits in one place don't propagate.
-**Do this instead:** Always read reference files from their original location on disk (`.claude/skills/devlog-scriptwriter/references/`). Both tools share the same files.
+**What people do:** Set up a YouTube MCP server and have Claude call it during generation to fetch live metrics.
+**Why it's wrong:** Adds latency (MCP roundtrip + YouTube API call) to every generation. Metrics don't change minute-to-minute. Generation becomes dependent on YouTube being reachable.
+**Do this instead:** Fetch metrics on a separate schedule (sync button / periodic). Store in SQLite. Read from SQLite during generation. Decoupled, fast, offline-capable.
 
-### Anti-Pattern 2: Building a Full Rich Text Editor
+### Anti-Pattern 2: Storing Metrics as JSON Blobs per Script
 
-**What people do:** Reach for Slate, TipTap, or ProseMirror to build a "proper" editor.
-**Why it's wrong:** The script format is highly structured (array of visual|voiceover pairs). A rich text editor adds massive complexity for a use case that is essentially "edit cells in a table." The script is NOT a free-form document.
-**Do this instead:** Render beats as a list of paired textareas or contentEditable divs. Each beat is a row with two fields. Simple, predictable, easy to serialize back to the Script type.
+**What people do:** Fetch metrics once and store them as a JSON column on the scripts table.
+**Why it's wrong:** Metrics change over time. A video's 48-hour metrics differ from its 7-day metrics. Overwriting loses history. Storing on scripts table couples video performance to script records.
+**Do this instead:** Separate `videos` and `video_metrics` tables. Time-series snapshots. Link scripts to videos via foreign key.
 
-### Anti-Pattern 3: Over-engineering the AI Layer
+### Anti-Pattern 3: Having AI Analyze Metrics and Make Recommendations
 
-**What people do:** Add LangChain, implement tool use, multi-step chains, RAG pipelines, vector embeddings for reference files.
-**Why it's wrong:** The reference files are 10KB total. They fit trivially in Claude's context window. There is one generation step, not a chain. The skill's logic (read files -> generate script -> score -> rewrite if needed) is a single prompt, not a pipeline.
-**Do this instead:** One system prompt containing all reference file content. One user message with format + context. One API call. Parse the response. Done.
+**What people do:** Ask the AI to analyze 6 data points and say "your audience prefers X format."
+**Why it's wrong:** 6-10 videos is not a statistically meaningful sample. AI will confidently state patterns that are noise. This erodes trust in the tool.
+**Do this instead:** Inject raw metrics as context. Explicitly tell AI "small sample, do not draw conclusions." Let the AI's pattern recognition inform creative choices subconsciously, without it making explicit data claims. Revisit at 20+ videos.
 
-### Anti-Pattern 4: Using CLIProxyAPI to Avoid API Costs
+### Anti-Pattern 4: Building a YouTube MCP Server from Scratch
 
-**What people do:** Route web app traffic through CLIProxyAPI to use the Max subscription instead of paying for API access.
-**Why it's wrong:** Anthropic has blocked OAuth token usage outside Claude Code before. The proxy can break without warning. It adds a separate process dependency. And the actual API cost for this use case is under $1/month.
-**Do this instead:** Get an Anthropic API key. Set a $5/month spend limit. Use Claude 3.5 Haiku for generation. The cost is negligible.
+**What people do:** Build a custom MCP server wrapping YouTube APIs "for future flexibility."
+**Why it's wrong:** YAGNI. This is a single-user local app. The only consumer of YouTube data is the Next.js server actions and the Claude prompt. MCP adds protocol overhead, process management, and debugging complexity for zero benefit.
+**Do this instead:** Direct `googleapis` import in `youtube-client.ts`. If MCP is ever needed (e.g., giving Claude Desktop direct YouTube access), it can wrap the same client later.
 
 ## Integration Points
 
 ### External Services
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Claude API (Anthropic) | Vercel AI SDK `@ai-sdk/anthropic` provider, streaming via `streamText` | API key in `.env.local`. Use Haiku for cost efficiency. Sonnet available for complex scripts. |
+| Service | Integration Pattern | Key Gotchas |
+|---------|---------------------|-------------|
+| YouTube Analytics API | `googleapis` npm, OAuth2 with refresh token | Test-mode tokens expire in 7 days; `engagedViews` metric added 2025; retention curve via `audienceWatchRatio` + `elapsedVideoTimeRatio` dimension |
+| YouTube Data API v3 | `googleapis` npm, same OAuth2 client | Needed to list channel videos (IDs, titles, publish dates); shares same auth tokens |
+| Claude Agent SDK | `@anthropic-ai/claude-agent-sdk` (existing) | Modified to accept optional `metricsContext` string; no new dependencies |
+| Google Cloud Console | Manual setup by Pavlo | OAuth consent screen, API enablement, credentials -- one-time setup documented in settings page |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| Web App <-> Skill Reference Files | Direct filesystem read (`fs.readFileSync`) | Web app reads reference files in-place. Both tools share the same files. |
-| Web App <-> Script Markdown Files | Filesystem write on export | Export creates markdown in `scripts/` matching existing format. Import reads existing scripts on first run. |
-| Client <-> Server | Server Actions (mutations) + Route Handlers (streaming) | Use Server Actions for CRUD. Use Route Handler only for the streaming generation endpoint. |
-| AI Response <-> App Types | JSON parsing in `lib/ai/parser.ts` | The system prompt instructs Claude to return structured JSON. Parser validates and types the response. |
+| UI components <-> Server actions | React Server Components + `"use server"` actions (existing pattern) | Metrics dashboard follows same pattern as script library |
+| Server actions <-> youtube-client.ts | Direct function import | Same as agent.ts pattern -- service functions called from actions |
+| Server actions <-> SQLite | Drizzle ORM queries (existing pattern) | New tables follow same schema conventions (timestamps, json columns) |
+| generate.ts <-> metrics-query.ts | Direct function import | Metrics context is a plain string, injected into prompt |
+| OAuth callback route <-> youtube-client.ts | Import storeTokens function | Only API route in the app, handles Google redirect |
 
-### Existing File Integration Map
+## Build Order (Dependency-Aware)
 
-| Existing File | How Web App Uses It | Read/Write |
-|---------------|---------------------|------------|
-| `.claude/skills/devlog-scriptwriter/SKILL.md` | Source of generation logic -- the system prompt replicates its rules | Read-only |
-| `references/brand-voice.md` | Injected into system prompt at generation time. Optionally editable via web UI. | Read + optional Write |
-| `references/anti-slop-rules.md` | Injected into system prompt. Banned phrases extracted for client-side scanner. | Read-only |
-| `references/video-formats.md` | Injected into system prompt. Format names/descriptions populate the format selector dropdown. | Read-only |
-| `references/metrics-log.md` | Injected into system prompt for context. Editable via web UI to log new video metrics. | Read + Write |
-| `scripts/*.md` | Imported on first run to populate the library. Export target for finished scripts. | Read + Write |
+Based on component dependencies, suggested implementation order:
+
+1. **Schema + Migration** -- `videos` and `video_metrics` tables. Everything else depends on this.
+2. **youtube-client.ts** -- OAuth2 client, token storage, API wrappers. Depends on nothing except env vars.
+3. **OAuth flow** -- Settings page + callback route. Depends on youtube-client.ts.
+4. **Metrics sync** -- `metrics.ts` action + sync logic. Depends on youtube-client.ts + schema.
+5. **Metrics display** -- Dashboard components + metrics cards. Depends on stored metrics in DB.
+6. **Script-video linking** -- Dropdown on script editor. Depends on videos table populated.
+7. **Data-aware generation** -- Modify agent.ts + generate.ts. Depends on metrics being in DB and scripts linked to videos.
+
+Steps 1-2 can be done in parallel. Steps 3-4 depend on 1-2. Step 5 depends on 4. Steps 6-7 depend on 5. This ordering means each phase delivers visible value: after step 4, Pavlo can sync and see metrics in the DB (even before UI). After step 5, the dashboard works. After step 7, generation becomes data-aware.
+
+## Environment Variables (NEW)
+
+```
+# .env.local (add to existing)
+YOUTUBE_CLIENT_ID=...
+YOUTUBE_CLIENT_SECRET=...
+YOUTUBE_REDIRECT_URI=http://localhost:3000/api/youtube/callback
+```
+
+## Files to .gitignore (NEW)
+
+```
+# Add to existing .gitignore
+web/data/.youtube-tokens.json
+```
 
 ## Sources
 
-- [Anthropic Help Center: Max subscription vs API billing](https://support.claude.com/en/articles/9876003)
-- [Vercel AI SDK: Getting Started with Next.js App Router](https://ai-sdk.dev/docs/getting-started/nextjs-app-router)
-- [Vercel AI SDK: Anthropic Provider](https://ai-sdk.dev/providers/ai-sdk-providers/anthropic)
-- [Vercel AI SDK: Stream Text](https://ai-sdk.dev/cookbook/next/stream-text)
-- [CLIProxyAPI GitHub](https://github.com/router-for-me/CLIProxyAPI) -- researched but NOT recommended
-- [Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript)
+- [YouTube Analytics API - Metrics Reference](https://developers.google.com/youtube/analytics/metrics) -- official metric definitions (HIGH confidence)
+- [YouTube Analytics API - OAuth2 Authorization](https://developers.google.com/youtube/reporting/guides/authorization) -- auth requirements, no service accounts (HIGH confidence)
+- [googleapis npm package](https://www.npmjs.com/package/googleapis) -- official Google Node.js client (HIGH confidence)
+- [@googleapis/youtubeanalytics npm](https://www.npmjs.com/package/@googleapis/youtubeanalytics) -- typed YouTube Analytics client (HIGH confidence)
+- [google-auth-library npm](https://www.npmjs.com/package/google-auth-library) -- OAuth2 with auto-refresh (HIGH confidence)
+- [pauling-ai/youtube-mcp-server](https://github.com/pauling-ai/youtube-mcp-server) -- evaluated and rejected; Python-based, 40 tools, overkill (HIGH confidence)
+- [YouTube API Guide 2026](https://zernio.com/blog/youtube-api) -- quota limits, setup walkthrough (MEDIUM confidence)
+- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) -- evaluated for MCP client approach, rejected (HIGH confidence)
+- [YouTube Analytics API Revision History](https://developers.google.com/youtube/reporting/revision_history) -- March 2025 Shorts metrics change (HIGH confidence)
 
 ---
-*Architecture research for: Devlog Scriptwriter Web UI*
-*Researched: 2026-03-26*
+*Architecture research for: YouTube Analytics integration into Devlog Scriptwriter Pipeline*
+*Researched: 2026-03-29*

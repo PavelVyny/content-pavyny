@@ -1,245 +1,226 @@
 # Pitfalls Research
 
-**Domain:** AI-powered scriptwriting web UI (Next.js + Claude API + local DB)
-**Researched:** 2026-03-26
-**Confidence:** HIGH (core pitfalls verified through multiple sources and official policies)
+**Domain:** YouTube Analytics API integration + data-aware AI generation for local Next.js app
+**Researched:** 2026-03-29
+**Confidence:** HIGH (OAuth and API limitations verified through official docs and community reports)
 
-> This document covers pitfalls specific to the v2.0 Web UI milestone.
-> For scriptwriting/content pitfalls (anti-slop, voice drift, feedback loops), see the original project research or the skill documentation.
+> This document covers pitfalls specific to the v2.1 YouTube Analytics milestone.
+> For v2.0 Web UI pitfalls (streaming, editor, SQLite, anti-slop UX), see git history of this file.
 
 ## Critical Pitfalls
 
-### Pitfall 1: Claude Max Subscription Cannot Power the Web App Backend
+### Pitfall 1: Refresh Tokens Expire After 7 Days in "Testing" Mode
 
 **What goes wrong:**
-Developer assumes the existing Claude Max subscription can be used to make API calls from the Next.js web app. It cannot. Anthropic explicitly bans using OAuth tokens from Max/Pro subscriptions in any third-party tool, app, or automated system. In January 2026, Anthropic deployed client fingerprinting to block unauthorized access. In February 2026, they updated Terms of Service to make this unambiguous. Accounts have been suspended for violations.
+OAuth2 integration works perfectly during development. One week later, Pavlo opens the app and all YouTube data fails with `invalid_grant: Token has been expired or revoked`. The app looks broken. He has to re-authorize every single week.
 
 **Why it happens:**
-Pavlo already pays for Claude Max. The assumption "I pay for Claude, I can use it in my local app" feels logical. Community proxy tools (CLIProxyAPI, claude-code-proxy) exist and appear to work, creating a false sense of legitimacy. But Anthropic's Consumer ToS states: accessing the Services through automated or non-human means is prohibited except when using an Anthropic API Key.
+Google Cloud Console OAuth consent screen has two publishing statuses: "Testing" and "In production." In Testing mode, refresh tokens expire after exactly 7 days. Most developers start in Testing mode (the default) and never switch because production mode requires Google verification -- a homepage URL, privacy policy, and branding review that feels like overkill for a local single-user tool.
+
+Worse: if you switch from Testing to Production, you must generate NEW OAuth credentials. Reusing the old client ID/secret from Testing mode will still produce 7-day tokens.
 
 **How to avoid:**
-Use the Anthropic API with a paid API key. For this project's scale, costs are negligible:
-- Claude Haiku 4.5: $1 input / $5 output per million tokens
-- Claude Sonnet 4.6: $3 input / $15 output per million tokens
-- A 60-second script is ~120 words / ~200 tokens. With system prompt (~2K tokens), one generation costs ~$0.003 with Haiku
-- With prompt caching (90% discount on repeated system prompts), even cheaper
-- At 1 video/week with 5 generation attempts: ~$0.08/month with Haiku, ~$0.40/month with Sonnet
-- Annual API cost: roughly $1-5. Negligible.
-
-Alternative: use the Vercel AI SDK which provides a clean abstraction layer over the Anthropic SDK, handles streaming, and makes it trivial to switch models.
+1. Create the OAuth consent screen in "Internal" user type if using a Google Workspace account (no verification needed, no token expiry). If using a personal Gmail (likely Pavlo's case), "Internal" is not available.
+2. For personal Gmail: set publishing status to "In production" from the start. Since the app requests sensitive scopes (YouTube Analytics), Google will require verification. BUT: apps with fewer than 100 users can request an "unverified app" exception -- Google shows a warning screen during consent but tokens do not expire.
+3. After switching to production: delete old OAuth credentials and create new ones. This is the step everyone forgets.
+4. Store refresh tokens persistently in SQLite (not just in-memory or session). On app startup, check token validity and trigger re-auth only when truly expired.
 
 **Warning signs:**
-- Plans to shell out to `claude` CLI as a subprocess
-- Searching for "proxy" solutions to route Max subscription through an API
-- Using OAuth tokens anywhere outside claude.ai or Claude Code terminal
-- Considering `claude -p` (print mode) as a backend
+- Google Cloud Console shows publishing status "Testing"
+- Token works for a few days then stops
+- User type is "External" (for personal Gmail accounts) with Testing status
+- Same client_id/secret used after switching from Testing to Production
 
 **Phase to address:**
-Phase 1 (Project Setup) -- API key provisioning is the very first infrastructure decision. Everything depends on it.
+Phase 1 (OAuth Setup) -- this must be resolved during initial Google Cloud Console configuration. Getting it wrong means weekly re-authorization that makes the feature feel unreliable.
 
 **Sources:**
-- [Anthropic clarifies ban on third-party access (The Register)](https://www.theregister.com/2026/02/20/anthropic_clarifies_ban_third_party_claude_access/)
-- [Anthropic bans subscription OAuth (WinBuzzer)](https://winbuzzer.com/2026/02/19/anthropic-bans-claude-subscription-oauth-in-third-party-apps-xcxwbn/)
-- [ToS violation guide (Dev Genius)](https://blog.devgenius.io/you-might-be-breaking-claudes-tos-without-knowing-it-228fcecc168c)
-- [Claude API Pricing (official)](https://platform.claude.com/docs/en/about-claude/pricing)
+- [Google OAuth2 official docs](https://developers.google.com/identity/protocols/oauth2)
+- [Refresh token 7-day expiry discussion](https://discuss.google.dev/t/oauth2-refresh-token-expiration-and-youtube-api-v3/160874)
+- [jwz: YouTube OAuth API fuckery (Feb 2026)](https://www.jwz.org/blog/2026/02/youtube-oauth-api-fuckery/)
+- [Nango: Google OAuth invalid_grant explained](https://www.nango.dev/blog/google-oauth-invalid-grant-token-has-been-expired-or-revoked)
 
 ---
 
-### Pitfall 2: Streaming Response Buffering in Next.js Route Handlers
+### Pitfall 2: Using the Wrong API (Data API v3 vs Analytics API vs Reporting API)
 
 **What goes wrong:**
-User clicks "Generate Script" and sees nothing for 10-30 seconds, then the entire response dumps at once. Or worse: the connection times out entirely for longer generations. The app feels broken even though the AI is working correctly.
+Developer uses the YouTube Data API v3 to fetch video stats (views, likes, comments) and assumes retention curves are available there. They are not. Retention data requires the YouTube Analytics API -- a completely separate API with different scopes, different endpoints, different quota, and different response formats. The project gets "basic metrics" working fast but hits a wall when trying to add the key feature: retention curves.
 
 **Why it happens:**
-Next.js route handlers buffer the response by default. If you `await` the full Claude API response inside the handler before returning `Response`, Next.js holds everything until the handler finishes. The stream never reaches the client incrementally. Additionally, reverse proxies (NGINX, Cloudflare) buffer SSE streams unless headers explicitly disable it.
+Google has THREE YouTube APIs that overlap confusingly:
+1. **YouTube Data API v3** -- video metadata, channel info, playlists. No analytics.
+2. **YouTube Analytics API** -- aggregated metrics (views, watch time, retention curves). Query-based, returns data for specific date ranges.
+3. **YouTube Reporting API** -- bulk data export as downloadable reports. Designed for content owners with thousands of videos.
 
-Common broken pattern:
-```typescript
-// WRONG: Buffers everything, user waits 15+ seconds seeing nothing
-export async function POST(req: Request) {
-  const result = await anthropic.messages.create({ stream: false, ... });
-  return Response.json(result);
-}
-```
+The Data API is what most tutorials cover. It returns `statistics` (viewCount, likeCount) but NOT retention, CTR, impressions, or subscriber change per video. Those are Analytics API only.
 
 **How to avoid:**
-Return the `Response` with a `ReadableStream` immediately. Async work runs inside the stream's controller:
-
-```typescript
-// CORRECT: Stream chunks to client as they arrive
-export async function POST(req: Request) {
-  const stream = new ReadableStream({
-    async start(controller) {
-      const response = await anthropic.messages.stream({ ... });
-      for await (const event of response) {
-        if (event.type === 'content_block_delta') {
-          controller.enqueue(encoder.encode(event.delta.text));
-        }
-      }
-      controller.close();
-    }
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'X-Accel-Buffering': 'no',
-      'Cache-Control': 'no-cache, no-transform',
-    },
-  });
-}
-```
-
-Or better: use the Vercel AI SDK which handles all of this correctly via `streamText()`.
-
-Required headers to prevent proxy buffering:
-- `Content-Type: text/plain; charset=utf-8` (NOT `application/json`)
-- `X-Accel-Buffering: no` (prevents NGINX buffering)
-- `Cache-Control: no-cache` (prevents edge caching)
+- Use the YouTube Analytics API (`youtubeAnalytics.reports.query`) for all metrics, NOT the Data API
+- Required scope: `https://www.googleapis.com/auth/youtube.readonly` (note: this changed from the older `yt-analytics.readonly` scope -- the new scope is now required for `reports.query`)
+- For retention curves specifically: query with `dimensions=elapsedVideoTimeRatio` and `metrics=audienceWatchRatio,relativeRetentionPerformance` with `filters=video==VIDEO_ID`
+- The Reporting API (bulk export) is overkill for 6 videos. Skip it entirely.
 
 **Warning signs:**
-- Response appears all at once after a long wait
-- Timeout errors on longer generations (extended thinking, complex prompts)
-- Works in development but breaks behind any reverse proxy
-- `Content-Type` set to `application/json` on streaming endpoints
+- Using `youtube/v3/videos?part=statistics` and calling it "analytics"
+- No retention curve data in the response
+- Scope set to `youtube.readonly` but calling Data API endpoints only
+- Confusion between `youtubeAnalytics` and `youtube` in API explorer
 
 **Phase to address:**
-Phase 2 (AI Integration) -- streaming must be implemented correctly from the start. Retrofitting streaming into a non-streaming architecture requires rewriting both API routes and all UI components that consume responses.
+Phase 1 (API Integration Design) -- choose the correct API before writing any code. The Analytics API has different request patterns (date ranges, dimensions, filters) that affect the entire data layer design.
 
 **Sources:**
-- [Next.js SSE discussion #48427](https://github.com/vercel/next.js/discussions/48427)
-- [Fixing Slow SSE in Next.js (Medium)](https://medium.com/@oyetoketoby80/fixing-slow-sse-server-sent-events-streaming-in-next-js-and-vercel-99f42fbdb996)
-- [Streaming LLM in Next.js without timeouts (Eaures)](https://www.eaures.online/streaming-llm-responses-in-next-js)
-- [Vercel AI SDK streaming guide (LogRocket)](https://blog.logrocket.com/nextjs-vercel-ai-sdk-streaming/)
+- [YouTube Analytics API metrics reference](https://developers.google.com/youtube/analytics/metrics)
+- [YouTube Analytics channel reports](https://developers.google.com/youtube/analytics/channel_reports)
+- [YouTube Analytics sample requests](https://developers.google.com/youtube/analytics/sample-requests)
+- [YouTube Analytics API scopes (installed apps)](https://developers.google.com/youtube/reporting/guides/authorization/installed-apps)
 
 ---
 
-### Pitfall 3: Over-Engineering the Editor with a Block Editor Library
+### Pitfall 3: Retention Data Can Only Be Fetched One Video at a Time
 
 **What goes wrong:**
-Developer reaches for a full-featured block editor (BlockNote, TipTap, Editor.js, Slate) when the actual data model is fixed and simple: a script is an ordered list of beats, each beat has a visual description and a voiceover line. The block editor adds weeks of integration complexity, introduces hydration errors with Next.js SSR, creates hard-to-debug edge cases, and ties the codebase to a heavy dependency -- all for a problem that doesn't require it.
+Developer designs the dashboard to batch-fetch retention curves for all videos in a single API call. This is impossible. The `audienceRetention` report requires a single `video==VIDEO_ID` filter -- no comma-separated lists, no "all videos" wildcard. For 6 videos, that is 6 separate API calls. For 20 videos, 20 calls. The dashboard loads slowly or the developer gives up on retention curves entirely.
 
 **Why it happens:**
-The spec says "block-based editor." This sounds like it needs a block editor library. But the blocks here are not arbitrary rich content -- they are a fixed schema: `{ visual: string, voiceover: string }[]`. A Notion-style editor supports headings, lists, embeds, tables, drag-and-drop of arbitrary types. This project needs none of that. Scripts are spoken aloud -- they don't need bold, italic, links, or rich formatting.
+Most Analytics API reports support filtering by channel (get everything). The audience retention report is a special case documented in a footnote. Developers discover this after building the batch-fetch architecture.
 
 **How to avoid:**
-Build a custom component: a sortable list of cards where each card has two textarea fields (visual description + voiceover). Use a lightweight drag-and-drop library (dnd-kit or @hello-pangea/dnd) for reordering. This gives:
-- Full control over the data model (no fighting the library's schema)
-- No hydration issues (simple textarea elements render fine in SSR)
-- No dependency on complex editor libraries (~0 vs ~200KB bundle)
-- Easy to add domain-specific features (anti-slop highlighting per beat, word count, timing estimates)
-- Simpler testing and maintenance
-
-Reserve block editor libraries for if/when the script format genuinely needs rich text. It likely never will.
+1. Design the fetch layer to iterate over videos, one API call per video
+2. Cache retention data in SQLite -- retention curves for published videos do not change after ~7 days
+3. Fetch retention data lazily: on first view of a video's detail, or on a manual "sync" button
+4. Never fetch all retention curves on page load. Fetch basic metrics (views, subs) in batch via Analytics API, then load retention on-demand per video.
 
 **Warning signs:**
-- Spending more than a day integrating an editor library
-- Fighting the library's data model to fit the beat structure
-- Customizing rendering for every block type to match the simple beat layout
-- Editor bundle size exceeding 100KB
+- Trying to pass multiple video IDs to the retention report filter
+- Dashboard makes N API calls on every page load (where N = number of videos)
+- No caching layer for retention data
+- API quota warnings despite small channel
 
 **Phase to address:**
-Phase 3 (Script Editor) -- this is an architecture decision that must be made before writing any editor code. Document the decision explicitly: "custom beat-card list, not a library."
-
----
-
-### Pitfall 4: Block Editor Hydration Mismatch (If You Use One Anyway)
-
-**What goes wrong:**
-If a block editor library is used, the page crashes on load with "Hydration failed because the initial UI does not match what was rendered on the server." The editor renders blank, shows a flash of unstyled content, or throws React errors.
-
-**Why it happens:**
-Rich text editors require browser APIs (DOM manipulation, Selection API, contenteditable). They cannot render on the server. Next.js App Router renders components as Server Components by default. If you import a block editor in a Server Component (or in a Client Component without proper lazy loading), SSR produces HTML that doesn't match the client-side editor, triggering hydration errors.
-
-**How to avoid:**
-1. Mark editor components with `'use client'` directive
-2. Use `dynamic` import with `ssr: false`:
-```typescript
-const ScriptEditor = dynamic(() => import('@/components/ScriptEditor'), {
-  ssr: false,
-  loading: () => <EditorSkeleton />,
-});
-```
-3. Always show a loading skeleton during client-side mount, never a blank space
-4. Keep all editor state management client-side; sync to server via API calls only
-
-**Warning signs:**
-- "Hydration mismatch" errors in browser console
-- Editor flickers or flashes on page load
-- Works in development (`next dev`) but breaks in production build
-- Editor component imported directly without dynamic/lazy loading
-
-**Phase to address:**
-Phase 3 (Script Editor) -- if using a library, `ssr: false` must be the default pattern from the start.
+Phase 2 (Data Fetching) -- the per-video limitation dictates the entire caching and loading strategy. Must be known before designing the dashboard data flow.
 
 **Sources:**
-- [BlockNote Next.js docs](https://www.blocknotejs.org/docs/advanced/nextjs)
-- [Isolated Block Editor Next.js issues](https://github.com/Automattic/isolated-block-editor/issues/257)
+- [YouTube Analytics channel reports -- audience retention](https://developers.google.com/youtube/analytics/channel_reports)
+- [YouTube Analytics data model](https://developers.google.com/youtube/analytics/data_model)
 
 ---
 
-### Pitfall 5: Losing In-Progress Generation on Navigation or Error
+### Pitfall 4: Analytics Data Thresholds Suppress Small-Channel Data
 
 **What goes wrong:**
-User triggers script generation (takes 10-20 seconds with streaming). During generation, they accidentally navigate away, close the tab, or the stream errors partway through. The partial result -- which may have been 80% complete and usable -- is lost entirely. User must start over from scratch.
+API call returns empty or partial data. Developer thinks the code is broken but the real issue is that YouTube suppresses analytics data when metrics do not meet a minimum threshold (exact threshold is undocumented). For a channel with 55 subscribers and videos with 2-8K views, some granular breakdowns (country-level, traffic source, demographic) may return no data at all.
 
 **Why it happens:**
-Streaming responses are ephemeral. If you only persist the result after the stream completes, any interruption means total loss. Browser navigation kills the fetch connection immediately. Network hiccups close the stream mid-sentence.
+YouTube applies data thresholds to protect viewer privacy. Reports for dimensions like `country`, `ageGroup`, `gender`, or `deviceType` may return empty results if the video does not have enough views from that segment. This is not an error -- it is by design. The API does not tell you "data suppressed"; it simply returns fewer rows or zero rows.
 
 **How to avoid:**
-1. Buffer chunks into React state as they arrive (for display) AND into a server-side partial record
-2. Save partial results to the database periodically (every 2 seconds or every 500 characters)
-3. Mark saved results with status: `generating | complete | partial | error`
-4. On page reload, show the last partial result with option to continue or regenerate
-5. Use `beforeunload` event to warn user if generation is in progress
-6. Disable navigation links during active generation, or show confirmation dialog
-
-Data model implication: the `scripts` table needs a `status` field from day one.
+1. Only query dimensions that work reliably at small scale: `day` (daily views), `video` (per-video totals), `elapsedVideoTimeRatio` (retention curve)
+2. Do NOT build UI around traffic source, demographics, or geography breakdowns -- they will be empty or misleading at 55 subscribers
+3. Handle empty API responses gracefully: show "Not enough data yet" instead of zeros or errors
+4. Focus on the metrics that actually have signal at this scale: views, retention %, subscriber change, impressions, CTR
 
 **Warning signs:**
-- No "are you sure?" prompt when navigating during generation
-- Database only stores `complete` scripts, never partials
-- User reports having to regenerate after browser hiccups
-- No `status` field in the scripts schema
+- Dashboard shows zeros for metrics that YouTube Studio shows as having data (Studio aggregates differently)
+- Building detailed demographic breakdowns for a 55-subscriber channel
+- Empty API responses treated as errors instead of expected behavior
+- Discrepancies between API data and YouTube Studio data
 
 **Phase to address:**
-Phase 2 (AI Integration) -- partial result persistence must be part of the data model and streaming handler design from the start.
+Phase 2 (Data Fetching) -- define which metrics to fetch and which to skip based on channel size. Revisit when channel reaches 1K+ subscribers.
+
+**Sources:**
+- [YouTube Analytics data model -- data thresholds](https://developers.google.com/youtube/analytics/data_model)
 
 ---
 
-### Pitfall 6: Storing Scripts as Unstructured Text Blobs
+### Pitfall 5: AI Drawing Statistical Conclusions from 6 Videos
 
 **What goes wrong:**
-Scripts are stored as a single text or markdown field in the database. This makes it impossible to: highlight individual beats with anti-slop issues, calculate per-beat timing, reorder beats without text parsing, show visual/voiceover side by side, or do any structured analysis on script content. Every feature that touches script content requires a fragile text parser.
+The AI receives metrics for 6 videos and starts generating advice: "Your audience prefers destruction content (8.7K views) over generic updates (2.1K views). You should make more destruction content." This sounds reasonable but is statistically meaningless. With 6 data points, the "pattern" could be random noise, seasonal variation, or YouTube algorithm experimentation. Pavlo changes his entire content strategy based on AI interpreting noise as signal.
 
 **Why it happens:**
-The AI generates a script as continuous text. The simplest path is to store that text as-is in one column. Parsing it into structured beats feels like premature optimization. "We can always parse it later."
+LLMs are pattern-matching machines. Give them 6 numbers and they WILL find patterns and present them confidently. They cannot distinguish between "statistically significant trend" and "random variation in a tiny sample." The PROJECT.md explicitly calls this out as out of scope, but the temptation is strong because it feels like the whole point of the feedback loop.
 
 **How to avoid:**
-Design the database schema with structure from day one:
-```sql
-scripts (id, title, format, status, slop_score, model, created_at, updated_at)
-beats   (id, script_id, position, visual_description, voiceover_text)
-```
-
-Prompt the AI to output JSON directly:
-```json
-{ "beats": [
-  { "visual": "Screen: troll ragdolling off a cliff",
-    "voiceover": "So I added ragdoll physics. Big mistake." }
-]}
-```
-
-Parse AI output into beats immediately after generation. Store structured data. Render to readable format for display.
+1. AI receives metrics as RAW CONTEXT ONLY -- prepend with explicit instructions: "Here are metrics for reference. Do NOT make recommendations based on these numbers. Do NOT identify trends. The sample size (N=6) is too small for statistical conclusions."
+2. AI should use metrics for SPECIFICITY only: "Your last video got 8.7K views" makes a script intro more authentic. "Your channel averages 4.5K views so you should..." is forbidden.
+3. Set the threshold in code: only allow AI to reference individual video metrics, never aggregate statistics, until the channel has 20+ videos
+4. Display metrics in the UI for Pavlo to interpret himself -- the human should draw conclusions, not the AI
 
 **Warning signs:**
-- Scripts table has a single `content TEXT` column
-- Using regex to extract beats from stored text
-- Unable to edit a single beat without reparsing everything
-- Anti-slop scoring runs on the full blob instead of per-beat
+- AI output contains phrases like "your audience prefers," "based on your analytics," "your best-performing format is"
+- Prompt includes instructions to "analyze metrics and recommend"
+- AI generates different script recommendations based on which 3 of 6 videos it looks at
+- Pavlo starts avoiding formats that had 1-2 low-performing videos
 
 **Phase to address:**
-Phase 1 (Database Schema) -- schema must model beats as separate rows from the start. Migrating from blob to structured data is painful and lossy.
+Phase 3 (Data-Aware Generation) -- this is the most important design decision for the AI integration. The prompt engineering must explicitly constrain the AI from drawing conclusions. Test by checking if the AI's script recommendations change when you shuffle the metrics order.
+
+---
+
+### Pitfall 6: OAuth Redirect URI Mismatch Between MCP Server and Web App
+
+**What goes wrong:**
+The MCP server handles YouTube API calls. The Next.js web app triggers OAuth flow. But OAuth redirect URIs are configured for one but not the other. The user clicks "Connect YouTube" and gets `redirect_uri_mismatch` error. Or worse: OAuth works for the MCP server but the web app cannot initiate re-auth when tokens expire.
+
+**Why it happens:**
+There are two possible architectures for OAuth in this setup:
+- **Option A:** Web app handles OAuth, stores tokens, passes them to MCP server
+- **Option B:** MCP server handles its own OAuth, web app queries MCP for data
+
+If the architecture is not decided upfront, the redirect URI configuration, token storage location, and re-auth flow become confused. Google Cloud Console requires EXACT redirect URI matches -- `http://localhost:3000/api/auth/callback` is NOT the same as `http://127.0.0.1:3000/api/auth/callback`.
+
+**How to avoid:**
+1. Decide the OAuth owner ONCE: the web app should own OAuth (it has a UI for the consent flow, a callback route, and persistent storage in SQLite). The MCP server receives tokens from the web app.
+2. Register BOTH `http://localhost:3000` and `http://127.0.0.1:3000` as authorized JavaScript origins
+3. Register the exact callback URL: `http://localhost:3000/api/auth/youtube/callback`
+4. Use `localhost` consistently, not `127.0.0.1`, in app code -- but register both in Google Console as a safety net
+5. Never use HTTPS for localhost OAuth -- Google explicitly allows HTTP for loopback addresses
+
+**Warning signs:**
+- `redirect_uri_mismatch` error during OAuth consent
+- OAuth works in one context (MCP) but not another (web app)
+- Token stored in MCP server's memory but web app cannot access it
+- Different ports used by web app and MCP server causing URI mismatch
+
+**Phase to address:**
+Phase 1 (OAuth Setup) -- architecture decision about who owns the OAuth flow must be made before any code is written.
+
+**Sources:**
+- [Google OAuth for desktop/installed apps](https://developers.google.com/youtube/reporting/guides/authorization/installed-apps)
+- [Google OAuth for web server apps](https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps)
+
+---
+
+### Pitfall 7: MCP Server as Security Liability
+
+**What goes wrong:**
+An MCP server handling YouTube API calls introduces a new attack surface. A 2026 security scan found that 66% of MCP servers had at least one security finding. In January 2026, a fake MCP server was published to npm that captured API keys from environment variables. Even legitimate servers can have the "approve once, trust forever" problem where behavior changes after initial approval.
+
+**Why it happens:**
+MCP is a new protocol (2024-2025). The ecosystem is young, security practices are not standardized, and many servers are hobby projects with minimal auditing. The trust model in most MCP clients does not re-verify servers after initial approval.
+
+**How to avoid:**
+1. Build a minimal custom MCP server rather than using a third-party one. For this project, the MCP server only needs to wrap 3-4 YouTube Analytics API calls -- it does not need a full-featured YouTube management server.
+2. Never store OAuth tokens or API keys as MCP server environment variables. Store tokens in the web app's SQLite database. The MCP server receives tokens per-request from the web app.
+3. Pin MCP server dependencies. Do not use `latest` for any npm packages.
+4. Audit the MCP server code before using it -- it should be small enough (under 300 lines) to read entirely.
+5. If using a third-party MCP server: verify the GitHub repo, check last commit date, read the source code. Do not install from npm without reviewing.
+
+**Warning signs:**
+- Using a third-party MCP server with 50+ dependencies
+- MCP server has direct access to Google OAuth credentials via env vars
+- MCP server code is too large to audit manually
+- Server was last updated 6+ months ago
+
+**Phase to address:**
+Phase 1 (MCP Server Setup) -- the MCP server architecture and security model must be established before any YouTube API integration.
+
+**Sources:**
+- [MCP Server Security Best Practices 2026](https://toolradar.com/blog/mcp-server-security-best-practices)
+- [YouTube MCP Server Comparison 2026](https://www.ekamoira.com/blog/youtube-mcp-server-comparison-2026-which-one-should-you-use)
 
 ---
 
@@ -247,113 +228,108 @@ Phase 1 (Database Schema) -- schema must model beats as separate rows from the s
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Storing scripts as text blobs | Skip parsing, faster to build | Cannot edit beats individually, cannot score per-beat, every feature needs a parser | Never -- structured storage is barely more work upfront |
-| Hardcoding anti-slop rules in frontend JS | Quick to implement | Cannot update rules without redeploy, rules diverge from CLI skill | MVP only -- extract to config/DB within first sprint |
-| No streaming (wait for full response) | Simpler API route, simpler UI | Terrible UX for any generation over 3 seconds | Never -- streaming is table stakes for AI apps in 2026 |
-| Single API route for all AI operations | One file to maintain | Becomes 500+ line god-route as you add ideation, scoring, rewriting, individual beat regeneration | Acceptable for first 2 endpoints, then split by concern |
-| SQLite without WAL mode | Default just works | Readers block writers. Two browser tabs = potential lock conflicts | Never -- `PRAGMA journal_mode=WAL` is one line at connection time |
-| Using localStorage for script data | Zero backend needed | Data loss on browser clear, no search, no cross-device | Never for scripts -- OK for UI preferences (theme, sidebar state) |
+| Fetching YouTube data on every page load instead of caching | Always fresh data | Wastes API quota, slow dashboard load, redundant calls for static historical data | Never -- retention data for old videos does not change |
+| Storing OAuth tokens in a JSON file instead of SQLite | Quick to implement, easy to debug | No encryption, easy to accidentally commit, no migration path, separate from app data | Early prototype only -- migrate to SQLite within first sprint |
+| Hardcoding video IDs instead of discovering via API | Skip channel listing logic | Breaks when new video published, manual maintenance forever | Never -- channel listing is 1 API call |
+| Fetching all metrics in a single mega-query | One API call | Cannot cache granular data, all-or-nothing refresh, harder to handle partial failures | Never -- separate basic metrics from retention curves |
+| Using YouTube Data API for basic stats alongside Analytics API | Familiar, well-documented | Two APIs with different auth, quota, and response formats for data that Analytics API provides in one place | Never once Analytics API is set up -- it provides views, watch time, and more |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Anthropic SDK | Using `messages.create()` with `stream: false`, blocking the route | Use `messages.stream()` or Vercel AI SDK's `streamText()` |
-| Anthropic SDK | Sending full system prompt (brand voice + anti-slop rules ~2K tokens) on every request without caching | Use prompt caching: add `cache_control: { type: "ephemeral" }` to system message, saves 90% on repeated prompts |
-| Anthropic SDK | Not setting `max_tokens` -- defaults vary by model and may cut off or over-generate | Set explicit `max_tokens` (512-1024 for a 60-second script) |
-| Anthropic SDK | Trusting the AI to always output valid JSON for beat parsing | Wrap JSON parsing in try/catch. If parse fails, fall back to text storage with `status: 'parse_error'` and let user manually structure |
-| SQLite (better-sqlite3) | Using async SQLite driver in Next.js dev mode -- hot reload creates connection leaks and SQLITE_BUSY errors | Use synchronous better-sqlite3 with a module-level singleton, or use Drizzle ORM for managed connections |
-| SQLite | Forgetting WAL mode | Run `PRAGMA journal_mode=WAL;` on every new connection. Without it, concurrent reads block writes |
-| Next.js App Router | Mixing Server and Client component concerns in the editor page | Editor is fully client-side (`'use client'` + `ssr: false`). Script list/library can be Server Component. Data flows through API routes, not props drilling from server to client |
-| Next.js App Router | Using `getServerSideProps` patterns from Pages Router | App Router uses `async` Server Components, `route.ts` handlers, and `'use client'` directives. Do not mix paradigms |
+| YouTube Analytics API | Using `yt-analytics.readonly` scope | Use `https://www.googleapis.com/auth/youtube.readonly` -- Google changed the required scope for `reports.query` |
+| YouTube Analytics API | Requesting retention for multiple videos in one call | One video per retention request. Batch basic metrics (views, watch time) separately. |
+| YouTube Analytics API | Not specifying date range, expecting "all time" | Always pass `startDate` and `endDate`. Use channel creation date as start. No "all time" shortcut. |
+| Google OAuth (localhost) | Using `https://localhost:3000` as redirect URI | Use `http://localhost:3000` -- Google allows HTTP for loopback. HTTPS on localhost causes certificate errors. |
+| Google OAuth | Keeping Testing mode to "avoid verification hassle" | Switch to Production mode. For <100 users, you get an unverified app warning but tokens do not expire weekly. |
+| Google OAuth | Reusing old credentials after switching Testing to Production | Must create NEW OAuth client ID/secret after switching. Old credentials still produce 7-day tokens. |
+| MCP Server | Storing YouTube tokens in MCP server env vars | Web app owns tokens in SQLite. Passes to MCP per-request. MCP is stateless regarding auth. |
+| MCP Server | Building MCP server that wraps the entire YouTube API | Build minimal server: 3-4 tools max (get_basic_metrics, get_retention_curve, list_videos, get_channel_stats). Less code = less attack surface. |
+| SQLite (metrics storage) | Creating a new table per video for metrics | Single `video_metrics` table with `video_id` column. Single `retention_points` table with `video_id` + `elapsed_ratio`. |
+| Claude AI context | Sending full retention curve data (100 points per video x N videos) as prompt context | Send summary only: peak retention %, drop-off point, average retention. Raw curves waste tokens and confuse the AI. |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Sending full script history as context to Claude | Slow responses, high token costs, hitting context limits | Only send brand voice + anti-slop rules + current request. Past scripts are irrelevant to new generation | After 20-30 scripts in conversation history |
-| Re-running anti-slop check on every keystroke | UI freezes/jank during typing | Debounce scoring (500ms+ delay), or only score on explicit action (Save/Check button) | Immediately noticeable with 60+ anti-slop rules |
-| Loading all scripts on library page without pagination | Slow initial page load, memory bloat | Paginate (20 per page), implement search server-side with SQL LIKE, virtual scroll only if needed | After 50+ scripts |
-| Not caching the system prompt via Anthropic's prompt caching | Each request sends ~2K tokens of system prompt at full input price | Set `cache_control` on system message. First request pays full price; subsequent requests pay 10% | Adds up after 100+ generations ($0.20 vs $2.00) |
-| Full re-render of beat list on every state change | Editor feels sluggish with 8+ beats | Memoize individual beat card components with `React.memo`, use stable keys, avoid re-creating handler functions | Noticeable at 8+ beats with complex per-beat UI |
+| Fetching retention curves for all videos on dashboard load | Dashboard takes 5-10 seconds, one API call per video | Cache in SQLite, fetch lazily on video detail view, background sync button | Immediately noticeable at 6+ videos |
+| No caching layer for Analytics API responses | Repeated identical API calls, quota consumed quickly | Cache with TTL: 1 hour for recent videos, 24 hours for videos older than 7 days | After a few days of development with frequent page reloads |
+| Rendering 100-point retention curve with DOM elements | Chart jank, slow render on lower-end devices | Use canvas-based chart library (recharts with SVG is fine at this scale) | Not a real concern at 6 videos, but good practice |
+| Sending all video metrics to Claude on every generation | Slow responses, high token count, context pollution | Only send metrics for the 3-5 most recent videos, summarized to key numbers | After 20+ videos with full metrics |
 
 ## Security Mistakes
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Storing Anthropic API key in `.env.local` that gets committed to git | Key exposed publicly, unauthorized API usage, billing surprise | Add `.env*` to `.gitignore` before first commit. Use `ANTHROPIC_API_KEY` env var only in server-side code (`route.ts`), never import in client components |
-| No rate limiting on generation API route | A bug, browser retry loop, or curious user could trigger hundreds of API calls | Add simple in-memory rate limiter: max 5 generations per minute. Even a basic counter prevents runaway costs |
-| Exposing raw Anthropic error messages to frontend | Error messages may reveal API key prefix, internal model details, or system prompt structure | Catch all errors server-side, return generic `{ error: "Generation failed. Please try again." }` to client |
-| API key accessible via client-side code | Anyone inspecting network requests sees the key | Anthropic SDK must only be instantiated in server-side route handlers. Never `import Anthropic from '@anthropic-ai/sdk'` in a `'use client'` file |
+| Storing Google OAuth client_secret in frontend code | Anyone can impersonate your app's OAuth flow | Client secret stays server-side only. For installed/desktop apps, Google considers the secret "not confidential" but it should still not be in client bundles. |
+| OAuth tokens stored unencrypted in SQLite | If `.db` file is shared or committed, full YouTube account access | Encrypt tokens at rest using a machine-specific key. At minimum: add `*.db` to `.gitignore`. |
+| Not revoking tokens on "Disconnect YouTube" action | Pavlo disconnects in UI but tokens remain valid, stale data persists | On disconnect: call Google's token revocation endpoint, delete tokens from SQLite, clear cached metrics. |
+| MCP server accepting requests from any origin | Other local apps could query YouTube data through the MCP server | MCP server should only accept connections from the registered Claude Code client or the web app. |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Empty state with just a text input | User (Pavlo) doesn't know what to type or how to start | Show format selector (The Bug, The Satisfaction, Before/After, etc.) + context input (what did you work on?) + example prompts |
-| No visual feedback during generation | User thinks app is broken after 3 seconds of nothing | Stream text as it arrives with a typing cursor animation. Show elapsed time. |
-| Anti-slop score shown as just a number (e.g., "38/50") | Number is meaningless without context -- what's bad? where? | Highlight flagged phrases inline in the editor with red underline. Click to see the rule and a suggested fix. |
-| Regenerate button replaces current script without saving | User loses a version they partially liked | Keep generation history. Each generation is a version. Show version switcher (v1, v2, v3...). Never delete automatically. |
-| No way to edit individual beats | User must accept or reject the whole script | Each beat is independently editable. Option to regenerate a single beat while keeping the rest. |
-| Script generation blocks the entire UI | User can't do anything while waiting for AI | Generate in background. Show progress indicator. Allow user to browse library or edit other scripts while generation runs. |
-| Full-screen modal for generation results | Can't reference previous scripts while reviewing new one | Split or side-panel layout: library/list on left, editor/preview on right. |
+| Showing raw API numbers without context | "Impressions: 1,247" means nothing to Pavlo | Show relative context: "1,247 impressions (your average: 890)" or simple trend arrows |
+| Dashboard shows metrics but no connection to scripts | User sees data in one tab, writes scripts in another, no link between them | Each script in the library shows its linked video metrics. Generation page shows metrics for recent videos inline. |
+| Re-auth flow interrupts workflow | Token expires while Pavlo is writing a script, suddenly redirected to Google consent | Background token refresh. If refresh fails, show non-blocking banner: "YouTube connection expired. Reconnect?" -- never interrupt active work. |
+| Showing all 100 retention data points as a table | Unreadable wall of numbers | Retention curve as a sparkline chart. Key callouts: "75% stayed at hook, 45% at midpoint, 30% at end." |
+| No "last synced" indicator | Pavlo does not know if metrics are from today or last week | Show "Last synced: 2 hours ago" with manual sync button. Color-code: green (<1h), yellow (<24h), red (>24h). |
+| Empty dashboard before first YouTube connect | User sees blank cards, no explanation of what to do | Clear onboarding: "Connect your YouTube channel to see video metrics here" with a single button. |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Streaming:** Verify chunks appear word-by-word in the UI, not all at once after a delay -- test with browser DevTools Network tab set to "Slow 3G"
-- [ ] **Anti-slop scoring:** Verify it catches phrases from the ACTUAL 90+ rules list (not a hardcoded subset) -- test with a script containing 5 known-bad phrases
-- [ ] **Script persistence:** Verify scripts survive: page reload, browser restart, and `next dev` restart -- test by killing the dev server mid-session
-- [ ] **Partial generation:** Verify that closing the browser tab mid-generation saves a partial script -- test by navigating away at 50% progress
-- [ ] **Beat editing:** Verify editing one beat doesn't reset others, and changes persist after navigation -- test editing the middle beat then going to library and back
-- [ ] **Error handling:** Verify behavior when Anthropic API returns 429 (rate limit), 500 (server error), or network disconnects mid-stream -- test by temporarily using an invalid API key
-- [ ] **Format selection:** Verify all 7 script formats actually produce meaningfully different outputs -- generate same topic in 3 different formats and compare
-- [ ] **SQLite concurrent access:** Verify opening the app in two browser tabs doesn't cause SQLITE_BUSY errors -- test by loading library in one tab while generating in another
-- [ ] **JSON parsing:** Verify the app handles malformed AI JSON output gracefully -- test by prompting the AI to output a script, then manually corrupting the response handler to simulate bad JSON
+- [ ] **OAuth persistence:** Close the app entirely, reopen 2 days later -- does YouTube data load without re-auth? Test by checking SQLite for stored refresh token.
+- [ ] **Token refresh:** Set access token expiry to 1 minute in dev. Does the app silently refresh without user action?
+- [ ] **Retention data:** Verify retention curve has 100 data points for each video. Some videos may return fewer if very short. Handle gracefully.
+- [ ] **Empty metrics:** Create a test query for a dimension that returns no data (e.g., country breakdown). Does the UI show "No data" or does it crash?
+- [ ] **Data-aware generation:** Generate a script WITH metrics context and WITHOUT. Compare. The WITH version should reference specific numbers but NOT make strategic recommendations.
+- [ ] **Metric freshness:** Publish a new video, wait 48 hours, sync. Does the new video appear in the dashboard?
+- [ ] **Disconnect flow:** Click "Disconnect YouTube." Verify: tokens deleted from SQLite, Google revocation endpoint called, metrics cache cleared, UI shows "Connect YouTube" state.
+- [ ] **MCP server isolation:** Verify MCP server does not store any tokens or credentials persistently. Kill and restart MCP -- it should have no residual state.
+- [ ] **Concurrent access:** Open dashboard in two tabs. Trigger sync in one. Does the other tab show updated data on refresh without errors?
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Used Max subscription via proxy (ToS violation) | LOW | Switch to API key. No data migration needed. Just change auth config in route handler. Cost: ~$0.08/month. |
-| Stored scripts as text blobs | MEDIUM | Write migration: parse existing blobs into beats using AI (prompt Claude to split them). Some may lose structure. ~1 day effort. |
-| Built with complex block editor library | HIGH | Extract data model first (export all scripts as JSON). Rebuild editor UI as custom component. Keep data layer. ~3-5 day effort. |
-| No streaming implemented | MEDIUM | Rewrite API route to return ReadableStream. Rewrite frontend fetch to use reader. If using Vercel AI SDK, much easier (~few hours). |
-| Editor hydration errors | LOW | Add `dynamic(() => import(...), { ssr: false })`. Add loading skeleton. ~1 hour fix. |
-| No partial result saving | MEDIUM | Add `status` column to scripts table. Modify stream handler to save periodically. Add beforeunload handler. ~1 day effort. |
-| API key exposed in git history | HIGH | Immediately rotate the API key in Anthropic console. Scrub git history with `git filter-branch` or BFG Repo-Cleaner. Verify no unauthorized usage in billing dashboard. |
+| 7-day token expiry (Testing mode) | LOW | Switch to Production in Google Console. Create new OAuth credentials. Update client ID/secret in app. Re-authorize once. ~30 min. |
+| Wrong API (Data API instead of Analytics) | MEDIUM | Rewrite data fetching layer to use Analytics API. Schema likely needs new columns for retention data. ~1 day. |
+| AI making statistical conclusions | LOW | Update system prompt to explicitly forbid trend analysis. Add guardrail check on AI output. ~1 hour. |
+| OAuth tokens leaked via git | HIGH | Revoke tokens immediately via Google Console. Rotate OAuth client secret. Re-authorize. Scrub git history. ~2 hours. |
+| MCP server compromised | MEDIUM | Revoke all tokens. Rebuild MCP server from scratch (should be <300 lines). Re-authorize. Audit what data was accessed. ~half day. |
+| Metrics stored in wrong format | MEDIUM | Write migration to restructure tables. If data is in SQLite, transformation is straightforward. ~half day. |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Claude Max as API (ToS) | Phase 1: Setup | API key in `.env.local`, test API call succeeds with key auth, `.env*` in `.gitignore` |
-| Script storage as blobs | Phase 1: Database Schema | Schema has `beats` table with `script_id` FK, AI outputs JSON, parser tested |
-| SQLite WAL mode | Phase 1: Database Schema | `PRAGMA journal_mode` returns `wal` on app startup |
-| Streaming buffering | Phase 2: AI Integration | Tokens appear word-by-word in browser with DevTools Network showing chunked transfer |
-| Partial result loss | Phase 2: AI Integration | Kill browser mid-gen, reload, see partial script with `status: 'partial'` |
-| Rate limiting | Phase 2: AI Integration | Clicking generate 10 times fast only triggers 1-2 actual API calls |
-| Prompt caching | Phase 2: AI Integration | Anthropic dashboard shows cache hits on system prompt after first request |
-| Over-engineered editor | Phase 3: Script Editor | Editor is custom component (<500 LOC), not a library. Decision documented. |
-| Editor hydration (if library) | Phase 3: Script Editor | No console errors on production build page load |
-| Empty state UX | Phase 3: Script Editor | New session shows format picker + context input, not a blank page |
-| Anti-slop as number only | Phase 4: Anti-slop UI | Flagged phrases highlighted inline with red underline and tooltip explanation |
-| No generation history | Phase 4: Polish | Each generation creates a version; user can browse and compare versions |
+| 7-day token expiry | Phase 1: OAuth Setup | Google Console shows "In production." New credentials created after switch. Token persists >7 days. |
+| Wrong API choice | Phase 1: API Design | First API call uses `youtubeAnalytics.reports.query`, not `youtube/v3/videos`. Retention data returns 100 points. |
+| Redirect URI mismatch | Phase 1: OAuth Setup | OAuth consent flow completes without error from `http://localhost:3000`. Both localhost and 127.0.0.1 registered. |
+| MCP server security | Phase 1: MCP Setup | MCP server is custom-built, <300 LOC, no persistent token storage. Code fully audited. |
+| Per-video retention limitation | Phase 2: Data Fetching | Retention fetched per-video with caching. Dashboard does not make N calls on load. |
+| Data threshold suppression | Phase 2: Data Fetching | UI shows "Not enough data" for empty dimension queries instead of zeros or errors. |
+| AI drawing conclusions on N=6 | Phase 3: Data-Aware Generation | System prompt explicitly forbids trend analysis. Test: shuffle metrics, verify AI output does not change recommendations. |
+| No caching for API responses | Phase 2: Data Fetching | SQLite stores cached metrics with timestamps. Repeated page loads do not trigger API calls. |
+| OAuth token not refreshing | Phase 1: OAuth Setup | Manually expire access token, verify silent refresh works without user interaction. |
 
 ## Sources
 
-- [Anthropic bans third-party subscription OAuth (The Register, Feb 2026)](https://www.theregister.com/2026/02/20/anthropic_clarifies_ban_third_party_claude_access/) -- HIGH confidence
-- [Anthropic bans subscription OAuth (WinBuzzer, Feb 2026)](https://winbuzzer.com/2026/02/19/anthropic-bans-claude-subscription-oauth-in-third-party-apps-xcxwbn/) -- HIGH confidence
-- [Claude API Pricing (official)](https://platform.claude.com/docs/en/about-claude/pricing) -- HIGH confidence
-- [CLIProxyAPI blog (demonstrates what NOT to do)](https://rogs.me/2026/02/use-your-claude-max-subscription-as-an-api-with-cliproxyapi/) -- HIGH confidence
-- [Next.js SSE discussion #48427](https://github.com/vercel/next.js/discussions/48427) -- HIGH confidence
-- [Fixing Slow SSE in Next.js](https://medium.com/@oyetoketoby80/fixing-slow-sse-server-sent-events-streaming-in-next-js-and-vercel-99f42fbdb996) -- MEDIUM confidence
-- [Streaming LLM in Next.js (Eaures)](https://www.eaures.online/streaming-llm-responses-in-next-js) -- MEDIUM confidence
-- [BlockNote Next.js docs](https://www.blocknotejs.org/docs/advanced/nextjs) -- HIGH confidence
-- [Claude streaming stall issues #18028](https://github.com/anthropics/claude-code/issues/18028) -- MEDIUM confidence
-- [10 Common AI Product UX Mistakes (UZER)](https://uzer.co/en/mistakes-designing-ai-products-ux-tips/) -- MEDIUM confidence
-- [Vercel AI SDK streaming (LogRocket)](https://blog.logrocket.com/nextjs-vercel-ai-sdk-streaming/) -- MEDIUM confidence
-- [Agent SDK Max plan billing issue #559](https://github.com/anthropics/claude-agent-sdk-python/issues/559) -- HIGH confidence
+- [YouTube Analytics API metrics reference (official)](https://developers.google.com/youtube/analytics/metrics) -- HIGH confidence
+- [YouTube Analytics channel reports (official)](https://developers.google.com/youtube/analytics/channel_reports) -- HIGH confidence
+- [YouTube Analytics data model (official)](https://developers.google.com/youtube/analytics/data_model) -- HIGH confidence
+- [YouTube Analytics sample requests (official)](https://developers.google.com/youtube/analytics/sample-requests) -- HIGH confidence
+- [Google OAuth2 for installed apps (official)](https://developers.google.com/youtube/reporting/guides/authorization/installed-apps) -- HIGH confidence
+- [Google OAuth2 overview (official)](https://developers.google.com/identity/protocols/oauth2) -- HIGH confidence
+- [jwz: YouTube OAuth API fuckery (Feb 2026)](https://www.jwz.org/blog/2026/02/youtube-oauth-api-fuckery/) -- HIGH confidence
+- [Google OAuth invalid_grant explained (Nango)](https://www.nango.dev/blog/google-oauth-invalid-grant-token-has-been-expired-or-revoked) -- MEDIUM confidence
+- [OAuth2 refresh token expiration discussion](https://discuss.google.dev/t/oauth2-refresh-token-expiration-and-youtube-api-v3/160874) -- MEDIUM confidence
+- [MCP Server Security Best Practices 2026](https://toolradar.com/blog/mcp-server-security-best-practices) -- MEDIUM confidence
+- [YouTube MCP Server Comparison 2026](https://www.ekamoira.com/blog/youtube-mcp-server-comparison-2026-which-one-should-you-use) -- MEDIUM confidence
+- [YouTube API quota breakdown 2026](https://www.contentstats.io/blog/youtube-api-quota-tracking) -- MEDIUM confidence
 
 ---
-*Pitfalls research for: AI-powered scriptwriting web UI (Next.js + Claude API + local DB)*
-*Researched: 2026-03-26*
+*Pitfalls research for: YouTube Analytics API integration + data-aware AI generation (v2.1 milestone)*
+*Researched: 2026-03-29*
