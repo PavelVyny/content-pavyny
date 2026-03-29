@@ -140,6 +140,113 @@ export async function getFullConnectionStatus(): Promise<
   }
 }
 
+// --- YouTube Data & Analytics API methods ---
+
+export async function listChannelVideos() {
+  const client = getOAuth2Client();
+  const youtube = google.youtube("v3");
+
+  // Step 1: Get uploads playlist ID (1 quota unit)
+  const channelResponse = await youtube.channels.list({
+    auth: client,
+    part: ["contentDetails"],
+    mine: true,
+  });
+  const uploadsPlaylistId =
+    channelResponse.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsPlaylistId) return [];
+
+  // Step 2: Get all videos from uploads playlist (1 quota unit per 50 videos)
+  const videos: Array<{
+    youtubeId: string;
+    title: string;
+    description: string;
+    thumbnailUrl: string;
+    publishedAt: string;
+  }> = [];
+
+  let pageToken: string | undefined;
+  do {
+    const response = await youtube.playlistItems.list({
+      auth: client,
+      part: ["snippet"],
+      playlistId: uploadsPlaylistId,
+      maxResults: 50,
+      pageToken,
+    });
+
+    for (const item of response.data.items ?? []) {
+      videos.push({
+        youtubeId: item.snippet?.resourceId?.videoId ?? "",
+        title: item.snippet?.title ?? "",
+        description: item.snippet?.description ?? "",
+        thumbnailUrl: item.snippet?.thumbnails?.medium?.url ?? "",
+        publishedAt: item.snippet?.publishedAt ?? "",
+      });
+    }
+
+    pageToken = response.data.nextPageToken ?? undefined;
+  } while (pageToken);
+
+  return videos;
+}
+
+export async function getVideoMetrics(
+  videoIds: string[],
+  channelStartDate: string
+) {
+  if (videoIds.length === 0) return [];
+
+  const client = getOAuth2Client();
+  const analytics = google.youtubeAnalytics("v2");
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const response = await analytics.reports.query({
+    auth: client,
+    ids: "channel==MINE",
+    startDate: channelStartDate,
+    endDate: today,
+    dimensions: "video",
+    metrics:
+      "views,likes,comments,shares,subscribersGained,subscribersLost,averageViewPercentage,averageViewDuration,engagedViews",
+    filters: `video==${videoIds.join(",")}`,
+    sort: "-views",
+  });
+
+  // rows: [[videoId, views, likes, comments, shares, subsGained, subsLost, avgViewPct, avgViewDuration, engagedViews], ...]
+  return response.data.rows ?? [];
+}
+
+export async function getRetentionData(
+  videoId: string,
+  channelStartDate: string
+) {
+  const client = getOAuth2Client();
+  const analytics = google.youtubeAnalytics("v2");
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const response = await analytics.reports.query({
+    auth: client,
+    ids: "channel==MINE",
+    startDate: channelStartDate,
+    endDate: today,
+    dimensions: "elapsedVideoTimeRatio",
+    metrics: "audienceWatchRatio,relativeRetentionPerformance",
+    filters: `video==${videoId};audienceType==ORGANIC`,
+    maxResults: 200,
+  });
+
+  // ~100 rows: [[ratio, watchRatio, relativeRetention], ...]
+  // watchRatio (index 1) can exceed 1.0 for rewatches
+  const retentionCurve = (response.data.rows ?? []).map(
+    (row: (string | number)[]) => Number(row[1])
+  );
+
+  return retentionCurve;
+}
+
 // Fetch channel info after OAuth (stored in token file alongside tokens)
 export async function getChannelInfo(): Promise<
   StoredTokens["channel"] | null
