@@ -66,7 +66,7 @@ export default async function ScriptPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <Link
           href="/scripts"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -76,7 +76,7 @@ export default async function ScriptPage({
         <DeleteScriptButton scriptId={scriptId} />
       </div>
       {videoData && serializedMetrics && (
-        <div className="mb-6">
+        <div className="mb-4">
           <EditorMetricsPanel
             metrics={serializedMetrics as any}
             videoTitle={videoData.video.title}

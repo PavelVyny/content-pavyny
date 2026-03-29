@@ -79,9 +79,9 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex items-start justify-between gap-3">
           <EditableField
             value={currentTitle}
@@ -110,7 +110,7 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
       {script.titles && script.titles.length > 0 && (
         <>
           <Separator />
-          <section className="space-y-3">
+          <section className="space-y-2">
             <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Title Options
             </h3>
@@ -165,11 +165,11 @@ export function ScriptEditor({ script, videoLinkSlot }: ScriptEditorProps) {
 
       {/* Script Beats */}
       {localBeats.length > 0 && (
-        <section className="space-y-3">
+        <section className="space-y-2">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Script Beats
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {localBeats.map((beat) => (
               <div key={beat.id} className="group relative">
                 <Card size="sm">
