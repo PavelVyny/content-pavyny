@@ -139,20 +139,20 @@ Requirements for milestone v3.0. Each maps to roadmap phases.
 
 ### Supabase Setup
 
-- [ ] **SUPA-01**: Supabase project created with DATABASE_URL configured in .env.local on both machines — Phase 10
-- [ ] **SUPA-02**: PostgreSQL schema matches current SQLite schema — all 4 tables (scripts, beats, videos, videoMetrics) created via Drizzle pgTable — Phase 10
+- [x] **SUPA-01**: Supabase project created with DATABASE_URL configured in .env.local on both machines — Phase 10
+- [x] **SUPA-02**: PostgreSQL schema matches current SQLite schema — all 4 tables (scripts, beats, videos, videoMetrics) created via Drizzle pgTable — Phase 10
 
 ### Schema & Connection
 
-- [ ] **MIGR-01**: Drizzle schema rewritten from sqliteTable to pgTable with correct type mappings (serial, jsonb, timestamp) — Phase 10
-- [ ] **MIGR-02**: DB connection module uses postgres-js with prepare: false for Supabase pooler — Phase 10
-- [ ] **MIGR-03**: drizzle.config.ts updated for PostgreSQL dialect with DATABASE_URL — Phase 10
+- [x] **MIGR-01**: Drizzle schema rewritten from sqliteTable to pgTable with correct type mappings (serial, jsonb, timestamp) — Phase 10
+- [x] **MIGR-02**: DB connection module uses postgres-js with prepare: false for Supabase pooler — Phase 10
+- [x] **MIGR-03**: drizzle.config.ts updated for PostgreSQL dialect with DATABASE_URL — Phase 10
 
 ### Async Conversion
 
-- [ ] **ASYN-01**: All server action files converted from sync to async DB calls (await added to every query) — Phase 10
-- [ ] **ASYN-02**: All page server components converted to async DB access — Phase 10
-- [ ] **ASYN-03**: No remaining .get(), .all(), .run() terminal methods — all use PostgreSQL Drizzle conventions — Phase 10
+- [x] **ASYN-01**: All server action files converted from sync to async DB calls (await added to every query) — Phase 10
+- [x] **ASYN-02**: All page server components converted to async DB access — Phase 10
+- [x] **ASYN-03**: No remaining .get(), .all(), .run() terminal methods — all use PostgreSQL Drizzle conventions — Phase 10
 
 ### Data Migration
 
@@ -258,14 +258,14 @@ Requirements for milestone v3.0. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SUPA-01 | Phase 10 | Pending |
-| SUPA-02 | Phase 10 | Pending |
-| MIGR-01 | Phase 10 | Pending |
-| MIGR-02 | Phase 10 | Pending |
-| MIGR-03 | Phase 10 | Pending |
-| ASYN-01 | Phase 10 | Pending |
-| ASYN-02 | Phase 10 | Pending |
-| ASYN-03 | Phase 10 | Pending |
+| SUPA-01 | Phase 10 | Complete |
+| SUPA-02 | Phase 10 | Complete |
+| MIGR-01 | Phase 10 | Complete |
+| MIGR-02 | Phase 10 | Complete |
+| MIGR-03 | Phase 10 | Complete |
+| ASYN-01 | Phase 10 | Complete |
+| ASYN-02 | Phase 10 | Complete |
+| ASYN-03 | Phase 10 | Complete |
 | DATA-01 | Phase 11 | Pending |
 | DATA-02 | Phase 11 | Pending |
 | DATA-03 | Phase 11 | Pending |

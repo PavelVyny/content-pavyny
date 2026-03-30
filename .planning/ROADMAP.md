@@ -199,7 +199,10 @@ Plans:
   3. Every server action (generate, editor, library, metrics) works end-to-end against the empty Supabase database — creating a script, editing beats, changing status, and syncing YouTube metrics all complete without errors
   4. Every page server component loads without errors against the Supabase database (home page, script editor, analytics)
   5. No remaining .get(), .all(), or .run() terminal methods anywhere in the codebase — all DB calls use async PostgreSQL Drizzle conventions
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [x] 10-01-PLAN.md — Schema & Async Rewrite: pgTable schema, postgres-js connection, async conversion of all DB call sites
 
 ### Phase 11: Data Migration & Cleanup
 **Goal**: All existing data lives in Supabase, the SQLite dependency is completely removed, and the app works identically from both of Pavlo's machines
@@ -228,5 +231,5 @@ Phases execute in numeric order: 10 -> 11
 | 7. OAuth & Schema | v2.1 | 2/2 | Complete | 2026-03-29 |
 | 8. Metrics & Dashboard | v2.1 | 3/3 | Complete | 2026-03-29 |
 | 9. Data-Aware Generation | v2.1 | 0/? | Deferred | - |
-| 10. Schema & Async Rewrite | v3.0 | 0/? | Not started | - |
+| 10. Schema & Async Rewrite | v3.0 | 1/1 | Complete | 2026-03-30 |
 | 11. Data Migration & Cleanup | v3.0 | 0/? | Not started | - |
