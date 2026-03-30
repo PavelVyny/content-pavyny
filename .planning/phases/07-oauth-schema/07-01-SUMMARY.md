@@ -21,11 +21,11 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/lib/youtube-client.ts
+    - src/lib/youtube-client.ts
   modified:
-    - web/src/lib/db/schema.ts
-    - web/package.json
-    - web/.gitignore
+    - src/lib/db/schema.ts
+    - package.json
+    - .gitignore
 
 key-decisions:
   - "Token merge pattern: on('tokens') merges with existing file to preserve refresh_token"
@@ -70,11 +70,11 @@ Each task was committed atomically:
 3. **Task 3: Create youtube-client.ts with OAuth2 singleton and token persistence** - `058b2c3` (feat)
 
 ## Files Created/Modified
-- `web/src/lib/youtube-client.ts` - OAuth2 client singleton, token persistence, status checks, channel info
-- `web/src/lib/db/schema.ts` - Added videos and videoMetrics table definitions
-- `web/package.json` - Added googleapis dependency
-- `web/.gitignore` - Added data/.youtube-tokens.json exclusion
-- `web/.env` - Added YOUTUBE_REDIRECT_URI (gitignored, not committed)
+- `src/lib/youtube-client.ts` - OAuth2 client singleton, token persistence, status checks, channel info
+- `src/lib/db/schema.ts` - Added videos and videoMetrics table definitions
+- `package.json` - Added googleapis dependency
+- `.gitignore` - Added data/.youtube-tokens.json exclusion
+- `.env` - Added YOUTUBE_REDIRECT_URI (gitignored, not committed)
 
 ## Decisions Made
 - Token merge pattern on `on("tokens")` event: strip nulls from googleapis response, merge with existing to preserve refresh_token (per RESEARCH.md Pitfall 2)
@@ -90,7 +90,7 @@ Each task was committed atomically:
 - **Found during:** Task 3 (youtube-client.ts creation)
 - **Issue:** googleapis `on("tokens")` callback returns tokens with nullable fields (`null | undefined`) which don't match the `StoredTokens` interface
 - **Fix:** Added null-stripping loop before merge, cast merged result as `StoredTokens`
-- **Files modified:** web/src/lib/youtube-client.ts
+- **Files modified:** src/lib/youtube-client.ts
 - **Verification:** `npx tsc --noEmit` passes with zero youtube-client.ts errors
 - **Committed in:** 058b2c3 (Task 3 commit)
 
@@ -109,7 +109,7 @@ None - all functions are fully implemented with real logic.
 - Schema ready: videos and video_metrics tables accept inserts
 - OAuth2 client ready: Plan 02 can import `getOAuth2Client`, `getAuthUrl`, `saveTokens`, `deleteTokens`
 - Token file path gitignored and data/ directory exists
-- GCP credentials still needed in web/.env before OAuth flow will work (user setup)
+- GCP credentials still needed in .env before OAuth flow will work (user setup)
 
 ## Self-Check: PASSED
 

@@ -23,12 +23,12 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/app/actions/editor.ts
-    - web/src/app/script/[id]/page.tsx
-    - web/src/components/editable-field.tsx
-    - web/src/components/hook-section.tsx
-    - web/src/components/script-editor.tsx
-    - web/src/components/ui/tabs.tsx
+    - src/app/actions/editor.ts
+    - src/app/script/[id]/page.tsx
+    - src/components/editable-field.tsx
+    - src/components/hook-section.tsx
+    - src/components/script-editor.tsx
+    - src/components/ui/tabs.tsx
   modified: []
 
 key-decisions:
@@ -74,12 +74,12 @@ Each task was committed atomically:
 2. **Task 2: Editor UI components with click-to-edit and hook tabs** - `9d7772c` (feat)
 
 ## Files Created/Modified
-- `web/src/app/actions/editor.ts` - Server actions for updateBeat, updateHook, selectHook
-- `web/src/app/script/[id]/page.tsx` - Editor page route with server-side script+beats fetch
-- `web/src/components/editable-field.tsx` - Reusable click-to-edit component with save-on-blur
-- `web/src/components/hook-section.tsx` - Hook variant tab bar with editable fields
-- `web/src/components/script-editor.tsx` - Main editor assembling hooks above beats with local state
-- `web/src/components/ui/tabs.tsx` - shadcn Tabs component (base-ui)
+- `src/app/actions/editor.ts` - Server actions for updateBeat, updateHook, selectHook
+- `src/app/script/[id]/page.tsx` - Editor page route with server-side script+beats fetch
+- `src/components/editable-field.tsx` - Reusable click-to-edit component with save-on-blur
+- `src/components/hook-section.tsx` - Hook variant tab bar with editable fields
+- `src/components/script-editor.tsx` - Main editor assembling hooks above beats with local state
+- `src/components/ui/tabs.tsx` - shadcn Tabs component (base-ui)
 
 ## Decisions Made
 - Used base-ui Tabs via shadcn for hook variant switching (consistent with project's shadcn usage)

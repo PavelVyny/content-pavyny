@@ -86,7 +86,7 @@ cd web && npx shadcn@latest add tabs
 
 ### New Files / Route Structure
 ```
-web/src/
+src/
 ├── app/
 │   ├── script/
 │   │   └── [id]/
@@ -409,20 +409,20 @@ Respond with ONLY JSON: { "directness": N, "rhythm": N, "trust": N, "authenticit
 - **Pronunciation-friendly.** Scripts must avoid complex English constructions (relevant for rescoring).
 - **Communicate with Pavlo in Russian.** Scripts for videos in English.
 - **GSD Workflow Enforcement.** Before using Edit, Write, or other file-changing tools, start work through a GSD command.
-- **Next.js 16 docs.** Read `web/node_modules/next/dist/docs/` before writing code (per web/AGENTS.md).
+- **Next.js 16 docs.** Read `node_modules/next/dist/docs/` before writing code (per web/AGENTS.md).
 - **Use frontend-design skill** for any UI/UX work (D-09 from Phase 4).
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `web/src/components/script-display.tsx` -- existing beat rendering pattern, score panel, hook display
-- `web/src/lib/types.ts` -- Script, ScriptBeat, HookVariant, AntiSlopScore interfaces
-- `web/src/lib/db/schema.ts` -- Drizzle schema with scripts + beats tables
-- `web/src/app/actions/generate.ts` -- existing server action patterns (Drizzle, revalidatePath, typed results)
-- `web/src/lib/agent.ts` -- existing Agent SDK integration pattern
-- `web/src/components/ui/textarea.tsx` -- Textarea with field-sizing-content
-- `web/node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.md` -- Next.js 16 dynamic route params (Promise)
-- `web/node_modules/next/dist/docs/01-app/01-getting-started/07-mutating-data.md` -- Server Functions / Server Actions pattern
+- `src/components/script-display.tsx` -- existing beat rendering pattern, score panel, hook display
+- `src/lib/types.ts` -- Script, ScriptBeat, HookVariant, AntiSlopScore interfaces
+- `src/lib/db/schema.ts` -- Drizzle schema with scripts + beats tables
+- `src/app/actions/generate.ts` -- existing server action patterns (Drizzle, revalidatePath, typed results)
+- `src/lib/agent.ts` -- existing Agent SDK integration pattern
+- `src/components/ui/textarea.tsx` -- Textarea with field-sizing-content
+- `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.md` -- Next.js 16 dynamic route params (Promise)
+- `node_modules/next/dist/docs/01-app/01-getting-started/07-mutating-data.md` -- Server Functions / Server Actions pattern
 
 ### Secondary (MEDIUM confidence)
 - `.planning/phases/05-script-editor/05-CONTEXT.md` -- all locked decisions (D-01 through D-09)

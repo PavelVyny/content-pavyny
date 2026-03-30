@@ -49,7 +49,7 @@
 
 ## Schema Migration: SQLite to PostgreSQL
 
-The schema file (`web/src/lib/db/schema.ts`) needs a full rewrite of imports and column type definitions. Drizzle does NOT support dialect-agnostic schemas -- you must use dialect-specific table builders.
+The schema file (`src/lib/db/schema.ts`) needs a full rewrite of imports and column type definitions. Drizzle does NOT support dialect-agnostic schemas -- you must use dialect-specific table builders.
 
 ### Import Changes
 
@@ -94,7 +94,7 @@ import { pgTable, text, integer, serial, jsonb, timestamp } from "drizzle-orm/pg
 
 ## Connection Setup
 
-### New `web/src/lib/db/index.ts`
+### New `src/lib/db/index.ts`
 
 ```typescript
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -113,7 +113,7 @@ export const db = drizzle(client, { schema });
 
 **Export change:** Current code exports `getDb()` function. New code exports `db` constant. All call sites need updating from `getDb()` to `db`.
 
-### New `web/drizzle.config.ts`
+### New `drizzle.config.ts`
 
 ```typescript
 import { defineConfig } from "drizzle-kit";
@@ -155,11 +155,11 @@ That is it. Two packages removed, one added. `drizzle-orm` and `drizzle-kit` sta
 
 | File | Change | Scope |
 |------|--------|-------|
-| `web/src/lib/db/schema.ts` | Rewrite: `sqlite-core` imports to `pg-core`, column types | Medium -- mechanical type mapping |
-| `web/src/lib/db/index.ts` | Rewrite: `better-sqlite3` driver to `postgres-js` driver, `getDb()` to `db` export | Small -- 5 lines total |
-| `web/drizzle.config.ts` | Update: dialect `sqlite` to `postgresql`, dbCredentials to URL | Small -- 2 line changes |
-| `web/package.json` | Add `postgres`, remove `better-sqlite3` + types | Via npm install/uninstall |
-| `web/.env.local` | Add `DATABASE_URL` | New env var |
+| `src/lib/db/schema.ts` | Rewrite: `sqlite-core` imports to `pg-core`, column types | Medium -- mechanical type mapping |
+| `src/lib/db/index.ts` | Rewrite: `better-sqlite3` driver to `postgres-js` driver, `getDb()` to `db` export | Small -- 5 lines total |
+| `drizzle.config.ts` | Update: dialect `sqlite` to `postgresql`, dbCredentials to URL | Small -- 2 line changes |
+| `package.json` | Add `postgres`, remove `better-sqlite3` + types | Via npm install/uninstall |
+| `.env.local` | Add `DATABASE_URL` | New env var |
 | All files importing `getDb` | Change `getDb()` calls to `db` import | Find-and-replace |
 
 ### Files That Do NOT Need Changes

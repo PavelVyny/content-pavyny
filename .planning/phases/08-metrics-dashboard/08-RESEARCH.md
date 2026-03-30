@@ -114,7 +114,7 @@ npm install recharts
 ### Recommended Project Structure (new/modified files)
 
 ```
-web/src/
+src/
   app/
     actions/
       metrics.ts              # NEW: syncMetrics, getScriptsWithMetrics, linkVideo, unlinkVideo

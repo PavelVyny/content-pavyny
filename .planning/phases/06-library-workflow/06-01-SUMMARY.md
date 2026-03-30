@@ -22,11 +22,11 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/app/actions/library.ts
-    - web/src/app/scripts/page.tsx
-    - web/src/components/scripts-table.tsx
+    - src/app/actions/library.ts
+    - src/app/scripts/page.tsx
+    - src/components/scripts-table.tsx
   modified:
-    - web/src/app/layout.tsx
+    - src/app/layout.tsx
 
 key-decisions:
   - "Native HTML select over shadcn Select for inline table status dropdown — simpler, lighter for table cells"
@@ -68,10 +68,10 @@ Each task was committed atomically:
 2. **Task 2: Scripts list page with interactive table** - `adcba3c` (feat)
 
 ## Files Created/Modified
-- `web/src/app/actions/library.ts` - Server actions: getAllScripts, updateScriptStatus, getVoiceoverText
-- `web/src/app/scripts/page.tsx` - Scripts list page route (server component)
-- `web/src/components/scripts-table.tsx` - Interactive table with status dropdown, score display, copy button
-- `web/src/app/layout.tsx` - Header with Generate and Scripts nav links
+- `src/app/actions/library.ts` - Server actions: getAllScripts, updateScriptStatus, getVoiceoverText
+- `src/app/scripts/page.tsx` - Scripts list page route (server component)
+- `src/components/scripts-table.tsx` - Interactive table with status dropdown, score display, copy button
+- `src/app/layout.tsx` - Header with Generate and Scripts nav links
 
 ## Decisions Made
 - Used native HTML `<select>` instead of shadcn Select for inline table status dropdown — simpler and more appropriate for table cell editing

@@ -38,10 +38,10 @@ human_verification:
 
 | Artifact                                        | Expected                                                             | Status   | Details                                                                                   |
 | ----------------------------------------------- | -------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------- |
-| `web/src/app/actions/library.ts`                | Server actions: getAllScripts, updateScriptStatus, getVoiceoverText  | VERIFIED | 85 lines; all three functions exported; `"use server"` directive present; DB queries real |
-| `web/src/app/scripts/page.tsx`                  | Scripts list page route (server component)                           | VERIFIED | 19 lines; async server component; calls `getAllScripts()`; passes data to `<ScriptsTable>` |
-| `web/src/components/scripts-table.tsx`          | Interactive table with status dropdown and copy button               | VERIFIED | 175 lines (above 50-line threshold); `"use client"`; full table render, handlers, empty state |
-| `web/src/app/layout.tsx`                        | Header with Generate + Scripts nav links                             | VERIFIED | Contains "Scripts" link at `/scripts` and "Generate" link at `/`; uses `<Link>` from next/link |
+| `src/app/actions/library.ts`                | Server actions: getAllScripts, updateScriptStatus, getVoiceoverText  | VERIFIED | 85 lines; all three functions exported; `"use server"` directive present; DB queries real |
+| `src/app/scripts/page.tsx`                  | Scripts list page route (server component)                           | VERIFIED | 19 lines; async server component; calls `getAllScripts()`; passes data to `<ScriptsTable>` |
+| `src/components/scripts-table.tsx`          | Interactive table with status dropdown and copy button               | VERIFIED | 175 lines (above 50-line threshold); `"use client"`; full table render, handlers, empty state |
+| `src/app/layout.tsx`                        | Header with Generate + Scripts nav links                             | VERIFIED | Contains "Scripts" link at `/scripts` and "Generate" link at `/`; uses `<Link>` from next/link |
 
 ### Key Link Verification
 
@@ -67,7 +67,7 @@ human_verification:
 | library.ts exports three functions    | grep exports in library.ts                                | getAllScripts, updateScriptStatus, getVoiceoverText confirmed | PASS |
 | "generating" status excluded from list | grep `ne(scripts.status, "generating")` in library.ts   | Line 13 confirmed   | PASS   |
 | Beat voiceover join format            | `parts.join("\n\n")` in getVoiceoverText                 | Line 84 confirmed — blank line separated | PASS |
-| /script/[id] route exists             | `ls web/src/app/script/`                                 | `[id]` directory present | PASS |
+| /script/[id] route exists             | `ls src/app/script/`                                 | `[id]` directory present | PASS |
 | No static empty-array returns         | grep for `return.*\[\]` in library.ts                    | No matches          | PASS   |
 
 ### Requirements Coverage

@@ -23,17 +23,17 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/lib/db/schema.ts
-    - web/src/lib/db/index.ts
-    - web/src/lib/types.ts
-    - web/src/lib/references.ts
-    - web/drizzle.config.ts
-    - web/data/.gitkeep
+    - src/lib/db/schema.ts
+    - src/lib/db/index.ts
+    - src/lib/types.ts
+    - src/lib/references.ts
+    - drizzle.config.ts
+    - data/.gitkeep
   modified:
-    - web/src/app/layout.tsx
-    - web/src/app/page.tsx
-    - web/next.config.ts
-    - web/.gitignore
+    - src/app/layout.tsx
+    - src/app/page.tsx
+    - next.config.ts
+    - .gitignore
 
 key-decisions:
   - "Removed nested .git from create-next-app scaffold to keep single-repo structure"
@@ -79,18 +79,18 @@ Each task was committed atomically:
 2. **Task 2: Database schema, types, and reference file reader** - `adba29f` (feat)
 
 ## Files Created/Modified
-- `web/package.json` - Next.js 16 project with all dependencies
-- `web/src/lib/db/schema.ts` - Drizzle schema with scripts and beats tables
-- `web/src/lib/db/index.ts` - SQLite connection singleton with WAL mode
-- `web/src/lib/types.ts` - Shared TypeScript types (Script, ScriptBeat, HookVariant, AntiSlopScore, VideoFormat)
-- `web/src/lib/references.ts` - Reference file reader with readBrandVoice, readAntiSlopRules, readVideoFormats, getFormatList
-- `web/drizzle.config.ts` - Drizzle Kit configuration for SQLite
-- `web/src/app/layout.tsx` - Root layout with "Devlog Scriptwriter" header and Toaster
-- `web/src/app/page.tsx` - Placeholder page for generation form
-- `web/next.config.ts` - serverExternalPackages for better-sqlite3
-- `web/.gitignore` - Added data/*.db exclusion
-- `web/data/.gitkeep` - SQLite database directory
-- `web/src/components/ui/` - 8 shadcn/ui components
+- `package.json` - Next.js 16 project with all dependencies
+- `src/lib/db/schema.ts` - Drizzle schema with scripts and beats tables
+- `src/lib/db/index.ts` - SQLite connection singleton with WAL mode
+- `src/lib/types.ts` - Shared TypeScript types (Script, ScriptBeat, HookVariant, AntiSlopScore, VideoFormat)
+- `src/lib/references.ts` - Reference file reader with readBrandVoice, readAntiSlopRules, readVideoFormats, getFormatList
+- `drizzle.config.ts` - Drizzle Kit configuration for SQLite
+- `src/app/layout.tsx` - Root layout with "Devlog Scriptwriter" header and Toaster
+- `src/app/page.tsx` - Placeholder page for generation form
+- `next.config.ts` - serverExternalPackages for better-sqlite3
+- `.gitignore` - Added data/*.db exclusion
+- `data/.gitkeep` - SQLite database directory
+- `src/components/ui/` - 8 shadcn/ui components
 
 ## Decisions Made
 - Removed nested .git directory created by create-next-app to maintain single-repo structure

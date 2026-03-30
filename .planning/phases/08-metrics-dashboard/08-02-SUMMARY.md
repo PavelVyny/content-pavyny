@@ -23,13 +23,13 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/components/retention-chart.tsx
-    - web/src/components/metrics-card.tsx
-    - web/src/components/sync-button.tsx
+    - src/components/retention-chart.tsx
+    - src/components/metrics-card.tsx
+    - src/components/sync-button.tsx
   modified:
-    - web/src/components/scripts-table.tsx
-    - web/src/app/scripts/page.tsx
-    - web/src/app/actions/metrics.ts
+    - src/components/scripts-table.tsx
+    - src/app/scripts/page.tsx
+    - src/app/actions/metrics.ts
 
 key-decisions:
   - "Staleness uses Intl.RelativeTimeFormat for human-readable relative time"
@@ -76,12 +76,12 @@ Each task was committed atomically:
 3. **Task 3: Verify sync and metrics display on scripts page** - checkpoint:human-verify (pending)
 
 ## Files Created/Modified
-- `web/src/components/retention-chart.tsx` - Sparkline and expanded recharts LineChart for retention curves
-- `web/src/components/metrics-card.tsx` - Horizontal metrics display with clickable sparkline
-- `web/src/components/sync-button.tsx` - Sync Now button with count progress and staleness indicator
-- `web/src/components/scripts-table.tsx` - Expandable rows with chevron toggle, MetricsCard rendering
-- `web/src/app/scripts/page.tsx` - Server component now calls getScriptsWithMetrics + getLastSyncTime
-- `web/src/app/actions/metrics.ts` - Fixed nullable type assertions for left-join video fields
+- `src/components/retention-chart.tsx` - Sparkline and expanded recharts LineChart for retention curves
+- `src/components/metrics-card.tsx` - Horizontal metrics display with clickable sparkline
+- `src/components/sync-button.tsx` - Sync Now button with count progress and staleness indicator
+- `src/components/scripts-table.tsx` - Expandable rows with chevron toggle, MetricsCard rendering
+- `src/app/scripts/page.tsx` - Server component now calls getScriptsWithMetrics + getLastSyncTime
+- `src/app/actions/metrics.ts` - Fixed nullable type assertions for left-join video fields
 
 ## Decisions Made
 - Used Intl.RelativeTimeFormat for staleness display (no date-fns dependency needed)
@@ -96,7 +96,7 @@ Each task was committed atomically:
 - **Found during:** Task 1 (TypeScript compilation)
 - **Issue:** Left-join on videos table produces nullable youtubeId/title in Drizzle despite notNull() schema, causing TS2322
 - **Fix:** Added non-null assertions (!) for videoYoutubeId and videoTitle since they are notNull() in schema and guarded by videoId null check
-- **Files modified:** web/src/app/actions/metrics.ts
+- **Files modified:** src/app/actions/metrics.ts
 - **Verification:** TypeScript compiles cleanly
 - **Committed in:** 35682c0
 
@@ -104,7 +104,7 @@ Each task was committed atomically:
 - **Found during:** Task 1 (TypeScript compilation)
 - **Issue:** recharts Tooltip formatter/labelFormatter expect `unknown` parameter types, not `number`
 - **Fix:** Changed parameter types to `unknown` with Number() conversion
-- **Files modified:** web/src/components/retention-chart.tsx
+- **Files modified:** src/components/retention-chart.tsx
 - **Verification:** TypeScript compiles cleanly
 - **Committed in:** 35682c0
 

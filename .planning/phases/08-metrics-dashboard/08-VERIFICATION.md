@@ -51,17 +51,17 @@ human_verification:
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `web/src/lib/youtube-client.ts` | listChannelVideos, getVideoMetrics, getRetentionData | VERIFIED | All 3 functions present with full implementation; uses `playlistItems.list` + `youtubeAnalytics("v2")` |
-| `web/src/app/actions/metrics.ts` | 8 server actions + query helpers | VERIFIED | All 8 exports present: discoverVideos, syncSingleVideo, getScriptsWithMetrics, getLastSyncTime, linkVideo, unlinkVideo, getUnlinkedVideos, getVideoForScript |
-| `web/src/lib/types.ts` | VideoMetricsData, VideoData, ScriptWithVideo | VERIFIED | All 3 interfaces exported |
-| `web/src/components/sync-button.tsx` | Sync Now button with count-based progress and staleness badge | VERIFIED | Two-phase sync, "Syncing N/M videos...", colored staleness badge |
-| `web/src/components/metrics-card.tsx` | Expanded metrics display in table row | VERIFIED | 5 metrics + clickable RetentionChart toggle |
-| `web/src/components/retention-chart.tsx` | Sparkline and expanded recharts LineChart | VERIFIED | Dual mode (100px sparkline / full 200px chart with axes), recharts 3.8.1 |
-| `web/src/components/scripts-table.tsx` | Expandable rows with chevron toggle | VERIFIED | ScriptWithVideo prop, ChevronDown/Up, expandedId state, MetricsCard in expanded tr |
-| `web/src/app/scripts/page.tsx` | Server component with metrics data and sync state | VERIFIED | Calls getScriptsWithMetrics + getLastSyncTime, renders SyncButton |
-| `web/src/components/video-link-selector.tsx` | Dropdown for linking/unlinking videos | VERIFIED | Native select, useTransition, linkVideo + unlinkVideo wired |
-| `web/src/components/editor-metrics-panel.tsx` | Metrics detail panel for editor page | VERIFIED | Card with 5-metric grid + RetentionChart in expanded mode |
-| `web/src/app/script/[id]/page.tsx` | Editor page with video linking and metrics panel | VERIFIED | Fetches getVideoForScript + getUnlinkedVideos, renders both components |
+| `src/lib/youtube-client.ts` | listChannelVideos, getVideoMetrics, getRetentionData | VERIFIED | All 3 functions present with full implementation; uses `playlistItems.list` + `youtubeAnalytics("v2")` |
+| `src/app/actions/metrics.ts` | 8 server actions + query helpers | VERIFIED | All 8 exports present: discoverVideos, syncSingleVideo, getScriptsWithMetrics, getLastSyncTime, linkVideo, unlinkVideo, getUnlinkedVideos, getVideoForScript |
+| `src/lib/types.ts` | VideoMetricsData, VideoData, ScriptWithVideo | VERIFIED | All 3 interfaces exported |
+| `src/components/sync-button.tsx` | Sync Now button with count-based progress and staleness badge | VERIFIED | Two-phase sync, "Syncing N/M videos...", colored staleness badge |
+| `src/components/metrics-card.tsx` | Expanded metrics display in table row | VERIFIED | 5 metrics + clickable RetentionChart toggle |
+| `src/components/retention-chart.tsx` | Sparkline and expanded recharts LineChart | VERIFIED | Dual mode (100px sparkline / full 200px chart with axes), recharts 3.8.1 |
+| `src/components/scripts-table.tsx` | Expandable rows with chevron toggle | VERIFIED | ScriptWithVideo prop, ChevronDown/Up, expandedId state, MetricsCard in expanded tr |
+| `src/app/scripts/page.tsx` | Server component with metrics data and sync state | VERIFIED | Calls getScriptsWithMetrics + getLastSyncTime, renders SyncButton |
+| `src/components/video-link-selector.tsx` | Dropdown for linking/unlinking videos | VERIFIED | Native select, useTransition, linkVideo + unlinkVideo wired |
+| `src/components/editor-metrics-panel.tsx` | Metrics detail panel for editor page | VERIFIED | Card with 5-metric grid + RetentionChart in expanded mode |
+| `src/app/script/[id]/page.tsx` | Editor page with video linking and metrics panel | VERIFIED | Fetches getVideoForScript + getUnlinkedVideos, renders both components |
 
 ### Key Link Verification
 
@@ -93,7 +93,7 @@ human_verification:
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
 | TypeScript compiles cleanly | `cd web && npx tsc --noEmit` | No errors | PASS |
-| recharts installed | `grep "recharts" web/package.json` | `"recharts": "^3.8.1"` | PASS |
+| recharts installed | `grep "recharts" package.json` | `"recharts": "^3.8.1"` | PASS |
 | All 6 phase commits in git | `git log --oneline` | a055935, c69f3b1, 35682c0, 9db3651, 34eae36, e272992 all present + 709b0b5 fix | PASS |
 | discoverVideos export exists | grep check | `export async function discoverVideos` at metrics.ts:15 | PASS |
 | syncSingleVideo export exists | grep check | `export async function syncSingleVideo` at metrics.ts:61 | PASS |

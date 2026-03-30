@@ -47,10 +47,10 @@ Deliver YouTube OAuth2 connection flow from a new settings page, persistent toke
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Existing Codebase
-- `web/src/lib/db/schema.ts` — Current Drizzle schema (scripts + beats tables). New tables must follow same patterns.
-- `web/src/app/layout.tsx` — Header layout with nav links. YouTube icon and gear icon integrate here.
-- `web/src/app/actions/` — Server actions pattern. OAuth and YouTube actions follow this.
-- `web/drizzle.config.ts` — Drizzle config for schema push.
+- `src/lib/db/schema.ts` — Current Drizzle schema (scripts + beats tables). New tables must follow same patterns.
+- `src/app/layout.tsx` — Header layout with nav links. YouTube icon and gear icon integrate here.
+- `src/app/actions/` — Server actions pattern. OAuth and YouTube actions follow this.
+- `drizzle.config.ts` — Drizzle config for schema push.
 - `web/AGENTS.md` — Next.js 16 breaking changes warning. Read Next.js docs before writing code.
 
 ### Research

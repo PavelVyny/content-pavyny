@@ -19,17 +19,17 @@ All database calls are **synchronous**. Drizzle wraps better-sqlite3 and exposes
 
 | File | Role | Sync DB Calls | Migration Action |
 |------|------|---------------|------------------|
-| `web/src/lib/db/index.ts` | Connection singleton | `new Database()`, `.pragma()` | **Full rewrite** |
-| `web/src/lib/db/schema.ts` | 4 table definitions | N/A (schema only) | **Full rewrite** |
-| `web/drizzle.config.ts` | Drizzle Kit config | N/A (config only) | **Full rewrite** |
-| `web/src/app/actions/metrics.ts` | Video discovery, sync, analytics | 15x `.run()/.get()/.all()` | **Add await to all DB calls** |
-| `web/src/app/actions/editor.ts` | Beat/hook editing, AI regen | 14x `.run()/.get()/.all()` | **Add await to all DB calls** |
-| `web/src/app/actions/library.ts` | Script listing, status, voiceover | 5x `.run()/.get()/.all()` | **Add await to all DB calls** |
-| `web/src/app/actions/generate.ts` | Script generation, deletion | 9x `.run()/.get()/.returning().get()` | **Add await to all DB calls** |
-| `web/src/app/page.tsx` | Home page (sync server component) | 1x `.get()` | **Make component async, add await** |
-| `web/src/app/script/[id]/page.tsx` | Script editor page (already async) | 2x `.get()/.all()` | **Add await** |
-| `web/next.config.ts` | External packages config | N/A | **Remove better-sqlite3 entry** |
-| `web/package.json` | Dependencies | N/A | **Remove better-sqlite3, add postgres** |
+| `src/lib/db/index.ts` | Connection singleton | `new Database()`, `.pragma()` | **Full rewrite** |
+| `src/lib/db/schema.ts` | 4 table definitions | N/A (schema only) | **Full rewrite** |
+| `drizzle.config.ts` | Drizzle Kit config | N/A (config only) | **Full rewrite** |
+| `src/app/actions/metrics.ts` | Video discovery, sync, analytics | 15x `.run()/.get()/.all()` | **Add await to all DB calls** |
+| `src/app/actions/editor.ts` | Beat/hook editing, AI regen | 14x `.run()/.get()/.all()` | **Add await to all DB calls** |
+| `src/app/actions/library.ts` | Script listing, status, voiceover | 5x `.run()/.get()/.all()` | **Add await to all DB calls** |
+| `src/app/actions/generate.ts` | Script generation, deletion | 9x `.run()/.get()/.returning().get()` | **Add await to all DB calls** |
+| `src/app/page.tsx` | Home page (sync server component) | 1x `.get()` | **Make component async, add await** |
+| `src/app/script/[id]/page.tsx` | Script editor page (already async) | 2x `.get()/.all()` | **Add await** |
+| `next.config.ts` | External packages config | N/A | **Remove better-sqlite3 entry** |
+| `package.json` | Dependencies | N/A | **Remove better-sqlite3, add postgres** |
 
 **Total: 11 files change. ~46 individual DB call sites gain `await`.**
 
@@ -92,7 +92,7 @@ Next.js Server (dev/prod)
 
 ## File-by-File Change Specification
 
-### 1. `web/src/lib/db/schema.ts` -- FULL REWRITE
+### 1. `src/lib/db/schema.ts` -- FULL REWRITE
 
 All imports change from `drizzle-orm/sqlite-core` to `drizzle-orm/pg-core`. Every table definition changes.
 
@@ -135,7 +135,7 @@ export const scripts = pgTable("scripts", {
 - All `$defaultFn(() => new Date())` -> `defaultNow()`
 - Plain `integer()` columns (views, likes, etc.) stay as `integer()` -- same in pg-core
 
-### 2. `web/src/lib/db/index.ts` -- FULL REWRITE
+### 2. `src/lib/db/index.ts` -- FULL REWRITE
 
 **Before:**
 ```typescript
@@ -172,7 +172,7 @@ export const db = drizzle({ client, schema });
 
 **Export change:** `getDb()` function -> direct `db` export. All 8 consumer files update their import from `const db = getDb()` to `import { db } from "@/lib/db"`. Alternatively, keep `getDb()` as a wrapper that returns `db` to minimize downstream changes -- but direct export is cleaner.
 
-### 3. `web/drizzle.config.ts` -- FULL REWRITE
+### 3. `drizzle.config.ts` -- FULL REWRITE
 
 **Before:**
 ```typescript
@@ -194,7 +194,7 @@ export default defineConfig({
 });
 ```
 
-### 4. `web/src/app/actions/editor.ts` -- ADD AWAIT (14 sites)
+### 4. `src/app/actions/editor.ts` -- ADD AWAIT (14 sites)
 
 All functions are already `async`. Every `db.` chain ending in `.run()`, `.get()`, or `.all()` gains `await` and the terminal method changes.
 
@@ -215,11 +215,11 @@ const script = db.select().from(scripts).where(eq(scripts.id, scriptId)).get();
 const [script] = await db.select().from(scripts).where(eq(scripts.id, scriptId)).limit(1);
 ```
 
-### 5. `web/src/app/actions/library.ts` -- ADD AWAIT (5 sites)
+### 5. `src/app/actions/library.ts` -- ADD AWAIT (5 sites)
 
 Same mechanical pattern. `.all()` becomes just `await`, `.get()` becomes `await ... .limit(1)` then `[0]`.
 
-### 6. `web/src/app/actions/generate.ts` -- ADD AWAIT (9 sites)
+### 6. `src/app/actions/generate.ts` -- ADD AWAIT (9 sites)
 
 Special case -- `returning().get()`:
 ```typescript
@@ -230,7 +230,7 @@ const script = db.insert(scripts).values({...}).returning().get();
 const [script] = await db.insert(scripts).values({...}).returning();
 ```
 
-### 7. `web/src/app/actions/metrics.ts` -- ADD AWAIT (15 sites)
+### 7. `src/app/actions/metrics.ts` -- ADD AWAIT (15 sites)
 
 Largest file. Additional concern beyond mechanical await:
 
@@ -248,7 +248,7 @@ return result.maxSync ? new Date(result.maxSync) : null;
 
 **Raw SQL aggregations:** `COALESCE(SUM(...), 0)` and `MAX(...)` work identically. No changes.
 
-### 8. `web/src/app/page.tsx` -- MAKE ASYNC
+### 8. `src/app/page.tsx` -- MAKE ASYNC
 
 Currently a **synchronous** server component. Must become async:
 ```typescript
@@ -262,7 +262,7 @@ export default async function Home() {
   const [latestScript] = await db.select()...limit(1);
 ```
 
-### 9. `web/src/app/script/[id]/page.tsx` -- ADD AWAIT (2 sites)
+### 9. `src/app/script/[id]/page.tsx` -- ADD AWAIT (2 sites)
 
 Already `async`. Two DB calls gain `await`:
 ```typescript
@@ -275,7 +275,7 @@ const [script] = await db.select().from(scripts).where(eq(scripts.id, scriptId))
 const scriptBeats = await db.select().from(beats).where(eq(beats.scriptId, scriptId)).orderBy(beats.order);
 ```
 
-### 10. `web/next.config.ts` -- REMOVE ENTRY
+### 10. `next.config.ts` -- REMOVE ENTRY
 
 ```typescript
 // Before
@@ -287,7 +287,7 @@ const nextConfig: NextConfig = {
 const nextConfig: NextConfig = {};
 ```
 
-### 11. `web/package.json` -- DEPENDENCY SWAP
+### 11. `package.json` -- DEPENDENCY SWAP
 
 **Remove:**
 - `"better-sqlite3": "^12.8.0"` from dependencies
@@ -296,7 +296,7 @@ const nextConfig: NextConfig = {};
 **Add:**
 - `"postgres": "^3.4.5"` to dependencies
 
-### 12. `web/.env.local` -- ADD DATABASE_URL
+### 12. `.env.local` -- ADD DATABASE_URL
 
 ```env
 DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
@@ -306,12 +306,12 @@ DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-0-[region].poole
 
 | File | Why Unaffected |
 |------|---------------|
-| `web/src/lib/youtube-client.ts` | Reads/writes tokens to filesystem. No DB dependency. |
-| `web/src/lib/agent.ts` | AI generation logic. No DB calls. |
-| `web/src/lib/types.ts` | TypeScript interfaces. DB-agnostic. |
-| `web/src/lib/references.ts` | Reads skill reference files. No DB. |
-| All `web/src/components/*.tsx` | Client components. Never touch DB directly. |
-| `web/src/app/analytics/page.tsx` | Calls server actions from metrics.ts. No direct DB access. |
+| `src/lib/youtube-client.ts` | Reads/writes tokens to filesystem. No DB dependency. |
+| `src/lib/agent.ts` | AI generation logic. No DB calls. |
+| `src/lib/types.ts` | TypeScript interfaces. DB-agnostic. |
+| `src/lib/references.ts` | Reads skill reference files. No DB. |
+| All `src/components/*.tsx` | Client components. Never touch DB directly. |
+| `src/app/analytics/page.tsx` | Calls server actions from metrics.ts. No direct DB access. |
 
 ## Data Migration Strategy
 

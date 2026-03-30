@@ -46,19 +46,19 @@ Dual-track beat editor for generated scripts. Pavlo can view and edit any script
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Existing App (Phase 4 output)
-- `web/src/components/script-display.tsx` — Current read-only beat display (reference for layout patterns, will be superseded by editor)
-- `web/src/components/generation-page.tsx` — Client wrapper managing form/display toggle
-- `web/src/app/actions/generate.ts` — Existing server actions (generateNewScript, regenerateScript, deleteScript)
-- `web/src/lib/types.ts` — Script, ScriptBeat, HookVariant, AntiSlopScore interfaces
-- `web/src/lib/db/schema.ts` — Drizzle schema (scripts + beats tables)
-- `web/src/lib/agent.ts` — Agent SDK wrapper for script generation
-- `web/src/lib/db/index.ts` — Database connection
+- `src/components/script-display.tsx` — Current read-only beat display (reference for layout patterns, will be superseded by editor)
+- `src/components/generation-page.tsx` — Client wrapper managing form/display toggle
+- `src/app/actions/generate.ts` — Existing server actions (generateNewScript, regenerateScript, deleteScript)
+- `src/lib/types.ts` — Script, ScriptBeat, HookVariant, AntiSlopScore interfaces
+- `src/lib/db/schema.ts` — Drizzle schema (scripts + beats tables)
+- `src/lib/agent.ts` — Agent SDK wrapper for script generation
+- `src/lib/db/index.ts` — Database connection
 
 ### UI Components
-- `web/src/components/ui/card.tsx` — Card component (used extensively in ScriptDisplay)
-- `web/src/components/ui/badge.tsx` — Badge component
-- `web/src/components/ui/button.tsx` — Button component
-- `web/src/components/ui/textarea.tsx` — Textarea component (needed for editing)
+- `src/components/ui/card.tsx` — Card component (used extensively in ScriptDisplay)
+- `src/components/ui/badge.tsx` — Badge component
+- `src/components/ui/button.tsx` — Button component
+- `src/components/ui/textarea.tsx` — Textarea component (needed for editing)
 
 ### Reference Files (loaded at runtime)
 - `.claude/skills/devlog-scriptwriter/references/brand-voice.md` — Voice profile
@@ -69,7 +69,7 @@ Dual-track beat editor for generated scripts. Pavlo can view and edit any script
 - `.planning/phases/04-foundation-generation/04-CONTEXT.md` — Stack decisions, design choices, AI backend approach
 
 ### Next.js Documentation
-- `web/node_modules/next/dist/docs/` — Next.js 16 guides (AGENTS.md warns: read before writing code)
+- `node_modules/next/dist/docs/` — Next.js 16 guides (AGENTS.md warns: read before writing code)
 
 </canonical_refs>
 

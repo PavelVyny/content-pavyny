@@ -18,20 +18,20 @@
 ## Key Files
 
 ### Created
-- `web/src/app/api/youtube/callback/route.ts` — OAuth redirect handler
-- `web/src/app/actions/youtube.ts` — Server actions for YouTube operations
-- `web/src/app/settings/page.tsx` — Settings page
-- `web/src/components/youtube-connect-card.tsx` — Connect/channel card component
-- `web/src/components/youtube-status-icon.tsx` — Header status icon
+- `src/app/api/youtube/callback/route.ts` — OAuth redirect handler
+- `src/app/actions/youtube.ts` — Server actions for YouTube operations
+- `src/app/settings/page.tsx` — Settings page
+- `src/components/youtube-connect-card.tsx` — Connect/channel card component
+- `src/components/youtube-status-icon.tsx` — Header status icon
 
 ### Modified
-- `web/src/app/layout.tsx` — Added YouTube icon + gear icon to header
+- `src/app/layout.tsx` — Added YouTube icon + gear icon to header
 
 ## Deviations
 
 1. **revalidatePath fix** — Original code didn't include `revalidatePath("/", "layout")` after connect/disconnect, causing header icon to not update. Fixed during checkpoint verification.
 2. **npm install required** — Plan 07-01 added googleapis to package.json but didn't run npm install. Fixed manually.
-3. **.env location** — Credentials were in root `.env` but Next.js runs from `web/`. Created `web/.env` with correct values.
+3. **.env location** — Credentials were in root `.env` but Next.js runs from `web/`. Created `.env` with correct values.
 
 ## Requirements Addressed
 

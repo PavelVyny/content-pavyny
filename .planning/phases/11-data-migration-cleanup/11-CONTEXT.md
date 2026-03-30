@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Migrate all existing data from the local SQLite database (web/data/scripts.db) to Supabase PostgreSQL, remove the SQLite dependency completely, and verify the app works identically from both of Pavlo's machines (Windows PC and MacBook Air M1) against the same Supabase instance.
+Migrate all existing data from the local SQLite database (data/scripts.db) to Supabase PostgreSQL, remove the SQLite dependency completely, and verify the app works identically from both of Pavlo's machines (Windows PC and MacBook Air M1) against the same Supabase instance.
 
 </domain>
 
@@ -22,7 +22,7 @@ Migrate all existing data from the local SQLite database (web/data/scripts.db) t
 - **D-04:** MacBook Air M1 already has the repo cloned and npm installed. Only needs .env.local with DATABASE_URL and npm install to pick up postgres-js.
 
 ### SQLite Cleanup
-- **D-05:** Keep SQLite files as backup temporarily — add web/data/ to .gitignore but keep on disk. Pavlo deletes manually once confident Supabase is stable.
+- **D-05:** Keep SQLite files as backup temporarily — add data/ to .gitignore but keep on disk. Pavlo deletes manually once confident Supabase is stable.
 - **D-06:** Do NOT delete scripts.db, .db-shm, .db-wal during this phase. Just gitignore them.
 
 ### Migration Approach (Claude's Discretion)
@@ -44,18 +44,18 @@ Migrate all existing data from the local SQLite database (web/data/scripts.db) t
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Current Schema & Connection (Phase 10 output)
-- `web/src/lib/db/schema.ts` — PostgreSQL schema with pgTable (serial PKs, jsonb, timestamp)
-- `web/src/lib/db/index.ts` — postgres-js connection module with Supabase pooler
-- `web/drizzle.config.ts` — PostgreSQL dialect config
+- `src/lib/db/schema.ts` — PostgreSQL schema with pgTable (serial PKs, jsonb, timestamp)
+- `src/lib/db/index.ts` — postgres-js connection module with Supabase pooler
+- `drizzle.config.ts` — PostgreSQL dialect config
 
 ### SQLite Source Data
-- `web/data/scripts.db` — Source SQLite database (16KB, 4 tables: scripts, beats, videos, videoMetrics)
+- `data/scripts.db` — Source SQLite database (16KB, 4 tables: scripts, beats, videos, videoMetrics)
 
 ### Phase 10 Context (prior decisions)
 - `.planning/phases/10-schema-async-rewrite/10-CONTEXT.md` — Type conversion decisions (D-08: timestamp, D-09: jsonb, D-10: serial)
 
 ### Smoke Test
-- `web/scripts/smoke-test.ts` — Existing Supabase CRUD smoke test (from Phase 10)
+- `scripts/smoke-test.ts` — Existing Supabase CRUD smoke test (from Phase 10)
 
 </canonical_refs>
 
@@ -63,8 +63,8 @@ Migrate all existing data from the local SQLite database (web/data/scripts.db) t
 ## Existing Code Insights
 
 ### Reusable Assets
-- `web/scripts/smoke-test.ts` — Already verifies Supabase CRUD for all 4 tables, can be run post-migration
-- `web/src/lib/db/index.ts` — postgres-js connection module, reusable for migration script's write side
+- `scripts/smoke-test.ts` — Already verifies Supabase CRUD for all 4 tables, can be run post-migration
+- `src/lib/db/index.ts` — postgres-js connection module, reusable for migration script's write side
 
 ### Established Patterns
 - postgres-js with `prepare: false` for Supabase pooler
@@ -74,7 +74,7 @@ Migrate all existing data from the local SQLite database (web/data/scripts.db) t
 ### Integration Points
 - Migration script reads from SQLite file, writes to Supabase using same connection as app
 - After migration: run existing smoke-test.ts to verify
-- .gitignore needs web/data/ entry
+- .gitignore needs data/ entry
 
 </code_context>
 

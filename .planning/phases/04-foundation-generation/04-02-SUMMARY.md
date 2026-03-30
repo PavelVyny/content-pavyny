@@ -22,8 +22,8 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/lib/agent.ts
-    - web/src/app/actions/generate.ts
+    - src/lib/agent.ts
+    - src/app/actions/generate.ts
   modified: []
 
 key-decisions:
@@ -68,8 +68,8 @@ completed: 2026-03-28
 
 ## Files Created
 
-- `web/src/lib/agent.ts` - Agent SDK wrapper: ScriptOutputSchema (Zod), generateScript() with query(), structured output validation
-- `web/src/app/actions/generate.ts` - Server Actions: generateNewScript (FormData), regenerateScript (scriptId + params), placeholder-then-update pattern, error handling
+- `src/lib/agent.ts` - Agent SDK wrapper: ScriptOutputSchema (Zod), generateScript() with query(), structured output validation
+- `src/app/actions/generate.ts` - Server Actions: generateNewScript (FormData), regenerateScript (scriptId + params), placeholder-then-update pattern, error handling
 
 ## Decisions Made
 
@@ -84,7 +84,7 @@ completed: 2026-03-28
 - **Found during:** Task 2 (verification)
 - **Issue:** Plan showed `const [script] = db.insert(scripts).values({...}).returning()` but Drizzle's SQLite driver returns a query builder from `.returning()`, not an iterable array
 - **Fix:** Changed to `.returning().get()` which executes the query and returns a single row
-- **Files modified:** `web/src/app/actions/generate.ts`
+- **Files modified:** `src/app/actions/generate.ts`
 - **Committed in:** 809837e (Task 2 commit)
 
 ---

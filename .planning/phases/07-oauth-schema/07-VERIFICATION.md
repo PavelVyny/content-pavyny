@@ -9,9 +9,9 @@ gaps:
     status: failed
     reason: "drizzle-kit push was not successfully applied — tables are defined in schema.ts but absent from data/scripts.db. Direct SQL queries confirm: no such table: videos / video_metrics."
     artifacts:
-      - path: "web/src/lib/db/schema.ts"
+      - path: "src/lib/db/schema.ts"
         issue: "File is correct and substantive (tables defined), but push to SQLite never ran or failed silently"
-      - path: "web/data/scripts.db"
+      - path: "data/scripts.db"
         issue: "Database only contains scripts and beats tables. videos and video_metrics are missing."
     missing:
       - "Run cd web && npx drizzle-kit push to apply the schema to the SQLite database"
@@ -19,7 +19,7 @@ gaps:
     status: failed
     reason: "youtube-connect-card.tsx line 34 has a type error: getChannelInfoAction() returns Promise<ChannelInfo | null | undefined> but setChannel expects SetStateAction<ChannelInfo | null>. undefined is not assignable."
     artifacts:
-      - path: "web/src/components/youtube-connect-card.tsx"
+      - path: "src/components/youtube-connect-card.tsx"
         issue: "Line 34: setChannel(info) — info can be undefined (from StoredTokens['channel']) but setChannel state type is ChannelInfo | null"
     missing:
       - "Change line 34 from setChannel(info) to setChannel(info ?? null) to handle undefined return from getChannelInfoAction()"
@@ -64,19 +64,19 @@ human_verification:
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `web/src/lib/db/schema.ts` | videos and videoMetrics table definitions | WIRED | File exists, exports `videos` and `videoMetrics`, imported via `* as schema` in db/index.ts. Tables NOT yet in SQLite. |
-| `web/src/lib/youtube-client.ts` | OAuth2 client singleton, token persistence, channel info fetch | VERIFIED | 181 lines, all 9 exported functions present, null-strip token merge, both scopes, access_type:"offline", prompt:"consent" |
+| `src/lib/db/schema.ts` | videos and videoMetrics table definitions | WIRED | File exists, exports `videos` and `videoMetrics`, imported via `* as schema` in db/index.ts. Tables NOT yet in SQLite. |
+| `src/lib/youtube-client.ts` | OAuth2 client singleton, token persistence, channel info fetch | VERIFIED | 181 lines, all 9 exported functions present, null-strip token merge, both scopes, access_type:"offline", prompt:"consent" |
 
 #### Plan 02 Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `web/src/app/api/youtube/callback/route.ts` | OAuth2 callback handler | VERIFIED | Exports GET, imports from @/lib/youtube-client, redirects to /settings?connected=true on success |
-| `web/src/app/actions/youtube.ts` | Server actions for connect URL, disconnect, status | VERIFIED | "use server", exports all 5 expected actions including disconnectYouTube with revokeToken |
-| `web/src/app/settings/page.tsx` | Settings page with YouTube integration section | VERIFIED | Renders YouTubeConnectCard, has "Settings" heading, "YouTube Integration" section |
-| `web/src/components/youtube-status-icon.tsx` | Three-state YouTube icon for header | VERIFIED | "use client", YouTube SVG (23.498 path), #FF0000/zinc-400 colors, amber dot for expired state |
-| `web/src/components/youtube-connect-card.tsx` | Connect button or channel details card | STUB (TS error) | Functionally complete but has TypeScript error on line 34 (undefined not assignable to ChannelInfo \| null) |
-| `web/src/app/layout.tsx` | Header with gear icon and YouTube status icon | VERIFIED | Imports YouTubeStatusIcon + getQuickConnectionStatus + Settings from lucide-react, nav has items-center |
+| `src/app/api/youtube/callback/route.ts` | OAuth2 callback handler | VERIFIED | Exports GET, imports from @/lib/youtube-client, redirects to /settings?connected=true on success |
+| `src/app/actions/youtube.ts` | Server actions for connect URL, disconnect, status | VERIFIED | "use server", exports all 5 expected actions including disconnectYouTube with revokeToken |
+| `src/app/settings/page.tsx` | Settings page with YouTube integration section | VERIFIED | Renders YouTubeConnectCard, has "Settings" heading, "YouTube Integration" section |
+| `src/components/youtube-status-icon.tsx` | Three-state YouTube icon for header | VERIFIED | "use client", YouTube SVG (23.498 path), #FF0000/zinc-400 colors, amber dot for expired state |
+| `src/components/youtube-connect-card.tsx` | Connect button or channel details card | STUB (TS error) | Functionally complete but has TypeScript error on line 34 (undefined not assignable to ChannelInfo \| null) |
+| `src/app/layout.tsx` | Header with gear icon and YouTube status icon | VERIFIED | Imports YouTubeStatusIcon + getQuickConnectionStatus + Settings from lucide-react, nav has items-center |
 
 ---
 
@@ -84,12 +84,12 @@ human_verification:
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| web/src/lib/db/schema.ts | web/src/lib/db/index.ts | import * as schema in drizzle() | WIRED | db/index.ts line 3: `import * as schema from "./schema"` |
-| web/src/lib/youtube-client.ts | data/.youtube-tokens.json | fs read/write | WIRED | TOKEN_PATH defined as `path.join(process.cwd(), "data", ".youtube-tokens.json")` |
-| web/src/app/api/youtube/callback/route.ts | web/src/lib/youtube-client.ts | getOAuth2Client, saveTokens, getChannelInfo imports | WIRED | Line 3-7: `import { getOAuth2Client, saveTokens, getChannelInfo } from "@/lib/youtube-client"` |
-| web/src/app/actions/youtube.ts | web/src/lib/youtube-client.ts | all youtube-client functions | WIRED | Lines 4-13 import all 8 functions from @/lib/youtube-client |
-| web/src/app/layout.tsx | web/src/components/youtube-status-icon.tsx | YouTubeStatusIcon component | WIRED | Line 6: `import { YouTubeStatusIcon }` used on line 54: `<YouTubeStatusIcon status={connectionStatus} />` |
-| web/src/app/settings/page.tsx | web/src/app/actions/youtube.ts | server action calls | WIRED | youtube-connect-card.tsx (used by settings page) imports getAuthUrlAction, disconnectYouTube, getConnectionStatus, getChannelInfoAction |
+| src/lib/db/schema.ts | src/lib/db/index.ts | import * as schema in drizzle() | WIRED | db/index.ts line 3: `import * as schema from "./schema"` |
+| src/lib/youtube-client.ts | data/.youtube-tokens.json | fs read/write | WIRED | TOKEN_PATH defined as `path.join(process.cwd(), "data", ".youtube-tokens.json")` |
+| src/app/api/youtube/callback/route.ts | src/lib/youtube-client.ts | getOAuth2Client, saveTokens, getChannelInfo imports | WIRED | Line 3-7: `import { getOAuth2Client, saveTokens, getChannelInfo } from "@/lib/youtube-client"` |
+| src/app/actions/youtube.ts | src/lib/youtube-client.ts | all youtube-client functions | WIRED | Lines 4-13 import all 8 functions from @/lib/youtube-client |
+| src/app/layout.tsx | src/components/youtube-status-icon.tsx | YouTubeStatusIcon component | WIRED | Line 6: `import { YouTubeStatusIcon }` used on line 54: `<YouTubeStatusIcon status={connectionStatus} />` |
+| src/app/settings/page.tsx | src/app/actions/youtube.ts | server action calls | WIRED | youtube-connect-card.tsx (used by settings page) imports getAuthUrlAction, disconnectYouTube, getConnectionStatus, getChannelInfoAction |
 
 ---
 
@@ -134,7 +134,7 @@ human_verification:
 
 | File | Line | Pattern | Severity | Impact |
 |------|------|---------|----------|--------|
-| web/src/components/youtube-connect-card.tsx | 34 | TypeScript error: `setChannel(info)` where info can be `undefined` | Warning | Compilation fails; at runtime undefined is passed where null expected, though behavior may be the same since both are falsy |
+| src/components/youtube-connect-card.tsx | 34 | TypeScript error: `setChannel(info)` where info can be `undefined` | Warning | Compilation fails; at runtime undefined is passed where null expected, though behavior may be the same since both are falsy |
 
 No TODO/FIXME/placeholder comments found in phase 7 files. No empty return stubs. All handler functions contain real logic.
 
@@ -154,9 +154,9 @@ No TODO/FIXME/placeholder comments found in phase 7 files. No empty return stubs
 
 Two gaps block full goal achievement:
 
-**Gap 1 — Missing SQLite tables (blocker for YTUB-05):** The `videos` and `video_metrics` Drizzle schema definitions exist in `web/src/lib/db/schema.ts` and are correct, but `npx drizzle-kit push` was not successfully executed against the live database. The `data/scripts.db` file contains only the original `scripts` and `beats` tables from Phase 4. Phase 8 (metrics sync) cannot proceed until these tables exist.
+**Gap 1 — Missing SQLite tables (blocker for YTUB-05):** The `videos` and `video_metrics` Drizzle schema definitions exist in `src/lib/db/schema.ts` and are correct, but `npx drizzle-kit push` was not successfully executed against the live database. The `data/scripts.db` file contains only the original `scripts` and `beats` tables from Phase 4. Phase 8 (metrics sync) cannot proceed until these tables exist.
 
-**Gap 2 — TypeScript compilation error (code quality):** `web/src/components/youtube-connect-card.tsx` line 34 passes the return value of `getChannelInfoAction()` directly to `setChannel()`. Since `getChannelInfo()` returns `StoredTokens["channel"] | null` and `StoredTokens["channel"]` is optional (hence can be `undefined`), TypeScript rejects the assignment. The fix is a single-character change: `setChannel(info ?? null)`. This does not affect runtime behavior (undefined and null are both falsy), but the project should compile clean.
+**Gap 2 — TypeScript compilation error (code quality):** `src/components/youtube-connect-card.tsx` line 34 passes the return value of `getChannelInfoAction()` directly to `setChannel()`. Since `getChannelInfo()` returns `StoredTokens["channel"] | null` and `StoredTokens["channel"]` is optional (hence can be `undefined`), TypeScript rejects the assignment. The fix is a single-character change: `setChannel(info ?? null)`. This does not affect runtime behavior (undefined and null are both falsy), but the project should compile clean.
 
 Both gaps are trivial to fix — one shell command and one source edit. The OAuth2 connection flow itself was human-verified as working end-to-end per 07-02-SUMMARY.md.
 

@@ -22,20 +22,20 @@ tech-stack:
 
 key-files:
   created:
-    - web/.env.local.example
-    - web/scripts/smoke-test.ts
+    - .env.local.example
+    - scripts/smoke-test.ts
   modified:
-    - web/src/lib/db/schema.ts
-    - web/src/lib/db/index.ts
-    - web/drizzle.config.ts
-    - web/src/app/actions/generate.ts
-    - web/src/app/actions/editor.ts
-    - web/src/app/actions/library.ts
-    - web/src/app/actions/metrics.ts
-    - web/src/app/page.tsx
-    - web/src/app/script/[id]/page.tsx
-    - web/next.config.ts
-    - web/package.json
+    - src/lib/db/schema.ts
+    - src/lib/db/index.ts
+    - drizzle.config.ts
+    - src/app/actions/generate.ts
+    - src/app/actions/editor.ts
+    - src/app/actions/library.ts
+    - src/app/actions/metrics.ts
+    - src/app/page.tsx
+    - src/app/script/[id]/page.tsx
+    - next.config.ts
+    - package.json
 
 key-decisions:
   - "Array destructuring [row] for single-row queries instead of .get() -- PostgreSQL Drizzle returns arrays"
@@ -86,19 +86,19 @@ Each task was committed atomically:
 **Plan metadata:** `4381105` (docs: plan file)
 
 ## Files Created/Modified
-- `web/src/lib/db/schema.ts` - PostgreSQL schema with pgTable, serial, jsonb, timestamp
-- `web/src/lib/db/index.ts` - postgres-js connection with prepare: false for Supabase pooler
-- `web/drizzle.config.ts` - PostgreSQL dialect with DATABASE_URL
-- `web/src/app/actions/generate.ts` - Async script generation and deletion
-- `web/src/app/actions/editor.ts` - Async beat editing, hook management, anti-slop rescoring
-- `web/src/app/actions/library.ts` - Async script listing, status changes, voiceover export
-- `web/src/app/actions/metrics.ts` - Async YouTube sync, metrics queries, video linking
-- `web/src/app/page.tsx` - Async home page with DB access
-- `web/src/app/script/[id]/page.tsx` - Async script editor page
-- `web/next.config.ts` - Removed better-sqlite3 from serverExternalPackages
-- `web/package.json` - Swapped better-sqlite3 for postgres
-- `web/.env.local.example` - DATABASE_URL template
-- `web/scripts/smoke-test.ts` - CRUD smoke test for all 4 tables
+- `src/lib/db/schema.ts` - PostgreSQL schema with pgTable, serial, jsonb, timestamp
+- `src/lib/db/index.ts` - postgres-js connection with prepare: false for Supabase pooler
+- `drizzle.config.ts` - PostgreSQL dialect with DATABASE_URL
+- `src/app/actions/generate.ts` - Async script generation and deletion
+- `src/app/actions/editor.ts` - Async beat editing, hook management, anti-slop rescoring
+- `src/app/actions/library.ts` - Async script listing, status changes, voiceover export
+- `src/app/actions/metrics.ts` - Async YouTube sync, metrics queries, video linking
+- `src/app/page.tsx` - Async home page with DB access
+- `src/app/script/[id]/page.tsx` - Async script editor page
+- `next.config.ts` - Removed better-sqlite3 from serverExternalPackages
+- `package.json` - Swapped better-sqlite3 for postgres
+- `.env.local.example` - DATABASE_URL template
+- `scripts/smoke-test.ts` - CRUD smoke test for all 4 tables
 
 ## Decisions Made
 - Used array destructuring `const [row] = await ...` for single-row queries, replacing `.get()` -- cleanest pattern for PostgreSQL Drizzle

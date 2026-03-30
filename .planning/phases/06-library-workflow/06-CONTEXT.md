@@ -40,23 +40,23 @@ Script library page for browsing all saved scripts, changing their status (draft
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Existing App (Phase 4+5 output)
-- `web/src/lib/types.ts` — Script, ScriptBeat, AntiSlopScore interfaces
-- `web/src/lib/db/schema.ts` — Drizzle schema (scripts + beats tables, status enum)
-- `web/src/lib/db/index.ts` — Database connection
-- `web/src/app/actions/generate.ts` — Existing server actions pattern
-- `web/src/app/actions/editor.ts` — Server actions from Phase 5
-- `web/src/components/script-display.tsx` — scoreColor and statusColor helpers (reuse)
-- `web/src/components/ui/badge.tsx` — Badge component
-- `web/src/components/ui/select.tsx` — Select component (for status dropdown)
-- `web/src/app/layout.tsx` — Layout with header (add nav links here)
-- `web/src/app/page.tsx` — Generation page
+- `src/lib/types.ts` — Script, ScriptBeat, AntiSlopScore interfaces
+- `src/lib/db/schema.ts` — Drizzle schema (scripts + beats tables, status enum)
+- `src/lib/db/index.ts` — Database connection
+- `src/app/actions/generate.ts` — Existing server actions pattern
+- `src/app/actions/editor.ts` — Server actions from Phase 5
+- `src/components/script-display.tsx` — scoreColor and statusColor helpers (reuse)
+- `src/components/ui/badge.tsx` — Badge component
+- `src/components/ui/select.tsx` — Select component (for status dropdown)
+- `src/app/layout.tsx` — Layout with header (add nav links here)
+- `src/app/page.tsx` — Generation page
 
 ### Prior Phase Context
 - `.planning/phases/04-foundation-generation/04-CONTEXT.md` — Stack decisions
 - `.planning/phases/05-script-editor/05-CONTEXT.md` — Editor design decisions
 
 ### Next.js Documentation
-- `web/node_modules/next/dist/docs/` — Next.js 16 guides
+- `node_modules/next/dist/docs/` — Next.js 16 guides
 
 </canonical_refs>
 

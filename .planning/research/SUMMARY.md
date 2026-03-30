@@ -60,9 +60,9 @@ The post-migration data flow changes from synchronous local file access to async
 The change scope is precisely bounded: 11 files change, ~46 individual DB call sites gain `await`. Every file outside the DB layer is unaffected.
 
 **Major components:**
-1. `web/src/lib/db/schema.ts` — full rewrite: `sqliteTable` to `pgTable`, 4 PKs to `serial`, 4 JSON-text columns to `jsonb`, 6 timestamp columns to `timestamp`, all `$defaultFn(() => new Date())` to `defaultNow()`
-2. `web/src/lib/db/index.ts` — full rewrite: 15-line singleton to 4-line direct export using `postgres-js` with `prepare: false`
-3. `web/drizzle.config.ts` — dialect `sqlite` to `postgresql`, credentials from file path to `DATABASE_URL` env var
+1. `src/lib/db/schema.ts` — full rewrite: `sqliteTable` to `pgTable`, 4 PKs to `serial`, 4 JSON-text columns to `jsonb`, 6 timestamp columns to `timestamp`, all `$defaultFn(() => new Date())` to `defaultNow()`
+2. `src/lib/db/index.ts` — full rewrite: 15-line singleton to 4-line direct export using `postgres-js` with `prepare: false`
+3. `drizzle.config.ts` — dialect `sqlite` to `postgresql`, credentials from file path to `DATABASE_URL` env var
 4. 4 action files + 2 pages (8 files) — mechanical async conversion: ~46 call sites gain `await`, terminal methods removed or changed per PostgreSQL Drizzle conventions
 5. One-time ETL migration script — standalone Node.js: reads SQLite, converts timestamps (epoch seconds -> Date) and JSON (text -> parsed objects), writes in FK-safe order (scripts -> beats -> videos -> videoMetrics), resets sequences, verifies row counts
 

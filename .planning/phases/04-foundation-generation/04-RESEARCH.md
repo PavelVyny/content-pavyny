@@ -565,7 +565,7 @@ The shadcn CLI v4 automatically detects Tailwind v4 and configures OKLCH color t
 ### Drizzle Kit Configuration
 
 ```typescript
-// web/drizzle.config.ts
+// drizzle.config.ts
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({

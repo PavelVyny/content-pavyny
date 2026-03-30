@@ -45,20 +45,20 @@ Replace local SQLite (better-sqlite3) with Supabase PostgreSQL. Rewrite Drizzle 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Current Schema & DB
-- `web/src/lib/db/schema.ts` — Current SQLite schema with all 4 tables (scripts, beats, videos, videoMetrics)
-- `web/src/lib/db/index.ts` — Current better-sqlite3 connection module (singleton pattern, WAL mode)
-- `web/drizzle.config.ts` — Current Drizzle config (SQLite dialect)
+- `src/lib/db/schema.ts` — Current SQLite schema with all 4 tables (scripts, beats, videos, videoMetrics)
+- `src/lib/db/index.ts` — Current better-sqlite3 connection module (singleton pattern, WAL mode)
+- `drizzle.config.ts` — Current Drizzle config (SQLite dialect)
 
 ### Server Actions (all DB call sites)
-- `web/src/app/actions/generate.ts` — Script generation and regeneration (~12 .get()/.all()/.run() calls)
-- `web/src/app/actions/editor.ts` — Beat editing, hook selection, anti-slop rescoring (~16 .get()/.all()/.run() calls)
-- `web/src/app/actions/library.ts` — Script listing, status changes, clipboard export (~4 .get()/.all()/.run() calls)
-- `web/src/app/actions/metrics.ts` — YouTube sync, video metrics, linking (~18 .get()/.all()/.run() calls)
+- `src/app/actions/generate.ts` — Script generation and regeneration (~12 .get()/.all()/.run() calls)
+- `src/app/actions/editor.ts` — Beat editing, hook selection, anti-slop rescoring (~16 .get()/.all()/.run() calls)
+- `src/app/actions/library.ts` — Script listing, status changes, clipboard export (~4 .get()/.all()/.run() calls)
+- `src/app/actions/metrics.ts` — YouTube sync, video metrics, linking (~18 .get()/.all()/.run() calls)
 
 ### Page Server Components (async conversion needed)
-- `web/src/app/page.tsx` — Home page with DB access
-- `web/src/app/script/[id]/page.tsx` — Script editor page
-- `web/src/app/analytics/page.tsx` — Analytics dashboard
+- `src/app/page.tsx` — Home page with DB access
+- `src/app/script/[id]/page.tsx` — Script editor page
+- `src/app/analytics/page.tsx` — Analytics dashboard
 
 ### Project Research
 - `.planning/STATE.md` — Key decisions section has v3.0 research findings (postgres-js, pooler port, no supabase-js)

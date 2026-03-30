@@ -19,10 +19,10 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/app/actions/metrics.ts
+    - src/app/actions/metrics.ts
   modified:
-    - web/src/lib/youtube-client.ts
-    - web/src/lib/types.ts
+    - src/lib/youtube-client.ts
+    - src/lib/types.ts
 
 key-decisions:
   - "Single-video sync calls for per-video progress updates (D-06 compliance)"

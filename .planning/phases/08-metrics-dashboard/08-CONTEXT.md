@@ -49,12 +49,12 @@ Deliver sync engine to fetch YouTube video data and metrics, display them alongs
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Existing Codebase (Phase 7 outputs)
-- `web/src/lib/youtube-client.ts` — OAuth2 client singleton, token management. Needs new methods: listChannelVideos, getVideoMetrics, getRetentionData
-- `web/src/lib/db/schema.ts` — videos + videoMetrics tables (Phase 7). Sync writes here.
-- `web/src/app/actions/youtube.ts` — Existing server actions for YouTube. Add sync actions here.
-- `web/src/components/scripts-table.tsx` — Current scripts table. Modify to add expandable rows + metrics cards.
-- `web/src/components/score-panel.tsx` — Existing pattern for detail panels in the editor.
-- `web/src/app/script/[id]/page.tsx` or `web/src/components/script-editor.tsx` — Script editor page. Add video linking dropdown here.
+- `src/lib/youtube-client.ts` — OAuth2 client singleton, token management. Needs new methods: listChannelVideos, getVideoMetrics, getRetentionData
+- `src/lib/db/schema.ts` — videos + videoMetrics tables (Phase 7). Sync writes here.
+- `src/app/actions/youtube.ts` — Existing server actions for YouTube. Add sync actions here.
+- `src/components/scripts-table.tsx` — Current scripts table. Modify to add expandable rows + metrics cards.
+- `src/components/score-panel.tsx` — Existing pattern for detail panels in the editor.
+- `src/app/script/[id]/page.tsx` or `src/components/script-editor.tsx` — Script editor page. Add video linking dropdown here.
 
 ### Research
 - `.planning/research/ARCHITECTURE.md` — System diagram, data flows, API call patterns
@@ -62,7 +62,7 @@ Deliver sync engine to fetch YouTube video data and metrics, display them alongs
 - `.planning/research/PITFALLS.md` — Retention per-video limitation, data suppression, API confusion
 
 ### Environment
-- `web/.env` — YouTube API credentials
+- `.env` — YouTube API credentials
 - `web/AGENTS.md` — Next.js 16 breaking changes warning
 
 </canonical_refs>

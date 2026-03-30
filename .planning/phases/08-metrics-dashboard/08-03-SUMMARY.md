@@ -21,10 +21,10 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/components/video-link-selector.tsx
-    - web/src/components/editor-metrics-panel.tsx
+    - src/components/video-link-selector.tsx
+    - src/components/editor-metrics-panel.tsx
   modified:
-    - web/src/app/script/[id]/page.tsx
+    - src/app/script/[id]/page.tsx
 
 key-decisions:
   - "Used 'as any' for serialized Date-to-string props to avoid creating duplicate interfaces"
@@ -65,9 +65,9 @@ Each task was committed atomically:
 3. **Task 3: Verify video linking and metrics panel** - Auto-approved checkpoint
 
 ## Files Created/Modified
-- `web/src/components/video-link-selector.tsx` - Dropdown for linking/unlinking YouTube videos to scripts
-- `web/src/components/editor-metrics-panel.tsx` - Metrics detail panel with grid and retention chart
-- `web/src/app/script/[id]/page.tsx` - Editor page with video selector and conditional metrics display
+- `src/components/video-link-selector.tsx` - Dropdown for linking/unlinking YouTube videos to scripts
+- `src/components/editor-metrics-panel.tsx` - Metrics detail panel with grid and retention chart
+- `src/app/script/[id]/page.tsx` - Editor page with video selector and conditional metrics display
 
 ## Decisions Made
 - Used `as any` for serialized Date props rather than creating separate serialized interfaces -- pragmatic for 3 props

@@ -32,15 +32,15 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/components/generate-form.tsx
-    - web/src/components/format-card.tsx
-    - web/src/components/loading-state.tsx
-    - web/src/components/script-display.tsx
-    - web/src/components/generation-page.tsx
+    - src/components/generate-form.tsx
+    - src/components/format-card.tsx
+    - src/components/loading-state.tsx
+    - src/components/script-display.tsx
+    - src/components/generation-page.tsx
   modified:
-    - web/src/app/page.tsx
-    - web/src/lib/agent.ts
-    - web/src/app/actions/generate.ts
+    - src/app/page.tsx
+    - src/lib/agent.ts
+    - src/app/actions/generate.ts
 
 key-decisions:
   - "Rewrote agent.ts from markdown-parsing to JSON-prompt approach after checkpoint revealed parsing failures"
@@ -78,8 +78,8 @@ completed: 2026-03-28
 - Created `GenerateForm` — client component with format grid, dev context textarea, generate button; shows `LoadingState` during generation, calls `generateNewScript` server action on submit
 - Created `ScriptDisplay` — client component rendering 7 sections: Header, Title Options, Hook Variants (3), Script Beats (ordered), Anti-Slop Score (5-dimension breakdown), Thumbnail Concept, Actions (Re-generate)
 - Created `GenerationPage` — client wrapper managing form/display state, wires `onScriptGenerated` to `router.refresh()` and `onRegenerate` back to form
-- Updated `web/src/app/page.tsx` — server component fetching formats + latest script, rendering GenerationPage with props
-- Rewrote `web/src/lib/agent.ts` — switched from markdown-parsing strategy to JSON-prompt strategy; Claude prompted to output raw JSON block only, parsed with `JSON.parse()` inside try/catch
+- Updated `src/app/page.tsx` — server component fetching formats + latest script, rendering GenerationPage with props
+- Rewrote `src/lib/agent.ts` — switched from markdown-parsing strategy to JSON-prompt strategy; Claude prompted to output raw JSON block only, parsed with `JSON.parse()` inside try/catch
 - Added `deleteScript` and `newScript` server actions to `generate.ts` to support delete-then-regenerate flow discovered during end-to-end testing
 
 ## Task Commits
@@ -90,11 +90,11 @@ completed: 2026-03-28
 
 ## Files Created
 
-- `web/src/components/format-card.tsx` - Selectable format card: shadcn Card, selected ring style, onClick handler
-- `web/src/components/loading-state.tsx` - Loading indicator: animated pulse, elapsed seconds counter via setInterval
-- `web/src/components/generate-form.tsx` - Generation form: 7-card grid, dev context textarea, generate/regenerate button, loading state swap
-- `web/src/components/script-display.tsx` - Script display: header, title options, hook variants (3), beats (visual+voiceover grid), anti-slop score, thumbnail, re-generate action
-- `web/src/components/generation-page.tsx` - Client state wrapper: form vs display mode, router.refresh() after generation
+- `src/components/format-card.tsx` - Selectable format card: shadcn Card, selected ring style, onClick handler
+- `src/components/loading-state.tsx` - Loading indicator: animated pulse, elapsed seconds counter via setInterval
+- `src/components/generate-form.tsx` - Generation form: 7-card grid, dev context textarea, generate/regenerate button, loading state swap
+- `src/components/script-display.tsx` - Script display: header, title options, hook variants (3), beats (visual+voiceover grid), anti-slop score, thumbnail, re-generate action
+- `src/components/generation-page.tsx` - Client state wrapper: form vs display mode, router.refresh() after generation
 
 ## Decisions Made
 
@@ -110,14 +110,14 @@ completed: 2026-03-28
 - **Found during:** Task 3 checkpoint — Pavlo tested end-to-end generation and reported parsing failures
 - **Issue:** Original `agent.ts` attempted to strip markdown fences from Claude output and parse the resulting string as JSON. Claude's responses included varied formatting (extra text, different fence styles) causing `JSON.parse()` to throw on most responses.
 - **Fix:** Rewrote the system prompt and user prompt in `agent.ts` to instruct Claude to output only a raw JSON object with no surrounding text or markdown. Response is parsed directly with `JSON.parse()` in a try/catch block. If parsing fails, the script is marked as `failed` in the DB.
-- **Files modified:** `web/src/lib/agent.ts`
+- **Files modified:** `src/lib/agent.ts`
 - **Commit:** f75aa0e
 
 **2. [Rule 2 - Missing Functionality] Added deleteScript and newScript server actions**
 - **Found during:** Task 3 checkpoint — debugging required ability to delete a broken script and start fresh
 - **Issue:** No way to clear broken generated scripts or start a new generation without the form being locked to the last result
 - **Fix:** Added `deleteScript(scriptId: number)` and `newScript()` server actions to `generate.ts`; wired into `GenerationPage` UI for delete/new buttons
-- **Files modified:** `web/src/app/actions/generate.ts`, `web/src/components/generate-form.tsx`, `web/src/components/generation-page.tsx`
+- **Files modified:** `src/app/actions/generate.ts`, `src/components/generate-form.tsx`, `src/components/generation-page.tsx`
 - **Commit:** f75aa0e
 
 ---

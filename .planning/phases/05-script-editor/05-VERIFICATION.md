@@ -50,22 +50,22 @@ All artifacts from both plan frontmatter blocks verified at all three levels (ex
 
 | Artifact | Expected | Exists | Substantive | Wired | Status |
 |----------|----------|--------|-------------|-------|--------|
-| `web/src/app/script/[id]/page.tsx` | Server component fetching script+beats | Yes | 51 lines, real DB queries, `await params` | Imports `ScriptEditor`, passes `{ ...script, beats: scriptBeats }` | VERIFIED |
-| `web/src/app/actions/editor.ts` | Server actions updateBeat, updateHook, selectHook | Yes | 151 lines, all 3 original actions + 2 new | Imported by `script-editor.tsx`, `hook-section.tsx`, `score-panel.tsx` | VERIFIED |
-| `web/src/components/script-editor.tsx` | Main editor client component | Yes | 244 lines, `"use client"`, full layout | Used by `script/[id]/page.tsx` as `<ScriptEditor>` | VERIFIED |
-| `web/src/components/editable-field.tsx` | Reusable click-to-edit component | Yes | 59 lines, `useState`, `useEffect`, `Textarea`, `onBlur` | Used in `script-editor.tsx` (beats) and `hook-section.tsx` (hooks) | VERIFIED |
-| `web/src/components/hook-section.tsx` | Hook tab bar with editable content | Yes | 93 lines, `TabsList`, `TabsTrigger`, `TabsContent` | Used in `script-editor.tsx:130-136` | VERIFIED |
-| `web/src/components/ui/tabs.tsx` | shadcn Tabs component | Yes | 83 lines, full base-ui Tabs wrapper | Imported by `hook-section.tsx` | VERIFIED |
+| `src/app/script/[id]/page.tsx` | Server component fetching script+beats | Yes | 51 lines, real DB queries, `await params` | Imports `ScriptEditor`, passes `{ ...script, beats: scriptBeats }` | VERIFIED |
+| `src/app/actions/editor.ts` | Server actions updateBeat, updateHook, selectHook | Yes | 151 lines, all 3 original actions + 2 new | Imported by `script-editor.tsx`, `hook-section.tsx`, `score-panel.tsx` | VERIFIED |
+| `src/components/script-editor.tsx` | Main editor client component | Yes | 244 lines, `"use client"`, full layout | Used by `script/[id]/page.tsx` as `<ScriptEditor>` | VERIFIED |
+| `src/components/editable-field.tsx` | Reusable click-to-edit component | Yes | 59 lines, `useState`, `useEffect`, `Textarea`, `onBlur` | Used in `script-editor.tsx` (beats) and `hook-section.tsx` (hooks) | VERIFIED |
+| `src/components/hook-section.tsx` | Hook tab bar with editable content | Yes | 93 lines, `TabsList`, `TabsTrigger`, `TabsContent` | Used in `script-editor.tsx:130-136` | VERIFIED |
+| `src/components/ui/tabs.tsx` | shadcn Tabs component | Yes | 83 lines, full base-ui Tabs wrapper | Imported by `hook-section.tsx` | VERIFIED |
 
 #### Plan 02 Artifacts
 
 | Artifact | Expected | Exists | Substantive | Wired | Status |
 |----------|----------|--------|-------------|-------|--------|
-| `web/src/lib/agent.ts` | `regenerateBeatText` and `rescoreScriptText` functions | Yes | Full AI agent calls with prompt, JSON extraction, return types | Called by `editor.ts` `regenerateBeat` and `rescoreScript` actions | VERIFIED |
-| `web/src/app/actions/editor.ts` (extended) | `regenerateBeat` and `rescoreScript` server actions | Yes | Lines 64-150, DB fetch + agent call + DB write for both | `regenerateBeat` imported in `script-editor.tsx`; `rescoreScript` imported in `score-panel.tsx` | VERIFIED |
-| `web/src/components/score-panel.tsx` | Score display with stale indicator and Rescore button | Yes | 108 lines, `"use client"`, `isStale` badge, `Rescore` button, `grid grid-cols-5`, `rescoreScript` import | Rendered by `script-editor.tsx:213-222` | VERIFIED |
-| `web/src/components/script-editor.tsx` (extended) | Regenerate button on each beat card | Yes | `RefreshCw` button at `absolute top-2 right-2`, `onMouseDown={(e) => e.preventDefault()}`, `regeneratingBeatId` spin state | `regenerateBeat` imported and called in `handleRegenerateBeat` | VERIFIED |
-| `web/src/components/script-display.tsx` (modified) | Edit link to `/script/[id]` | Yes | `<Link href={`/script/${script.id}`}><Button variant="outline">Edit</Button></Link>` at line 262 | Link renders in ScriptDisplay actions row | VERIFIED |
+| `src/lib/agent.ts` | `regenerateBeatText` and `rescoreScriptText` functions | Yes | Full AI agent calls with prompt, JSON extraction, return types | Called by `editor.ts` `regenerateBeat` and `rescoreScript` actions | VERIFIED |
+| `src/app/actions/editor.ts` (extended) | `regenerateBeat` and `rescoreScript` server actions | Yes | Lines 64-150, DB fetch + agent call + DB write for both | `regenerateBeat` imported in `script-editor.tsx`; `rescoreScript` imported in `score-panel.tsx` | VERIFIED |
+| `src/components/score-panel.tsx` | Score display with stale indicator and Rescore button | Yes | 108 lines, `"use client"`, `isStale` badge, `Rescore` button, `grid grid-cols-5`, `rescoreScript` import | Rendered by `script-editor.tsx:213-222` | VERIFIED |
+| `src/components/script-editor.tsx` (extended) | Regenerate button on each beat card | Yes | `RefreshCw` button at `absolute top-2 right-2`, `onMouseDown={(e) => e.preventDefault()}`, `regeneratingBeatId` spin state | `regenerateBeat` imported and called in `handleRegenerateBeat` | VERIFIED |
+| `src/components/script-display.tsx` (modified) | Edit link to `/script/[id]` | Yes | `<Link href={`/script/${script.id}`}><Button variant="outline">Edit</Button></Link>` at line 262 | Link renders in ScriptDisplay actions row | VERIFIED |
 
 ---
 

@@ -233,12 +233,12 @@ const [script] = await db.insert(scripts).values({...}).returning();
 ### Pattern 5: Async Conversion — Page Server Components
 
 Two of three pages already have `async` on the function:
-- `web/src/app/script/[id]/page.tsx` — already `async`, uses `.get()` and `.all()` directly (no await). Needs `await` added.
-- `web/src/app/analytics/page.tsx` — already `async`, calls only server actions (which are already async). No DB calls directly in page — no change needed to this page.
-- `web/src/app/page.tsx` — **NOT async**. The home page calls `getDb()` and uses `.get()` synchronously. Must add `async` to the component function AND add `await`.
+- `src/app/script/[id]/page.tsx` — already `async`, uses `.get()` and `.all()` directly (no await). Needs `await` added.
+- `src/app/analytics/page.tsx` — already `async`, calls only server actions (which are already async). No DB calls directly in page — no change needed to this page.
+- `src/app/page.tsx` — **NOT async**. The home page calls `getDb()` and uses `.get()` synchronously. Must add `async` to the component function AND add `await`.
 
 ```typescript
-// Before: web/src/app/page.tsx (line 8)
+// Before: src/app/page.tsx (line 8)
 export default function Home() {
 
 // After
@@ -289,7 +289,7 @@ return result.maxSync; // PostgreSQL timestamp already returns Date
 
 ### Pattern 8: Smoke Test Script
 
-Per D-06, write a Node.js script at `web/scripts/smoke-test.ts` (or `.js`) that:
+Per D-06, write a Node.js script at `scripts/smoke-test.ts` (or `.js`) that:
 1. Imports `getDb` and all 4 schema tables
 2. Runs one SELECT on each table (verifies connection + schema)
 3. Inserts a test script row, reads it back, deletes it (verifies write round-trip)
@@ -318,7 +318,7 @@ Run with: `cd web && npx tsx scripts/smoke-test.ts`
 **How to avoid:** Keep `if (!script)` checks unchanged. Do not introduce `?? null` unless the TypeScript type requires it.
 
 ### Pitfall 2: Home page not async — runtime crash
-**What goes wrong:** `web/src/app/page.tsx` has `export default function Home()` (no `async`). With PostgreSQL, DB queries return Promises. If `async` is forgotten, the component will silently return `undefined` for the DB result instead of crashing at the type level.
+**What goes wrong:** `src/app/page.tsx` has `export default function Home()` (no `async`). With PostgreSQL, DB queries return Promises. If `async` is forgotten, the component will silently return `undefined` for the DB result instead of crashing at the type level.
 **How to avoid:** Add `async` to the Home component function signature as part of the page async conversion task.
 
 ### Pitfall 3: `getLastSyncTime` epoch multiplication
@@ -416,7 +416,7 @@ return result?.maxSync ?? null; // already a Date, no * 1000
 
 ## Call Site Inventory
 
-All `.get()`, `.all()`, `.run()` occurrences found in `web/src/` (46 total):
+All `.get()`, `.all()`, `.run()` occurrences found in `src/` (46 total):
 
 | File | `.get()` | `.all()` | `.run()` | Notes |
 |------|----------|----------|----------|-------|

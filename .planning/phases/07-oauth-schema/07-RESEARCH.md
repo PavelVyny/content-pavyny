@@ -104,7 +104,7 @@ npm install googleapis
 ### Recommended Project Structure (new/modified files only)
 
 ```
-web/src/
+src/
   app/
     api/youtube/callback/route.ts   # NEW: OAuth2 callback handler
     settings/page.tsx               # NEW: YouTube connection settings
@@ -116,7 +116,7 @@ web/src/
   lib/
     youtube-client.ts               # NEW: OAuth2 client singleton, token file read/write
     db/schema.ts                    # MODIFIED: add videos + videoMetrics tables
-web/data/
+data/
   .youtube-tokens.json              # NEW: OAuth2 tokens (gitignored)
 ```
 
@@ -563,7 +563,7 @@ YOUTUBE_REDIRECT_URI=http://localhost:3000/api/youtube/callback
 
 ## Files to Gitignore
 
-Add to `web/.gitignore`:
+Add to `.gitignore`:
 
 ```
 # YouTube OAuth tokens
@@ -624,12 +624,12 @@ The existing `.gitignore` already covers `data/*.db` files but not JSON files in
 - [Google OAuth2 refresh token discussion](https://discuss.google.dev/t/oauth2-refresh-token-expiration-and-youtube-api-v3/160874) -- community reports on token behavior
 
 ### Codebase (HIGH confidence)
-- `web/src/lib/db/schema.ts` -- existing Drizzle schema patterns (integer timestamps, JSON text columns, FK references)
-- `web/src/lib/db/index.ts` -- database singleton pattern
-- `web/src/app/actions/library.ts` -- server action patterns (`"use server"`, Drizzle queries)
-- `web/src/app/layout.tsx` -- header layout structure
-- `web/src/components/providers.tsx` -- client providers pattern
-- `web/drizzle.config.ts` -- Drizzle config (SQLite at `./data/scripts.db`)
+- `src/lib/db/schema.ts` -- existing Drizzle schema patterns (integer timestamps, JSON text columns, FK references)
+- `src/lib/db/index.ts` -- database singleton pattern
+- `src/app/actions/library.ts` -- server action patterns (`"use server"`, Drizzle queries)
+- `src/app/layout.tsx` -- header layout structure
+- `src/components/providers.tsx` -- client providers pattern
+- `drizzle.config.ts` -- Drizzle config (SQLite at `./data/scripts.db`)
 
 ## Metadata
 

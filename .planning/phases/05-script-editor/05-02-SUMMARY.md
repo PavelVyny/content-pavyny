@@ -23,12 +23,12 @@ tech-stack:
 
 key-files:
   created:
-    - web/src/components/score-panel.tsx
+    - src/components/score-panel.tsx
   modified:
-    - web/src/lib/agent.ts
-    - web/src/app/actions/editor.ts
-    - web/src/components/script-editor.tsx
-    - web/src/components/script-display.tsx
+    - src/lib/agent.ts
+    - src/app/actions/editor.ts
+    - src/components/script-editor.tsx
+    - src/components/script-display.tsx
 
 key-decisions:
   - "Score panel scrolls with page (not sticky) to avoid layout complexity on small screens"
@@ -76,11 +76,11 @@ Each task was committed atomically:
 **Plan metadata:** TBD (docs: complete plan)
 
 ## Files Created/Modified
-- `web/src/lib/agent.ts` - Added regenerateBeatText and rescoreScriptText functions using Claude Agent SDK
-- `web/src/app/actions/editor.ts` - Added regenerateBeat and rescoreScript server actions with DB persistence
-- `web/src/components/score-panel.tsx` - New component: 5-dimension anti-slop score display with stale badge and Rescore button
-- `web/src/components/script-editor.tsx` - Added regenerate buttons on beat cards, wired ScorePanel, added localScore state
-- `web/src/components/script-display.tsx` - Added Edit link to /script/[id] via Next.js Link
+- `src/lib/agent.ts` - Added regenerateBeatText and rescoreScriptText functions using Claude Agent SDK
+- `src/app/actions/editor.ts` - Added regenerateBeat and rescoreScript server actions with DB persistence
+- `src/components/score-panel.tsx` - New component: 5-dimension anti-slop score display with stale badge and Rescore button
+- `src/components/script-editor.tsx` - Added regenerate buttons on beat cards, wired ScorePanel, added localScore state
+- `src/components/script-display.tsx` - Added Edit link to /script/[id] via Next.js Link
 
 ## Decisions Made
 - Score panel scrolls with page (not sticky) to keep layout simple on small screens

@@ -18,8 +18,8 @@ tech-stack:
   patterns: [epoch-to-Date auto-detection for timestamp migration, transaction-wrapped bulk migration]
 
 key-files:
-  created: [web/scripts/migrate-sqlite-to-supabase.ts]
-  modified: [web/package.json, web/package-lock.json]
+  created: [scripts/migrate-sqlite-to-supabase.ts]
+  modified: [package.json, package-lock.json]
 
 key-decisions:
   - "Round decimal average_view_percentage to integer for PG schema compatibility"
@@ -59,9 +59,9 @@ Each task was committed atomically:
 2. **Task 2: Remove SQLite dependencies and update gitignore** - `9107692` (chore)
 
 ## Files Created/Modified
-- `web/scripts/migrate-sqlite-to-supabase.ts` - One-shot migration script: reads SQLite, converts timestamps, writes to Supabase, resets sequences
-- `web/package.json` - Removed better-sqlite3 and @types/better-sqlite3
-- `web/package-lock.json` - Updated lockfile
+- `scripts/migrate-sqlite-to-supabase.ts` - One-shot migration script: reads SQLite, converts timestamps, writes to Supabase, resets sequences
+- `package.json` - Removed better-sqlite3 and @types/better-sqlite3
+- `package-lock.json` - Updated lockfile
 
 ## Decisions Made
 - Rounded `average_view_percentage` values (71.12, 60.86, etc.) to integers for PG schema compatibility -- SQLite stored them as floats but PG schema defines them as `integer`
@@ -75,7 +75,7 @@ Each task was committed atomically:
 - **Found during:** Task 1 (migration script execution)
 - **Issue:** SQLite stored `average_view_percentage` as float (71.12) but PostgreSQL schema defines column as `integer`, causing "invalid input syntax for type integer" error
 - **Fix:** Added `Math.round()` for `average_view_percentage` and `average_view_duration` columns in migration
-- **Files modified:** web/scripts/migrate-sqlite-to-supabase.ts
+- **Files modified:** scripts/migrate-sqlite-to-supabase.ts
 - **Verification:** Migration completed successfully, all 6 metrics rows inserted
 - **Committed in:** 86d1005 (Task 1 commit)
 
@@ -101,7 +101,7 @@ None -- all data is live in Supabase, no placeholder values.
 
 ## Self-Check: PASSED
 
-- FOUND: web/scripts/migrate-sqlite-to-supabase.ts (245 lines)
+- FOUND: scripts/migrate-sqlite-to-supabase.ts (245 lines)
 - FOUND: .planning/phases/11-data-migration-cleanup/11-01-SUMMARY.md
 - FOUND: commit 86d1005 (Task 1)
 - FOUND: commit 9107692 (Task 2)
