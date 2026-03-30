@@ -104,9 +104,9 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
               onEditingChange={setEditingTitle}
               className="text-2xl font-semibold text-foreground"
             />
-            {!editingTitle && (
-              <Badge variant={statusColor(script.status)} className="shrink-0">{script.status}</Badge>
-            )}
+            {!editingTitle ? (
+              <Badge key="status" variant={statusColor(script.status)} className="shrink-0">{script.status}</Badge>
+            ) : null}
           </div>
           {deleteSlot}
         </div>
