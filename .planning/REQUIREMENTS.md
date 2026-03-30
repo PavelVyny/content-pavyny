@@ -133,6 +133,50 @@ Deferred until 20+ published videos or v2.2+.
 - **ADVN-01**: Retention curve overlay with beat timestamps
 - **ADVN-02**: Demographic breakdowns (deferred until 1K+ subscribers)
 
+## v3.0 Requirements — Supabase Migration
+
+Requirements for milestone v3.0. Each maps to roadmap phases.
+
+### Supabase Setup
+
+- [ ] **SUPA-01**: Supabase project created with DATABASE_URL configured in .env.local on both machines
+- [ ] **SUPA-02**: PostgreSQL schema matches current SQLite schema — all 4 tables (scripts, beats, videos, videoMetrics) created via Drizzle pgTable
+
+### Schema & Connection
+
+- [ ] **MIGR-01**: Drizzle schema rewritten from sqliteTable to pgTable with correct type mappings (serial, jsonb, timestamp)
+- [ ] **MIGR-02**: DB connection module uses postgres-js with prepare: false for Supabase pooler
+- [ ] **MIGR-03**: drizzle.config.ts updated for PostgreSQL dialect with DATABASE_URL
+
+### Async Conversion
+
+- [ ] **ASYN-01**: All server action files converted from sync to async DB calls (await added to every query)
+- [ ] **ASYN-02**: All page server components converted to async DB access
+- [ ] **ASYN-03**: No remaining .get(), .all(), .run() terminal methods — all use PostgreSQL Drizzle conventions
+
+### Data Migration
+
+- [ ] **DATA-01**: One-shot migration script transfers all existing data from SQLite to Supabase with correct type conversions
+- [ ] **DATA-02**: Timestamps converted from epoch integers to proper PostgreSQL timestamp values
+- [ ] **DATA-03**: Serial sequences reset after data import to prevent PK conflicts
+
+### Cleanup & Verification
+
+- [ ] **CLEN-01**: better-sqlite3 and @types/better-sqlite3 removed from dependencies
+- [ ] **CLEN-02**: serverExternalPackages removed from next.config.ts
+- [ ] **CLEN-03**: App verified working from both Windows PC and MacBook Air against same Supabase instance
+
+## v3.0 Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Supabase Auth / RLS | Single-user tool, no auth needed |
+| Supabase Realtime | No collaborative editing |
+| @supabase/supabase-js client | Drizzle direct SQL is faster and type-safe |
+| YouTube token migration to DB | Tokens stay in local JSON file — separate concern |
+| Full-text search | Client-side filtering sufficient at current scale |
+| App deployment / hosting | Localhost only for now |
+
 ## v2.1 Out of Scope
 
 | Feature | Reason |
@@ -217,4 +261,4 @@ Deferred until 20+ published videos or v2.2+.
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-29 after v2.1 roadmap creation*
+*Last updated: 2026-03-30 after v3.0 requirements definition*
