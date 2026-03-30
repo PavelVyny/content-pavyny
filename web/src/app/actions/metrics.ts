@@ -22,7 +22,8 @@ export async function discoverVideos(): Promise<{
     const db = getDb();
 
     for (const v of channelVideos) {
-      db.insert(videos)
+      await db
+        .insert(videos)
         .values({
           youtubeId: v.youtubeId,
           title: v.title,
@@ -40,8 +41,7 @@ export async function discoverVideos(): Promise<{
             thumbnailUrl: sql`excluded.thumbnail_url`,
             updatedAt: new Date(),
           },
-        })
-        .run();
+        });
     }
 
     return {
@@ -65,11 +65,10 @@ export async function syncSingleVideo(
     const db = getDb();
 
     // Look up DB video row
-    const videoRow = db
+    const [videoRow] = await db
       .select()
       .from(videos)
-      .where(eq(videos.youtubeId, youtubeId))
-      .get();
+      .where(eq(videos.youtubeId, youtubeId));
     if (!videoRow) {
       return { success: false, error: `Video not found: ${youtubeId}` };
     }
@@ -86,7 +85,8 @@ export async function syncSingleVideo(
 
     const now = new Date();
 
-    db.insert(videoMetrics)
+    await db
+      .insert(videoMetrics)
       .values({
         videoId: videoRow.id,
         views: row ? Number(row[1]) : 0,
@@ -116,8 +116,7 @@ export async function syncSingleVideo(
           retentionCurve: sql`excluded.retention_curve`,
           lastSyncedAt: now,
         },
-      })
-      .run();
+      });
 
     revalidatePath("/scripts");
 
@@ -132,7 +131,7 @@ export async function syncSingleVideo(
 export async function getScriptsWithMetrics(): Promise<ScriptWithVideo[]> {
   const db = getDb();
 
-  const rows = db
+  const rows = await db
     .select({
       // Script fields
       scriptId: scripts.id,
@@ -173,8 +172,7 @@ export async function getScriptsWithMetrics(): Promise<ScriptWithVideo[]> {
     .leftJoin(videos, eq(videos.scriptId, scripts.id))
     .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
     .where(ne(scripts.status, "generating"))
-    .orderBy(desc(scripts.createdAt))
-    .all();
+    .orderBy(desc(scripts.createdAt));
 
   return rows.map((r) => ({
     id: r.scriptId,
@@ -223,19 +221,16 @@ export async function getScriptsWithMetrics(): Promise<ScriptWithVideo[]> {
 export async function getLastSyncTime(): Promise<Date | null> {
   const db = getDb();
 
-  const result = db
+  const [result] = await db
     .select({
-      maxSync: sql<number>`MAX(${videoMetrics.lastSyncedAt})`,
+      maxSync: sql<string>`MAX(${videoMetrics.lastSyncedAt})`,
     })
-    .from(videoMetrics)
-    .get();
+    .from(videoMetrics);
 
   if (!result?.maxSync) return null;
 
-  // SQLite stores timestamps as integers (seconds since epoch via Drizzle mode: "timestamp")
-  // But Drizzle's mode: "timestamp" already handles conversion, so maxSync is already ms
-  // However, raw sql<number> bypasses Drizzle's conversion — multiply by 1000
-  return new Date(result.maxSync * 1000);
+  // PostgreSQL returns timestamp as string/Date — Drizzle handles conversion
+  return new Date(result.maxSync);
 }
 
 export async function linkVideo(
@@ -243,16 +238,16 @@ export async function linkVideo(
   videoId: number
 ): Promise<{ success: boolean }> {
   const db = getDb();
-  db.update(videos)
+  await db
+    .update(videos)
     .set({ scriptId, updatedAt: new Date() })
-    .where(eq(videos.id, videoId))
-    .run();
+    .where(eq(videos.id, videoId));
 
   // Auto-set script status to "done" when linked to a video
-  db.update(scripts)
+  await db
+    .update(scripts)
     .set({ status: "done", updatedAt: new Date() })
-    .where(eq(scripts.id, scriptId))
-    .run();
+    .where(eq(scripts.id, scriptId));
 
   revalidatePath("/scripts");
   revalidatePath(`/script/${scriptId}`);
@@ -266,22 +261,22 @@ export async function unlinkVideo(
   const db = getDb();
 
   // Find the linked script before unlinking
-  const video = db.select({ scriptId: videos.scriptId })
+  const [video] = await db
+    .select({ scriptId: videos.scriptId })
     .from(videos)
-    .where(eq(videos.id, videoId))
-    .get();
+    .where(eq(videos.id, videoId));
 
-  db.update(videos)
+  await db
+    .update(videos)
     .set({ scriptId: null, updatedAt: new Date() })
-    .where(eq(videos.id, videoId))
-    .run();
+    .where(eq(videos.id, videoId));
 
   // Auto-revert script status to "draft" when unlinked
   if (video?.scriptId) {
-    db.update(scripts)
+    await db
+      .update(scripts)
       .set({ status: "draft", updatedAt: new Date() })
-      .where(eq(scripts.id, video.scriptId))
-      .run();
+      .where(eq(scripts.id, video.scriptId));
   }
 
   revalidatePath("/scripts");
@@ -293,12 +288,11 @@ export async function unlinkVideo(
 export async function getUnlinkedVideos(): Promise<VideoData[]> {
   const db = getDb();
 
-  const rows = db
+  const rows = await db
     .select()
     .from(videos)
     .where(isNull(videos.scriptId))
-    .orderBy(desc(videos.publishedAt))
-    .all();
+    .orderBy(desc(videos.publishedAt));
 
   return rows.map((r) => ({
     id: r.id,
@@ -320,7 +314,7 @@ export interface VideoWithMetrics {
 export async function getAllVideosWithMetrics(): Promise<VideoWithMetrics[]> {
   const db = getDb();
 
-  const rows = db
+  const rows = await db
     .select({
       videoId: videos.id,
       videoYoutubeId: videos.youtubeId,
@@ -345,8 +339,7 @@ export async function getAllVideosWithMetrics(): Promise<VideoWithMetrics[]> {
     .from(videos)
     .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
     .leftJoin(scripts, eq(scripts.id, videos.scriptId))
-    .orderBy(desc(videos.publishedAt))
-    .all();
+    .orderBy(desc(videos.publishedAt));
 
   return rows.map((row) => ({
     video: {
@@ -404,13 +397,12 @@ export async function getChannelStats(): Promise<ChannelStats> {
   const db = getDb();
   const { getChannelInfo } = await import("@/lib/youtube-client");
 
-  const agg = db
+  const [agg] = await db
     .select({
       totalViews: sql<number>`COALESCE(SUM(${videoMetrics.views}), 0)`,
       totalLikes: sql<number>`COALESCE(SUM(${videoMetrics.likes}), 0)`,
     })
-    .from(videoMetrics)
-    .get();
+    .from(videoMetrics);
 
   const channelInfo = await getChannelInfo();
 
@@ -425,7 +417,7 @@ export async function getChannelStats(): Promise<ChannelStats> {
 export async function getGrowthTimeline(): Promise<GrowthPoint[]> {
   const db = getDb();
 
-  const rows = db
+  const rows = await db
     .select({
       title: videos.title,
       publishedAt: videos.publishedAt,
@@ -434,8 +426,7 @@ export async function getGrowthTimeline(): Promise<GrowthPoint[]> {
     })
     .from(videos)
     .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
-    .orderBy(videos.publishedAt)
-    .all();
+    .orderBy(videos.publishedAt);
 
   let cumulative = 0;
   return rows.map((r) => {
@@ -454,7 +445,7 @@ export async function getGrowthTimeline(): Promise<GrowthPoint[]> {
 export async function getTopPerformers(): Promise<TopVideo[]> {
   const db = getDb();
 
-  const rows = db
+  const rows = await db
     .select({
       title: videos.title,
       thumbnailUrl: videos.thumbnailUrl,
@@ -466,8 +457,7 @@ export async function getTopPerformers(): Promise<TopVideo[]> {
     .from(videos)
     .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
     .where(ne(videoMetrics.views, 0))
-    .orderBy(desc(videoMetrics.views))
-    .all();
+    .orderBy(desc(videoMetrics.views));
 
   if (rows.length === 0) return [];
 
@@ -500,7 +490,7 @@ export async function getVideoForScript(
 ): Promise<{ video: VideoData; metrics: VideoMetricsData } | null> {
   const db = getDb();
 
-  const row = db
+  const [row] = await db
     .select({
       videoId: videos.id,
       videoYoutubeId: videos.youtubeId,
@@ -523,8 +513,7 @@ export async function getVideoForScript(
     })
     .from(videos)
     .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
-    .where(eq(videos.scriptId, scriptId))
-    .get();
+    .where(eq(videos.scriptId, scriptId));
 
   if (!row) return null;
 

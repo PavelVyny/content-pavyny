@@ -12,10 +12,10 @@ export async function updateBeat(
   value: string
 ): Promise<{ success: boolean }> {
   const db = getDb();
-  db.update(beats)
+  await db
+    .update(beats)
     .set({ [field]: value })
-    .where(eq(beats.id, beatId))
-    .run();
+    .where(eq(beats.id, beatId));
   return { success: true };
 }
 
@@ -26,11 +26,10 @@ export async function updateHook(
   value: string
 ): Promise<{ success: boolean }> {
   const db = getDb();
-  const script = db
+  const [script] = await db
     .select()
     .from(scripts)
-    .where(eq(scripts.id, scriptId))
-    .get();
+    .where(eq(scripts.id, scriptId));
   if (!script || !script.hooks) return { success: false };
 
   const hooks = script.hooks as {
@@ -42,10 +41,10 @@ export async function updateHook(
   if (hookIndex === -1) return { success: false };
 
   hooks[hookIndex] = { ...hooks[hookIndex], [field]: value };
-  db.update(scripts)
+  await db
+    .update(scripts)
     .set({ hooks, updatedAt: new Date() })
-    .where(eq(scripts.id, scriptId))
-    .run();
+    .where(eq(scripts.id, scriptId));
   return { success: true };
 }
 
@@ -54,10 +53,10 @@ export async function selectHook(
   variant: string
 ): Promise<{ success: boolean }> {
   const db = getDb();
-  db.update(scripts)
+  await db
+    .update(scripts)
     .set({ selectedHook: variant, updatedAt: new Date() })
-    .where(eq(scripts.id, scriptId))
-    .run();
+    .where(eq(scripts.id, scriptId));
   return { success: true };
 }
 
@@ -66,10 +65,10 @@ export async function selectTitle(
   title: string
 ): Promise<{ success: boolean }> {
   const db = getDb();
-  db.update(scripts)
+  await db
+    .update(scripts)
     .set({ title, updatedAt: new Date() })
-    .where(eq(scripts.id, scriptId))
-    .run();
+    .where(eq(scripts.id, scriptId));
   return { success: true };
 }
 
@@ -78,10 +77,10 @@ export async function regenerateHook(
   variant: string
 ): Promise<{ success: boolean; visual?: string; voiceover?: string; error?: string }> {
   const db = getDb();
-  const script = db.select().from(scripts).where(eq(scripts.id, scriptId)).get();
+  const [script] = await db.select().from(scripts).where(eq(scripts.id, scriptId));
   if (!script) return { success: false, error: "Script not found" };
 
-  const scriptBeats = db.select().from(beats).where(eq(beats.scriptId, scriptId)).orderBy(asc(beats.order)).all();
+  const scriptBeats = await db.select().from(beats).where(eq(beats.scriptId, scriptId)).orderBy(asc(beats.order));
   const hooks = (script.hooks as HookVariant[] | null) ?? [];
 
   try {
@@ -97,10 +96,10 @@ export async function regenerateHook(
       h.variant === variant ? { ...h, visual: result.visual, voiceover: result.voiceover } : h
     );
 
-    db.update(scripts)
+    await db
+      .update(scripts)
       .set({ hooks: updatedHooks as never, updatedAt: new Date() })
-      .where(eq(scripts.id, scriptId))
-      .run();
+      .where(eq(scripts.id, scriptId));
 
     return { success: true, visual: result.visual, voiceover: result.voiceover };
   } catch (err) {
@@ -115,19 +114,17 @@ export async function regenerateBeat(
   try {
     const db = getDb();
 
-    const script = db
+    const [script] = await db
       .select()
       .from(scripts)
-      .where(eq(scripts.id, scriptId))
-      .get();
+      .where(eq(scripts.id, scriptId));
     if (!script) return { success: false, error: "Script not found" };
 
-    const allBeats = db
+    const allBeats = await db
       .select()
       .from(beats)
       .where(eq(beats.scriptId, scriptId))
-      .orderBy(asc(beats.order))
-      .all();
+      .orderBy(asc(beats.order));
 
     const targetBeat = allBeats.find((b) => b.id === beatId);
     if (!targetBeat) return { success: false, error: "Beat not found" };
@@ -142,10 +139,10 @@ export async function regenerateBeat(
       targetBeat.order
     );
 
-    db.update(beats)
+    await db
+      .update(beats)
       .set({ visual: result.visual, voiceover: result.voiceover })
-      .where(eq(beats.id, beatId))
-      .run();
+      .where(eq(beats.id, beatId));
 
     return { success: true, visual: result.visual, voiceover: result.voiceover };
   } catch (err) {
@@ -161,19 +158,17 @@ export async function rescoreScript(
   try {
     const db = getDb();
 
-    const script = db
+    const [script] = await db
       .select()
       .from(scripts)
-      .where(eq(scripts.id, scriptId))
-      .get();
+      .where(eq(scripts.id, scriptId));
     if (!script) return { success: false, error: "Script not found" };
 
-    const allBeats = db
+    const allBeats = await db
       .select()
       .from(beats)
       .where(eq(beats.scriptId, scriptId))
-      .orderBy(asc(beats.order))
-      .all();
+      .orderBy(asc(beats.order));
 
     const hooks = (script.hooks as { variant: string; visual: string; voiceover: string }[]) || [];
 
@@ -183,10 +178,10 @@ export async function rescoreScript(
       script.selectedHook || "A"
     );
 
-    db.update(scripts)
+    await db
+      .update(scripts)
       .set({ antiSlopScore: score, updatedAt: new Date() })
-      .where(eq(scripts.id, scriptId))
-      .run();
+      .where(eq(scripts.id, scriptId));
 
     return { success: true, score };
   } catch (err) {

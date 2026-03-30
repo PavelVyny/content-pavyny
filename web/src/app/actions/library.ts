@@ -7,12 +7,11 @@ import type { Script, HookVariant } from "@/lib/types";
 
 export async function getAllScripts(): Promise<Script[]> {
   const db = getDb();
-  const rows = db
+  const rows = await db
     .select()
     .from(scripts)
     .where(ne(scripts.status, "generating"))
-    .orderBy(desc(scripts.createdAt))
-    .all();
+    .orderBy(desc(scripts.createdAt));
 
   return rows.map((row) => ({
     id: row.id,
@@ -36,10 +35,10 @@ export async function updateScriptStatus(
   status: "draft" | "ready" | "done"
 ): Promise<{ success: boolean }> {
   const db = getDb();
-  db.update(scripts)
+  await db
+    .update(scripts)
     .set({ status, updatedAt: new Date() })
-    .where(eq(scripts.id, scriptId))
-    .run();
+    .where(eq(scripts.id, scriptId));
   return { success: true };
 }
 
@@ -48,19 +47,17 @@ export async function getVoiceoverText(
 ): Promise<{ success: boolean; text?: string }> {
   const db = getDb();
 
-  const script = db
+  const [script] = await db
     .select()
     .from(scripts)
-    .where(eq(scripts.id, scriptId))
-    .get();
+    .where(eq(scripts.id, scriptId));
   if (!script) return { success: false };
 
-  const scriptBeats = db
+  const scriptBeats = await db
     .select()
     .from(beats)
     .where(eq(beats.scriptId, scriptId))
-    .orderBy(asc(beats.order))
-    .all();
+    .orderBy(asc(beats.order));
 
   const parts: string[] = [];
 

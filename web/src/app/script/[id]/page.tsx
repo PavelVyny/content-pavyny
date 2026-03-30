@@ -22,22 +22,20 @@ export default async function ScriptPage({
   }
 
   const db = getDb();
-  const script = db
+  const [script] = await db
     .select()
     .from(scripts)
-    .where(eq(scripts.id, scriptId))
-    .get();
+    .where(eq(scripts.id, scriptId));
 
   if (!script) {
     notFound();
   }
 
-  const scriptBeats = db
+  const scriptBeats = await db
     .select()
     .from(beats)
     .where(eq(beats.scriptId, scriptId))
-    .orderBy(beats.order)
-    .all();
+    .orderBy(beats.order);
 
   const videoData = await getVideoForScript(scriptId);
   const unlinkedVideos = await getUnlinkedVideos();

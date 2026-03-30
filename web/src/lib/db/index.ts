@@ -1,21 +1,21 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
-import path from "path";
 
-const DB_PATH = path.join(process.cwd(), "data", "scripts.db");
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL is not set. Add it to .env.local (see .env.local.example)"
+  );
+}
+
+// postgres-js client with prepare: false for Supabase pooler (port 6543)
+const client = postgres(DATABASE_URL, { prepare: false });
 
 // Module-level singleton -- survives hot reload in dev
-let _db: ReturnType<typeof drizzle> | null = null;
+const db = drizzle(client, { schema });
 
 export function getDb() {
-  if (!_db) {
-    const sqlite = new Database(DB_PATH);
-    // WAL mode for concurrent read/write (two browser tabs)
-    sqlite.pragma("journal_mode = WAL");
-    // Foreign keys enforcement
-    sqlite.pragma("foreign_keys = ON");
-    _db = drizzle(sqlite, { schema });
-  }
-  return _db;
+  return db;
 }
