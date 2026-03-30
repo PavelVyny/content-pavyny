@@ -184,7 +184,7 @@ Plans:
 
 **Milestone Goal:** Replace local SQLite with Supabase PostgreSQL so the app works from any device (Windows PC + MacBook Air) against a single remote database, eliminating manual file copying.
 
-- [ ] **Phase 10: Schema & Async Rewrite** - Supabase project, PostgreSQL schema via Drizzle pgTable, connection module, and full async conversion of all DB call sites
+- [x] **Phase 10: Schema & Async Rewrite** - Supabase project, PostgreSQL schema via Drizzle pgTable, connection module, and full async conversion of all DB call sites (completed 2026-03-30)
 - [ ] **Phase 11: Data Migration & Cleanup** - One-shot data transfer from SQLite to Supabase, dependency removal, and cross-device verification
 
 ## Phase Details
@@ -232,5 +232,5 @@ Phases execute in numeric order: 10 -> 11
 | 7. OAuth & Schema | v2.1 | 2/2 | Complete | 2026-03-29 |
 | 8. Metrics & Dashboard | v2.1 | 3/3 | Complete | 2026-03-29 |
 | 9. Data-Aware Generation | v2.1 | 0/? | Deferred | - |
-| 10. Schema & Async Rewrite | v3.0 | 0/2 | Planned    |  |
+| 10. Schema & Async Rewrite | v3.0 | 0/2 | Complete    | 2026-03-30 |
 | 11. Data Migration & Cleanup | v3.0 | 0/? | Not started | - |
