@@ -139,32 +139,32 @@ Requirements for milestone v3.0. Each maps to roadmap phases.
 
 ### Supabase Setup
 
-- [ ] **SUPA-01**: Supabase project created with DATABASE_URL configured in .env.local on both machines
-- [ ] **SUPA-02**: PostgreSQL schema matches current SQLite schema — all 4 tables (scripts, beats, videos, videoMetrics) created via Drizzle pgTable
+- [ ] **SUPA-01**: Supabase project created with DATABASE_URL configured in .env.local on both machines — Phase 10
+- [ ] **SUPA-02**: PostgreSQL schema matches current SQLite schema — all 4 tables (scripts, beats, videos, videoMetrics) created via Drizzle pgTable — Phase 10
 
 ### Schema & Connection
 
-- [ ] **MIGR-01**: Drizzle schema rewritten from sqliteTable to pgTable with correct type mappings (serial, jsonb, timestamp)
-- [ ] **MIGR-02**: DB connection module uses postgres-js with prepare: false for Supabase pooler
-- [ ] **MIGR-03**: drizzle.config.ts updated for PostgreSQL dialect with DATABASE_URL
+- [ ] **MIGR-01**: Drizzle schema rewritten from sqliteTable to pgTable with correct type mappings (serial, jsonb, timestamp) — Phase 10
+- [ ] **MIGR-02**: DB connection module uses postgres-js with prepare: false for Supabase pooler — Phase 10
+- [ ] **MIGR-03**: drizzle.config.ts updated for PostgreSQL dialect with DATABASE_URL — Phase 10
 
 ### Async Conversion
 
-- [ ] **ASYN-01**: All server action files converted from sync to async DB calls (await added to every query)
-- [ ] **ASYN-02**: All page server components converted to async DB access
-- [ ] **ASYN-03**: No remaining .get(), .all(), .run() terminal methods — all use PostgreSQL Drizzle conventions
+- [ ] **ASYN-01**: All server action files converted from sync to async DB calls (await added to every query) — Phase 10
+- [ ] **ASYN-02**: All page server components converted to async DB access — Phase 10
+- [ ] **ASYN-03**: No remaining .get(), .all(), .run() terminal methods — all use PostgreSQL Drizzle conventions — Phase 10
 
 ### Data Migration
 
-- [ ] **DATA-01**: One-shot migration script transfers all existing data from SQLite to Supabase with correct type conversions
-- [ ] **DATA-02**: Timestamps converted from epoch integers to proper PostgreSQL timestamp values
-- [ ] **DATA-03**: Serial sequences reset after data import to prevent PK conflicts
+- [ ] **DATA-01**: One-shot migration script transfers all existing data from SQLite to Supabase with correct type conversions — Phase 11
+- [ ] **DATA-02**: Timestamps converted from epoch integers to proper PostgreSQL timestamp values — Phase 11
+- [ ] **DATA-03**: Serial sequences reset after data import to prevent PK conflicts — Phase 11
 
 ### Cleanup & Verification
 
-- [ ] **CLEN-01**: better-sqlite3 and @types/better-sqlite3 removed from dependencies
-- [ ] **CLEN-02**: serverExternalPackages removed from next.config.ts
-- [ ] **CLEN-03**: App verified working from both Windows PC and MacBook Air against same Supabase instance
+- [ ] **CLEN-01**: better-sqlite3 and @types/better-sqlite3 removed from dependencies — Phase 11
+- [ ] **CLEN-02**: serverExternalPackages removed from next.config.ts — Phase 11
+- [ ] **CLEN-03**: App verified working from both Windows PC and MacBook Air against same Supabase instance — Phase 11
 
 ## v3.0 Out of Scope
 
@@ -254,11 +254,31 @@ Requirements for milestone v3.0. Each maps to roadmap phases.
 | DATA-02 | Phase 9 | Pending |
 | DATA-03 | Phase 9 | Pending |
 
+### v3.0 Supabase Migration
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| SUPA-01 | Phase 10 | Pending |
+| SUPA-02 | Phase 10 | Pending |
+| MIGR-01 | Phase 10 | Pending |
+| MIGR-02 | Phase 10 | Pending |
+| MIGR-03 | Phase 10 | Pending |
+| ASYN-01 | Phase 10 | Pending |
+| ASYN-02 | Phase 10 | Pending |
+| ASYN-03 | Phase 10 | Pending |
+| DATA-01 | Phase 11 | Pending |
+| DATA-02 | Phase 11 | Pending |
+| DATA-03 | Phase 11 | Pending |
+| CLEN-01 | Phase 11 | Pending |
+| CLEN-02 | Phase 11 | Pending |
+| CLEN-03 | Phase 11 | Pending |
+
 **Coverage:**
 - v2.0 requirements: 15/15 mapped (all complete)
-- v2.1 requirements: 19/19 mapped (all pending)
+- v2.1 requirements: 19/19 mapped
+- v3.0 requirements: 14/14 mapped (all pending)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-30 after v3.0 requirements definition*
+*Last updated: 2026-03-30 after v3.0 roadmap creation*

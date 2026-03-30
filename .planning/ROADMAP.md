@@ -5,6 +5,7 @@
 - ✅ **v1.0 CLI Pipeline** - Phases 1-3 (shipped 2026-03-27, Phase 3 paused)
 - ✅ **v2.0 Web UI** - Phases 4-6 (shipped 2026-03-28)
 - 🚧 **v2.1 YouTube Analytics** - Phases 7-9 (in progress)
+- 📋 **v3.0 Supabase Migration** - Phases 10-11 (planned)
 
 ## Phases
 
@@ -15,7 +16,7 @@
 Decimal phases appear between their surrounding integers in numeric order.
 
 <details>
-<summary>✅ v1.0 CLI Pipeline (Phases 1-3) - SHIPPED 2026-03-27</summary>
+<summary>v1.0 CLI Pipeline (Phases 1-3) - SHIPPED 2026-03-27</summary>
 
 - [x] **Phase 1: Foundation** - Audit ecosystem, extract brand voice, build and install the custom skill with companions
 - [x] **Phase 2: Script Generation** - Generate publish-ready scripts with format templates, hook structure, and anti-slop quality gates
@@ -69,7 +70,7 @@ Plans:
 </details>
 
 <details>
-<summary>✅ v2.0 Web UI (Phases 4-6) - SHIPPED 2026-03-28</summary>
+<summary>v2.0 Web UI (Phases 4-6) - SHIPPED 2026-03-28</summary>
 
 - [x] **Phase 4: Foundation & Generation** - Next.js app with AI backend, database, and end-to-end script generation flow
 - [x] **Phase 5: Script Editor** - Dual-track beat editor with inline editing, hook variants, per-beat regeneration, and anti-slop scoring
@@ -126,15 +127,12 @@ Plans:
 
 </details>
 
-### v2.1 YouTube Analytics (In Progress)
+<details>
+<summary>v2.1 YouTube Analytics (Phases 7-9)</summary>
 
-**Milestone Goal:** Automatic YouTube metrics collection, in-app display alongside scripts, and data-aware generation where AI sees metrics as context without drawing conclusions on small sample sizes.
-
-- [ ] **Phase 7: OAuth & Schema** - YouTube OAuth2 connection flow, token persistence, connection status UI, and database schema for videos and metrics
-- [ ] **Phase 8: Metrics & Dashboard** - Sync engine, metrics dashboard with retention curves, script-video linking, and metrics display across app pages
-- [ ] **Phase 9: Data-Aware Generation** - Inject metrics context into AI prompts with small-sample guardrails and user toggle
-
-## Phase Details
+- [x] **Phase 7: OAuth & Schema** - YouTube OAuth2 connection flow, token persistence, connection status UI, and database schema for videos and metrics
+- [x] **Phase 8: Metrics & Dashboard** - Sync engine, metrics dashboard with retention curves, script-video linking, and metrics display across app pages
+- [ ] **Phase 9: Data-Aware Generation** - Inject metrics context into AI prompts with small-sample guardrails and user toggle (deferred)
 
 ### Phase 7: OAuth & Schema
 **Goal**: Pavlo can connect his YouTube channel via OAuth2 from a settings page, see connection status at all times, and the database is ready to store video metrics
@@ -168,7 +166,7 @@ Plans:
 Plans:
 - [x] 08-01-PLAN.md — Sync engine backend: YouTube API methods for video discovery + metrics, server actions for sync flow and data queries
 - [x] 08-02-PLAN.md — Scripts page UI: Sync Now button, staleness indicator, expandable table rows with metrics cards and retention sparklines
-- [ ] 08-03-PLAN.md — Video linking dropdown on editor page, metrics detail panel with full retention chart
+- [x] 08-03-PLAN.md — Video linking dropdown on editor page, metrics detail panel with full retention chart
 
 ### Phase 9: Data-Aware Generation
 **Goal**: Pavlo's script generation uses real channel performance data as context, referencing actual numbers without the AI making strategic recommendations from a small sample
@@ -180,10 +178,44 @@ Plans:
   3. The AI never makes recommendations like "your audience prefers X" or "you should do more Y" — it uses numbers for specificity only, with an explicit small-sample guardrail (N<20)
 **Plans**: TBD
 
+</details>
+
+### v3.0 Supabase Migration (Planned)
+
+**Milestone Goal:** Replace local SQLite with Supabase PostgreSQL so the app works from any device (Windows PC + MacBook Air) against a single remote database, eliminating manual file copying.
+
+- [ ] **Phase 10: Schema & Async Rewrite** - Supabase project, PostgreSQL schema via Drizzle pgTable, connection module, and full async conversion of all DB call sites
+- [ ] **Phase 11: Data Migration & Cleanup** - One-shot data transfer from SQLite to Supabase, dependency removal, and cross-device verification
+
+## Phase Details
+
+### Phase 10: Schema & Async Rewrite
+**Goal**: The entire app runs against Supabase PostgreSQL with all DB operations converted to async — functionally identical to current SQLite behavior but over the network
+**Depends on**: Phase 8 (existing app with SQLite/Drizzle, videos and metrics tables)
+**Requirements**: SUPA-01, SUPA-02, MIGR-01, MIGR-02, MIGR-03, ASYN-01, ASYN-02, ASYN-03
+**Success Criteria** (what must be TRUE):
+  1. Supabase project exists with DATABASE_URL configured in .env.local and Drizzle connects successfully
+  2. All 4 tables (scripts, beats, videos, videoMetrics) exist in Supabase with correct PostgreSQL types (serial PKs, jsonb columns, timestamp fields)
+  3. Every server action (generate, editor, library, metrics) works end-to-end against the empty Supabase database — creating a script, editing beats, changing status, and syncing YouTube metrics all complete without errors
+  4. Every page server component loads without errors against the Supabase database (home page, script editor, analytics)
+  5. No remaining .get(), .all(), or .run() terminal methods anywhere in the codebase — all DB calls use async PostgreSQL Drizzle conventions
+**Plans**: TBD
+
+### Phase 11: Data Migration & Cleanup
+**Goal**: All existing data lives in Supabase, the SQLite dependency is completely removed, and the app works identically from both of Pavlo's machines
+**Depends on**: Phase 10
+**Requirements**: DATA-01, DATA-02, DATA-03, CLEN-01, CLEN-02, CLEN-03
+**Success Criteria** (what must be TRUE):
+  1. All existing scripts, beats, videos, and metrics appear in the Supabase database with correct data (timestamps show real dates, not epoch integers or year-64000 values)
+  2. New scripts can be created after migration without primary key conflicts (serial sequences reset correctly)
+  3. better-sqlite3 is gone from package.json and node_modules — npm install produces no native compilation step
+  4. The app runs on both Windows PC and MacBook Air M1 against the same Supabase instance with identical behavior (same scripts visible, same metrics, same YouTube connection status)
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 7 -> 8 -> 9
+Phases execute in numeric order: 10 -> 11
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -193,6 +225,8 @@ Phases execute in numeric order: 7 -> 8 -> 9
 | 4. Foundation & Generation | v2.0 | 3/3 | Complete | 2026-03-28 |
 | 5. Script Editor | v2.0 | 2/2 | Complete | 2026-03-28 |
 | 6. Library & Workflow | v2.0 | 1/1 | Complete | 2026-03-28 |
-| 7. OAuth & Schema | v2.1 | 0/2 | Planned    |  |
-| 8. Metrics & Dashboard | v2.1 | 2/3 | In Progress|  |
-| 9. Data-Aware Generation | v2.1 | 0/? | Not started | - |
+| 7. OAuth & Schema | v2.1 | 2/2 | Complete | 2026-03-29 |
+| 8. Metrics & Dashboard | v2.1 | 3/3 | Complete | 2026-03-29 |
+| 9. Data-Aware Generation | v2.1 | 0/? | Deferred | - |
+| 10. Schema & Async Rewrite | v3.0 | 0/? | Not started | - |
+| 11. Data Migration & Cleanup | v3.0 | 0/? | Not started | - |

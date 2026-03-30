@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Supabase Migration
-status: Defining requirements
-stopped_at: null
+status: Ready to plan
+stopped_at: Roadmap created for v3.0
 last_updated: "2026-03-30"
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,22 +19,24 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Scripts must sound like Pavlo — natural, specific, with real dev details — never like AI-generated content.
-**Current focus:** Defining requirements for v3.0
+**Current focus:** Phase 10 — Schema & Async Rewrite
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-30 — Milestone v3.0 started
+Phase: 10 of 11 (Schema & Async Rewrite)
+Plan: Not yet planned
+Status: Ready to plan
+Last activity: 2026-03-30 — Roadmap created for v3.0 Supabase Migration
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 10 (3 from v1.0, 7 from v2.0)
-- Average duration: ~50 min
-- Total execution time: ~8.3 hours
+- Total plans completed: 14 (3 from v1.0, 7 from v2.0, 4 from v2.1)
+- Average duration: ~30 min
+- Total execution time: ~9 hours
 
 **By Phase:**
 
@@ -45,17 +47,15 @@ Last activity: 2026-03-30 — Milestone v3.0 started
 | Phase 04 | 3 | ~60 min | ~20 min |
 | Phase 05 | 2 | ~55 min | ~28 min |
 | Phase 06 | 1 | ~10 min | ~10 min |
+| Phase 07 | 1 | ~4 min | ~4 min |
+| Phase 08 | 3 | ~8 min | ~3 min |
 
 **Recent Trend:**
 
-- v2.0 plans were faster than v1.0 (established patterns, less exploration)
+- v2.1 plans were fastest yet (established codebase, clear patterns)
 - Trend: Improving
 
 *Updated after each plan completion*
-| Phase 07-oauth-schema P01 | 4min | 3 tasks | 5 files |
-| Phase 08 P01 | 2min | 2 tasks | 3 files |
-| Phase 08 P02 | 4min | 2 tasks | 6 files |
-| Phase 08 P03 | 2min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -64,17 +64,11 @@ Last activity: 2026-03-30 — Milestone v3.0 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v2.1 Research]: Use `googleapis` npm directly, NOT MCP server — simpler, server-side, native to Next.js
-- [v2.1 Research]: Manual "Sync Now" button, NOT auto-sync — 1 video/week does not justify cron
-- [v2.1 Research]: Token storage in local JSON file (`data/.youtube-tokens.json`), NOT in SQLite
-- [v2.1 Research]: OAuth consent screen must be "In production" mode + fresh credentials to avoid 7-day token expiry
-- [v2.1 Research]: Only `recharts` added for charts — no tanstack-query, no cron, no separate google-auth-library
-- [Phase 07-oauth-schema]: Token merge pattern: on('tokens') strips nulls and merges with existing to preserve refresh_token
-- [Phase 07-oauth-schema]: Quick vs full status check: file-check for header, API call for settings page only
-- [Phase 08]: Two-phase sync pattern: discoverVideos + syncSingleVideo for count-based progress
-- [Phase 08]: Staleness uses Intl.RelativeTimeFormat for human-readable relative time (no date-fns)
-- [Phase 08]: Copy button fully replaced by chevron expand/collapse per D-03
-- [Phase 08]: Used as-any for serialized Date props to avoid duplicate interfaces
+- [v3.0 Research]: Use postgres-js (not node-postgres) — pure JS, no native compilation, Drizzle-recommended for Supabase
+- [v3.0 Research]: Connect via Supabase pooler port 6543 with prepare: false — handles Next.js hot-reload connection churn
+- [v3.0 Research]: Do NOT add @supabase/supabase-js — Drizzle direct SQL is faster, all DB access is server-side
+- [v3.0 Research]: Leave RLS disabled — single-user tool, no auth needed
+- [v3.0 Research]: YouTube OAuth tokens stay in local JSON file — separate concern from DB migration
 
 ### Pending Todos
 
@@ -82,12 +76,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- GCP project setup required before Phase 7 coding: enable YouTube Data API v3 + Analytics API, create OAuth credentials, set consent screen to Production
-- Brand Account channel listing may behave differently — verify during Phase 7
-- Phase 3 (v1.0 Feedback Loop) still paused — superseded by v2.1 automated approach
+- Supabase project must be created manually before Phase 10 coding starts
+- Timestamp epoch-to-Date conversion is the highest-risk data migration step
+- YouTube OAuth tokens remain local-file-based — both machines need separate YouTube auth
 
 ## Session Continuity
 
-Last session: 2026-03-29T18:25:59.091Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-03-30
+Stopped at: Roadmap created for v3.0 Supabase Migration
 Resume file: None
