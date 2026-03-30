@@ -90,7 +90,7 @@ export async function loadTokens(): Promise<StoredTokens | null> {
     const tokens: StoredTokens = {};
     if (row.accessToken) tokens.access_token = row.accessToken;
     if (row.refreshToken) tokens.refresh_token = row.refreshToken;
-    if (row.expiryDate) tokens.expiry_date = row.expiryDate;
+    if (row.expiryDate) tokens.expiry_date = Number(row.expiryDate);
     if (row.tokenType) tokens.token_type = row.tokenType;
     if (row.scope) tokens.scope = row.scope;
     if (row.channelTitle) {
@@ -112,7 +112,7 @@ export async function saveTokens(tokens: StoredTokens) {
   const data = {
     accessToken: tokens.access_token ?? null,
     refreshToken: tokens.refresh_token ?? null,
-    expiryDate: tokens.expiry_date ?? null,
+    expiryDate: tokens.expiry_date != null ? String(tokens.expiry_date) : null,
     tokenType: tokens.token_type ?? null,
     scope: tokens.scope ?? null,
     channelTitle: tokens.channel?.title ?? null,

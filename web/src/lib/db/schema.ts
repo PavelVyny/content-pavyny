@@ -74,7 +74,7 @@ export const youtubeTokens = pgTable("youtube_tokens", {
   id: serial("id").primaryKey(),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
-  expiryDate: integer("expiry_date"), // epoch ms
+  expiryDate: text("expiry_date"), // epoch ms as string (bigint)
   tokenType: text("token_type"),
   scope: text("scope"),
   channelTitle: text("channel_title"),
