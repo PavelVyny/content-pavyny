@@ -1,521 +1,407 @@
-# Architecture Research
+# Architecture: SQLite to Supabase Migration
 
-**Domain:** YouTube Analytics integration into existing Next.js scriptwriting app
-**Researched:** 2026-03-29
+**Domain:** Database migration (SQLite -> Supabase PostgreSQL)
+**Researched:** 2026-03-30
 **Confidence:** HIGH
 
-## System Overview
+## Current Architecture Snapshot
+
+### Data Flow (SQLite, synchronous)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Next.js App (existing)                      │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐  │
-│  │ Script Editor │  │ Script List  │  │ Metrics Dashboard     │  │
-│  │  (existing)   │  │  (existing)  │  │  (NEW)                │  │
-│  └──────┬───────┘  └──────┬───────┘  └───────────┬───────────┘  │
-│         │                 │                       │              │
-├─────────┴─────────────────┴───────────────────────┴──────────────┤
-│                      Server Actions Layer                        │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐  │
-│  │ editor.ts    │  │ library.ts   │  │ metrics.ts (NEW)      │  │
-│  │ generate.ts  │  │  (existing)  │  │ youtube.ts (NEW)      │  │
-│  │ (MODIFIED)   │  │              │  │                       │  │
-│  └──────┬───────┘  └──────┬───────┘  └───────────┬───────────┘  │
-│         │                 │                       │              │
-├─────────┴─────────────────┴───────────────────────┴──────────────┤
-│                      Service Layer                               │
-│                                                                  │
-│  ┌──────────────┐  ┌───────────────────┐  ┌──────────────────┐  │
-│  │ agent.ts     │  │ youtube-client.ts  │  │ metrics-query.ts │  │
-│  │ (MODIFIED)   │  │ (NEW)             │  │ (NEW)            │  │
-│  └──────┬───────┘  └─────────┬─────────┘  └────────┬─────────┘  │
-│         │                    │                      │            │
-├─────────┴────────────────────┴──────────────────────┴────────────┤
-│                      Data Layer                                  │
-│                                                                  │
-│  ┌──────────────┐  ┌───────────────────┐  ┌──────────────────┐  │
-│  │ scripts      │  │ videos (NEW)      │  │ video_metrics    │  │
-│  │ beats        │  │                   │  │ (NEW)            │  │
-│  │ (existing)   │  │                   │  │                  │  │
-│  └──────────────┘  └───────────────────┘  └──────────────────┘  │
-│                                                                  │
-│                      SQLite + Drizzle ORM                        │
-└──────────────────────┬───────────────────────────────────────────┘
-                       │
-        ┌──────────────┴──────────────┐
-        │   Google OAuth2 Tokens      │
-        │   (file-based, local-only)  │
-        └──────────────┬──────────────┘
-                       │
-        ┌──────────────┴──────────────┐
-        │   YouTube Analytics API     │
-        │   YouTube Data API v3       │
-        └─────────────────────────────┘
+Browser -> Server Component/Action -> getDb() -> better-sqlite3 (sync) -> data/scripts.db
+                                                                      -> data/.youtube-tokens.json (filesystem)
 ```
 
-## Decision: Direct googleapis Client, Not MCP Server
+All database calls are **synchronous**. Drizzle wraps better-sqlite3 and exposes `.get()`, `.all()`, `.run()`, `.returning().get()` -- all return values directly (no await). Server actions are declared `async` but DB calls inside them are synchronous.
 
-**Recommendation:** Use the `googleapis` npm package directly from server actions. Do NOT use an MCP server for YouTube Analytics.
+### Files That Touch the Database (Complete Inventory)
 
-**Rationale:**
+| File | Role | Sync DB Calls | Migration Action |
+|------|------|---------------|------------------|
+| `web/src/lib/db/index.ts` | Connection singleton | `new Database()`, `.pragma()` | **Full rewrite** |
+| `web/src/lib/db/schema.ts` | 4 table definitions | N/A (schema only) | **Full rewrite** |
+| `web/drizzle.config.ts` | Drizzle Kit config | N/A (config only) | **Full rewrite** |
+| `web/src/app/actions/metrics.ts` | Video discovery, sync, analytics | 15x `.run()/.get()/.all()` | **Add await to all DB calls** |
+| `web/src/app/actions/editor.ts` | Beat/hook editing, AI regen | 14x `.run()/.get()/.all()` | **Add await to all DB calls** |
+| `web/src/app/actions/library.ts` | Script listing, status, voiceover | 5x `.run()/.get()/.all()` | **Add await to all DB calls** |
+| `web/src/app/actions/generate.ts` | Script generation, deletion | 9x `.run()/.get()/.returning().get()` | **Add await to all DB calls** |
+| `web/src/app/page.tsx` | Home page (sync server component) | 1x `.get()` | **Make component async, add await** |
+| `web/src/app/script/[id]/page.tsx` | Script editor page (already async) | 2x `.get()/.all()` | **Add await** |
+| `web/next.config.ts` | External packages config | N/A | **Remove better-sqlite3 entry** |
+| `web/package.json` | Dependencies | N/A | **Remove better-sqlite3, add postgres** |
 
-1. **MCP adds unnecessary indirection.** MCP servers are designed to give LLM agents access to tools. This app needs to fetch metrics on a schedule or button press and display them in a dashboard. That is a standard API call, not an agent tool invocation.
+**Total: 11 files change. ~46 individual DB call sites gain `await`.**
 
-2. **Existing MCP servers are Python-based.** The best YouTube Analytics MCP server (pauling-ai/youtube-mcp-server) is Python + FastMCP. Running a Python subprocess from a Node.js/Next.js app adds cross-language complexity, process management, and debugging pain for zero architectural benefit.
+### Current Schema (4 Tables)
 
-3. **The googleapis npm package is mature.** `@googleapis/youtubeanalytics` provides typed access to `reports.query()` with built-in token refresh via `google-auth-library`. This is Google's officially maintained client. One `npm install` vs. managing a separate Python process.
+| Table | Columns | JSON-as-Text Columns | FK References |
+|-------|---------|---------------------|---------------|
+| `scripts` | 12 | `hooks`, `titles`, `antiSlopScore` | None |
+| `beats` | 5 | None | `scriptId -> scripts.id` (cascade) |
+| `videos` | 8 | None | `scriptId -> scripts.id` (set null) |
+| `videoMetrics` | 12 | `retentionCurve` | `videoId -> videos.id` (cascade, unique) |
 
-4. **Data-aware generation only needs DB access.** The AI agent (Claude Agent SDK) already runs in Node.js. Feeding metrics into generation means querying SQLite for stored metrics and injecting them into the prompt string -- no MCP needed.
+## Post-Migration Architecture
 
-**When MCP would make sense (and does not here):**
-- If Claude needed to dynamically query YouTube during generation (it does not -- metrics are fetched separately and stored)
-- If multiple LLM agents needed YouTube access (single user, single agent)
-- If the app were a Claude Desktop plugin (it is a Next.js web app)
-
-**Confidence:** HIGH -- this matches the existing pattern where the app uses `googleapis` via server actions, same as any other API integration.
-
-### Component Responsibilities
-
-| Component | Responsibility | Status |
-|-----------|----------------|--------|
-| `youtube-client.ts` | OAuth2 flow, token storage/refresh, API wrapper for Analytics + Data API | NEW |
-| `metrics.ts` (action) | Fetch/sync metrics, expose to UI components | NEW |
-| `youtube.ts` (action) | OAuth setup flow, connection status check | NEW |
-| `videos` table | Store video metadata (YouTube ID, title, publish date, linked script) | NEW |
-| `video_metrics` table | Store time-series metrics snapshots per video | NEW |
-| `agent.ts` | Generate scripts with optional metrics context injected into prompt | MODIFIED |
-| `generate.ts` | Pass metrics context to agent when generating/regenerating | MODIFIED |
-| Metrics Dashboard | Display per-video metrics cards alongside script library | NEW |
-
-## Recommended Project Structure
-
-New and modified files only (existing structure preserved):
+### Data Flow (PostgreSQL, async)
 
 ```
-web/src/
-├── app/
-│   ├── actions/
-│   │   ├── editor.ts         # (existing, unchanged)
-│   │   ├── generate.ts       # (MODIFIED: inject metrics context)
-│   │   ├── library.ts        # (existing, unchanged)
-│   │   ├── metrics.ts        # (NEW: sync metrics, get metrics for video)
-│   │   └── youtube.ts        # (NEW: OAuth flow, connection status)
-│   ├── scripts/page.tsx      # (MODIFIED: add metrics mini-cards)
-│   ├── script/[id]/page.tsx  # (MODIFIED: show linked video metrics)
-│   ├── settings/page.tsx     # (NEW: YouTube connection, OAuth setup)
-│   └── api/
-│       └── youtube/
-│           └── callback/
-│               └── route.ts  # (NEW: OAuth2 callback handler)
-├── components/
-│   ├── metrics-card.tsx      # (NEW: mini metrics display per video)
-│   ├── metrics-dashboard.tsx # (NEW: overview of all video metrics)
-│   ├── youtube-connect.tsx   # (NEW: OAuth connect button + status)
-│   └── retention-chart.tsx   # (NEW: simple retention curve display)
-├── lib/
-│   ├── agent.ts              # (MODIFIED: accept metrics context param)
-│   ├── youtube-client.ts     # (NEW: googleapis wrapper + token management)
-│   ├── metrics-query.ts      # (NEW: SQLite queries for metrics data)
-│   └── db/
-│       ├── index.ts          # (existing, unchanged)
-│       └── schema.ts         # (MODIFIED: add videos + video_metrics tables)
+Browser -> Server Component/Action -> db (export) -> postgres-js (async) -> Supabase PostgreSQL
+                                                                         -> data/.youtube-tokens.json (filesystem, unchanged)
 ```
 
-### Structure Rationale
+### Connection Architecture
 
-- **youtube-client.ts in lib/:** Service layer, same pattern as `agent.ts`. Handles OAuth tokens and API calls. No UI logic.
-- **metrics.ts + youtube.ts as separate actions:** Metrics actions (fetch/display data) are used frequently. YouTube actions (OAuth setup) are used once. Separate files keep imports clean.
-- **api/youtube/callback/route.ts:** OAuth2 requires a redirect URI. This is the only API route needed. Google redirects here after consent, the handler exchanges code for tokens and stores them.
-- **settings/page.tsx:** One-time OAuth setup lives separate from daily workflow pages.
+```
+Next.js Server (dev/prod)
+  |
+  postgres-js client (prepare: false)
+  |
+  Supabase Supavisor (port 6543, Transaction mode)
+  |
+  PostgreSQL (Supabase-managed)
+```
 
-## Architectural Patterns
+**Why `prepare: false`:** Supabase Supavisor pooler runs in Transaction mode. Each query may hit a different PostgreSQL backend connection. Prepared statements are per-connection, so they break when the pooler reassigns connections. Disabling prevents intermittent `prepared statement does not exist` errors.
 
-### Pattern 1: File-Based OAuth Token Storage
+**Why pooler (port 6543) not direct (port 5432):** Next.js dev server with hot reload creates many connections. Direct connections have a limit (~60 on Supabase free tier). The pooler multiplexes many client connections onto fewer database connections.
 
-**What:** Store OAuth2 refresh token in a local JSON file (`web/data/.youtube-tokens.json`), not in SQLite.
-**When to use:** Single-user local-only apps where tokens are sensitive but don't need relational queries.
-**Trade-offs:** Simpler than DB column, easy to gitignore, but does not survive if `data/` is wiped.
+## The Core Migration Pattern: Sync to Async
 
+### Terminal Method Translation
+
+| SQLite (better-sqlite3) | PostgreSQL (postgres-js) | Notes |
+|--------------------------|--------------------------|-------|
+| `.get()` | `await ...` then `[0]` | PG driver always returns arrays |
+| `.all()` | `await ...` | PG returns array by default |
+| `.run()` | `await ...` | No return value needed, just execute |
+| `.returning().get()` | `const [row] = await ...returning()` | Destructure first element |
+
+### Schema Type Translation
+
+| SQLite (`drizzle-orm/sqlite-core`) | PostgreSQL (`drizzle-orm/pg-core`) | Notes |
+|------------------------------------|------------------------------------|-------|
+| `sqliteTable` | `pgTable` | Direct swap |
+| `integer("id").primaryKey({ autoIncrement: true })` | `serial("id").primaryKey()` | `serial` = auto-increment int |
+| `text("col")` | `text("col")` | Same API |
+| `text("col", { mode: "json" }).$type<T>()` | `jsonb("col").$type<T>()` | Native JSONB, indexable |
+| `integer("col", { mode: "timestamp" })` | `timestamp("col")` | Native timestamp type |
+| `.$defaultFn(() => new Date())` | `.defaultNow()` | DB-level default |
+| `text("status", { enum: [...] })` | `text("status", { enum: [...] })` | Same, or use `pgEnum` |
+
+## File-by-File Change Specification
+
+### 1. `web/src/lib/db/schema.ts` -- FULL REWRITE
+
+All imports change from `drizzle-orm/sqlite-core` to `drizzle-orm/pg-core`. Every table definition changes.
+
+**Before (scripts table example):**
 ```typescript
-// lib/youtube-client.ts
-import { google } from "googleapis";
-import fs from "fs";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+
+export const scripts = sqliteTable("scripts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  status: text("status", { enum: ["generating", "draft", "ready", "done"] })
+    .notNull().default("draft"),
+  hooks: text("hooks", { mode: "json" }).$type<HookVariant[]>(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull().$defaultFn(() => new Date()),
+});
+```
+
+**After:**
+```typescript
+import { pgTable, serial, text, jsonb, timestamp, integer } from "drizzle-orm/pg-core";
+
+export const scripts = pgTable("scripts", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  status: text("status", { enum: ["generating", "draft", "ready", "done"] })
+    .notNull().default("draft"),
+  hooks: jsonb("hooks").$type<HookVariant[]>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+```
+
+**Column changes across all 4 tables:**
+- 4 primary keys: `integer().primaryKey({ autoIncrement: true })` -> `serial().primaryKey()`
+- 4 JSON columns: `text({ mode: "json" })` -> `jsonb()`
+- 6 timestamp columns: `integer({ mode: "timestamp" })` -> `timestamp()`
+- All `$defaultFn(() => new Date())` -> `defaultNow()`
+- Plain `integer()` columns (views, likes, etc.) stay as `integer()` -- same in pg-core
+
+### 2. `web/src/lib/db/index.ts` -- FULL REWRITE
+
+**Before:**
+```typescript
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import * as schema from "./schema";
 import path from "path";
 
-const TOKEN_PATH = path.join(process.cwd(), "data", ".youtube-tokens.json");
-const SCOPES = [
-  "https://www.googleapis.com/auth/yt-analytics.readonly",
-  "https://www.googleapis.com/auth/youtube.readonly",
-];
+const DB_PATH = path.join(process.cwd(), "data", "scripts.db");
+let _db: ReturnType<typeof drizzle> | null = null;
 
-// OAuth2 client singleton
-let oauth2Client: InstanceType<typeof google.auth.OAuth2> | null = null;
-
-export function getOAuth2Client() {
-  if (!oauth2Client) {
-    oauth2Client = new google.auth.OAuth2(
-      process.env.YOUTUBE_CLIENT_ID,
-      process.env.YOUTUBE_CLIENT_SECRET,
-      process.env.YOUTUBE_REDIRECT_URI // http://localhost:3000/api/youtube/callback
-    );
-    // Load stored tokens if they exist
-    if (fs.existsSync(TOKEN_PATH)) {
-      const tokens = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf-8"));
-      oauth2Client.setCredentials(tokens);
-    }
+export function getDb() {
+  if (!_db) {
+    const sqlite = new Database(DB_PATH);
+    sqlite.pragma("journal_mode = WAL");
+    sqlite.pragma("foreign_keys = ON");
+    _db = drizzle(sqlite, { schema });
   }
-  return oauth2Client;
-}
-
-export function storeTokens(tokens: Record<string, unknown>) {
-  fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
-}
-
-export function isConnected(): boolean {
-  return fs.existsSync(TOKEN_PATH);
+  return _db;
 }
 ```
 
-### Pattern 2: Time-Series Metrics Snapshots
-
-**What:** Store metrics as dated snapshots, not overwritten values. Each sync creates a new row per video.
-**When to use:** When you want to track how metrics change over time (views at 48h vs 7d vs 30d).
-**Trade-offs:** More rows in SQLite, but enables trend analysis. At 1 video/week with daily syncs, this is ~365 rows/year -- trivial for SQLite.
-
+**After:**
 ```typescript
-// In schema.ts (NEW tables)
-export const videos = sqliteTable("videos", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  youtubeId: text("youtube_id").notNull().unique(),
-  title: text("title").notNull(),
-  publishedAt: integer("published_at", { mode: "timestamp" }),
-  scriptId: integer("script_id").references(() => scripts.id),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-});
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "./schema";
 
-export const videoMetrics = sqliteTable("video_metrics", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  videoId: integer("video_id")
-    .notNull()
-    .references(() => videos.id, { onDelete: "cascade" }),
-  fetchedAt: integer("fetched_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  views: integer("views").notNull().default(0),
-  engagedViews: integer("engaged_views"),
-  likes: integer("likes").default(0),
-  comments: integer("comments").default(0),
-  shares: integer("shares").default(0),
-  subscribersGained: integer("subscribers_gained").default(0),
-  subscribersLost: integer("subscribers_lost").default(0),
-  averageViewPercentage: integer("average_view_percentage"), // 0-100
-  averageViewDuration: integer("average_view_duration"),     // seconds
-  // Retention curve as JSON array of percentages at each second
-  retentionCurve: text("retention_curve", { mode: "json" })
-    .$type<number[]>(),
+const client = postgres(process.env.DATABASE_URL!, { prepare: false });
+export const db = drizzle({ client, schema });
+```
+
+**What disappears:** File path, `path` import, WAL pragma, foreign keys pragma, singleton pattern. PostgreSQL enforces FKs by default. `postgres-js` manages its own connection pool internally.
+
+**Export change:** `getDb()` function -> direct `db` export. All 8 consumer files update their import from `const db = getDb()` to `import { db } from "@/lib/db"`. Alternatively, keep `getDb()` as a wrapper that returns `db` to minimize downstream changes -- but direct export is cleaner.
+
+### 3. `web/drizzle.config.ts` -- FULL REWRITE
+
+**Before:**
+```typescript
+export default defineConfig({
+  schema: "./src/lib/db/schema.ts",
+  out: "./drizzle",
+  dialect: "sqlite",
+  dbCredentials: { url: "./data/scripts.db" },
 });
 ```
 
-### Pattern 3: Metrics Context Injection for Data-Aware Generation
-
-**What:** When generating a new script, query the DB for recent video metrics and inject them as raw data into the Claude prompt. The AI sees numbers but does NOT make statistical conclusions (sample too small).
-**When to use:** Exactly this project -- data-aware generation where AI uses patterns from metrics as context.
-**Trade-offs:** Adds ~500 tokens to prompt. Worth it for contextual awareness. Must explicitly instruct AI not to over-generalize from 6-10 data points.
-
+**After:**
 ```typescript
-// In agent.ts (MODIFIED generateScript)
-export async function generateScript(
-  format: string,
-  devContext: string,
-  metricsContext?: string  // NEW parameter
-): Promise<ScriptOutput> {
-  // ... existing code ...
+export default defineConfig({
+  schema: "./src/lib/db/schema.ts",
+  out: "./drizzle",
+  dialect: "postgresql",
+  dbCredentials: { url: process.env.DATABASE_URL! },
+});
+```
 
-  const metricsSection = metricsContext
-    ? `\n=== RECENT VIDEO PERFORMANCE (raw data, small sample) ===
-${metricsContext}
+### 4. `web/src/app/actions/editor.ts` -- ADD AWAIT (14 sites)
 
-NOTE: This is a SMALL sample (under 20 videos). Use these numbers as
-context about what Pavlo's audience responds to, but do NOT draw
-statistical conclusions or say "your audience prefers X". Just let
-the patterns inform your creative choices naturally.`
-    : "";
+All functions are already `async`. Every `db.` chain ending in `.run()`, `.get()`, or `.all()` gains `await` and the terminal method changes.
 
-  const prompt = `You are the devlog-scriptwriter...
-${metricsSection}
-... rest of existing prompt`;
-}
+**Example transformation:**
+```typescript
+// Before
+db.update(beats).set({ [field]: value }).where(eq(beats.id, beatId)).run();
+
+// After
+await db.update(beats).set({ [field]: value }).where(eq(beats.id, beatId));
 ```
 
 ```typescript
-// In metrics-query.ts (NEW)
-export function getMetricsContextForGeneration(): string {
+// Before
+const script = db.select().from(scripts).where(eq(scripts.id, scriptId)).get();
+
+// After
+const [script] = await db.select().from(scripts).where(eq(scripts.id, scriptId)).limit(1);
+```
+
+### 5. `web/src/app/actions/library.ts` -- ADD AWAIT (5 sites)
+
+Same mechanical pattern. `.all()` becomes just `await`, `.get()` becomes `await ... .limit(1)` then `[0]`.
+
+### 6. `web/src/app/actions/generate.ts` -- ADD AWAIT (9 sites)
+
+Special case -- `returning().get()`:
+```typescript
+// Before
+const script = db.insert(scripts).values({...}).returning().get();
+
+// After
+const [script] = await db.insert(scripts).values({...}).returning();
+```
+
+### 7. `web/src/app/actions/metrics.ts` -- ADD AWAIT (15 sites)
+
+Largest file. Additional concern beyond mechanical await:
+
+**Timestamp behavior change in `getLastSyncTime()`:**
+```typescript
+// Before (SQLite stores timestamps as integer seconds)
+return new Date(result.maxSync * 1000);
+
+// After (PostgreSQL timestamp returns proper Date or ISO string)
+// The * 1000 MUST be removed or dates will be in year ~64000
+return result.maxSync ? new Date(result.maxSync) : null;
+```
+
+**`onConflictDoUpdate` with `sql\`excluded.column\``:** This syntax works identically in PostgreSQL -- it is standard SQL UPSERT syntax, not SQLite-specific. No changes needed.
+
+**Raw SQL aggregations:** `COALESCE(SUM(...), 0)` and `MAX(...)` work identically. No changes.
+
+### 8. `web/src/app/page.tsx` -- MAKE ASYNC
+
+Currently a **synchronous** server component. Must become async:
+```typescript
+// Before
+export default function Home() {
   const db = getDb();
-  // Get latest metrics snapshot per video, joined with video info
-  const rows = db.select({
-    title: videos.title,
-    format: scripts.format,
-    views: videoMetrics.views,
-    avgViewPct: videoMetrics.averageViewPercentage,
-    subsGained: videoMetrics.subscribersGained,
-    publishedAt: videos.publishedAt,
-  })
-  .from(videoMetrics)
-  // ... joins and ordering ...
-  .all();
+  const latestScript = db.select()...get();
 
-  return rows.map(r =>
-    `- "${r.title}" (${r.format}): ${r.views} views, ${r.avgViewPct}% retained, +${r.subsGained} subs`
-  ).join("\n");
-}
+// After
+export default async function Home() {
+  const [latestScript] = await db.select()...limit(1);
 ```
 
-## Data Flow
+### 9. `web/src/app/script/[id]/page.tsx` -- ADD AWAIT (2 sites)
 
-### OAuth2 Setup Flow (one-time)
+Already `async`. Two DB calls gain `await`:
+```typescript
+// Before
+const script = db.select().from(scripts).where(eq(scripts.id, scriptId)).get();
+const scriptBeats = db.select().from(beats).where(eq(beats.scriptId, scriptId)).orderBy(beats.order).all();
 
-```
-User clicks "Connect YouTube" on Settings page
-    ↓
-youtube.ts action → getOAuth2Client() → generates consent URL
-    ↓
-Browser redirects to Google consent screen
-    ↓
-User approves → Google redirects to /api/youtube/callback?code=XXX
-    ↓
-route.ts handler → exchanges code for tokens → storeTokens() to file
-    ↓
-Redirects to /settings with success message
-    ↓
-Refresh token persists in data/.youtube-tokens.json
-(auto-refreshes access token on each API call)
+// After
+const [script] = await db.select().from(scripts).where(eq(scripts.id, scriptId)).limit(1);
+const scriptBeats = await db.select().from(beats).where(eq(beats.scriptId, scriptId)).orderBy(beats.order);
 ```
 
-### Metrics Sync Flow (on-demand or periodic)
+### 10. `web/next.config.ts` -- REMOVE ENTRY
 
-```
-User clicks "Sync Metrics" button (or app loads dashboard)
-    ↓
-metrics.ts action: syncAllMetrics()
-    ↓
-youtube-client.ts: listChannelVideos()
-  → YouTube Data API v3: channels.list + search.list
-  → Returns video IDs, titles, publish dates
-    ↓
-For each video not in DB: INSERT into videos table
-    ↓
-youtube-client.ts: getVideoMetrics(videoId, startDate, endDate)
-  → YouTube Analytics API: reports.query({
-      ids: "channel==MINE",
-      metrics: "views,engagedViews,likes,comments,shares,
-               subscribersGained,subscribersLost,
-               averageViewPercentage,averageViewDuration",
-      filters: "video==VIDEO_ID",
-      startDate, endDate
-    })
-    ↓
-youtube-client.ts: getRetentionData(videoId)
-  → YouTube Analytics API: reports.query({
-      ids: "channel==MINE",
-      metrics: "audienceWatchRatio",
-      dimensions: "elapsedVideoTimeRatio",
-      filters: "video==VIDEO_ID",
-    })
-    ↓
-INSERT new row into video_metrics with timestamp
-    ↓
-UI refreshes with latest metrics
+```typescript
+// Before
+const nextConfig: NextConfig = {
+  serverExternalPackages: ["better-sqlite3"],
+};
+
+// After
+const nextConfig: NextConfig = {};
 ```
 
-### Data-Aware Generation Flow
+### 11. `web/package.json` -- DEPENDENCY SWAP
 
-```
-User clicks "Generate Script" (existing flow)
-    ↓
-generate.ts: generateNewScript()
-    ↓
-NEW: metrics-query.ts: getMetricsContextForGeneration()
-  → SELECT latest metrics per video from SQLite
-  → Format as readable text string
-    ↓
-agent.ts: generateScript(format, devContext, metricsContext)
-  → Claude Agent SDK prompt now includes metrics section
-  → AI uses patterns naturally without over-generalizing
-    ↓
-... existing flow continues (parse JSON, save to DB)
+**Remove:**
+- `"better-sqlite3": "^12.8.0"` from dependencies
+- `"@types/better-sqlite3": "^7.6.13"` from devDependencies
+
+**Add:**
+- `"postgres": "^3.4.5"` to dependencies
+
+### 12. `web/.env.local` -- ADD DATABASE_URL
+
+```env
+DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
 ```
 
-### Key Data Flows Summary
+## Files That Do NOT Change
 
-1. **OAuth setup:** One-time browser redirect flow, stores refresh token to file
-2. **Metrics sync:** Button-triggered, fetches from YouTube API, writes snapshots to SQLite
-3. **Metrics display:** Dashboard reads from SQLite, no API calls needed
-4. **Data-aware generation:** Reads stored metrics from SQLite, injects into prompt text
+| File | Why Unaffected |
+|------|---------------|
+| `web/src/lib/youtube-client.ts` | Reads/writes tokens to filesystem. No DB dependency. |
+| `web/src/lib/agent.ts` | AI generation logic. No DB calls. |
+| `web/src/lib/types.ts` | TypeScript interfaces. DB-agnostic. |
+| `web/src/lib/references.ts` | Reads skill reference files. No DB. |
+| All `web/src/components/*.tsx` | Client components. Never touch DB directly. |
+| `web/src/app/analytics/page.tsx` | Calls server actions from metrics.ts. No direct DB access. |
 
-## YouTube Analytics API: Available Metrics for Shorts
+## Data Migration Strategy
 
-**Confidence:** HIGH -- verified against official Google documentation.
+### Approach: One-Time ETL Script
 
-| Metric | API Name | What It Shows | Available for Shorts |
-|--------|----------|---------------|---------------------|
-| Views | `views` | Play/replay count (changed March 2025 for Shorts) | Yes |
-| Engaged Views | `engagedViews` | Views past initial seconds (new metric, 2025) | Yes |
-| Likes | `likes` | Like count | Yes |
-| Comments | `comments` | Comment count | Yes |
-| Shares | `shares` | Share count | Yes |
-| Subs Gained | `subscribersGained` | New subscribers from this video | Yes |
-| Subs Lost | `subscribersLost` | Unsubscribes from this video | Yes |
-| Avg View % | `averageViewPercentage` | Percentage of video watched on average | Yes |
-| Avg View Duration | `averageViewDuration` | Average seconds watched | Yes |
-| Audience Watch Ratio | `audienceWatchRatio` | Per-segment retention curve | Yes |
-| Relative Retention | `relativeRetentionPerformance` | 0-1 vs similar-length videos | Yes |
+A standalone Node.js script that reads from SQLite and writes to Supabase PostgreSQL. Runs once, then gets deleted.
 
-**Important API change (March 2025):** For Shorts, `views` now counts play+replay starts. The old behavior (engaged views only) moved to `engagedViews`. Both should be fetched and stored.
+**Why a script, not Drizzle migrations:** Drizzle migrations create/alter schemas. They do not move data between different databases. Data migration is a separate concern.
 
-**Retention curve specifics:** `audienceWatchRatio` with `dimensions: "elapsedVideoTimeRatio"` returns an array of ratios at 100 evenly-spaced points through the video. Values can exceed 1.0 (rewatches). For a 30-second Short, each point represents ~0.3 seconds.
+### Key Transformations
 
-## OAuth2 Setup Requirements
+| Data Type | SQLite Storage | PostgreSQL Storage | Transform |
+|-----------|---------------|-------------------|-----------|
+| Timestamps | Integer (unix seconds) | `timestamp` (native) | `new Date(value * 1000)` |
+| JSON columns | Text string | JSONB (native object) | `JSON.parse(value)` |
+| Auto-increment IDs | INTEGER PRIMARY KEY | SERIAL | Insert with explicit IDs |
 
-**Google Cloud Console setup (one-time by Pavlo):**
+### Sequence Reset After Bulk Insert
 
-1. Create project in Google Cloud Console
-2. Enable YouTube Data API v3 + YouTube Analytics API
-3. Configure OAuth consent screen (External, Testing mode -- up to 100 test users, no verification needed)
-4. Create OAuth 2.0 Desktop/Web client credentials
-5. Add `http://localhost:3000/api/youtube/callback` as authorized redirect URI
-6. Store client ID and secret in `.env.local`
-
-**Scopes needed:**
-
-| Scope | Why |
-|-------|-----|
-| `yt-analytics.readonly` | Read analytics data (views, retention, etc.) |
-| `youtube.readonly` | List channel videos (titles, IDs, publish dates) |
-
-**Token lifecycle:**
-- Access token: expires in 1 hour, auto-refreshed by `google-auth-library`
-- Refresh token: long-lived, stored in `data/.youtube-tokens.json`
-- If refresh token is revoked: user re-authorizes on Settings page
-- Google's "Testing" consent screen: refresh tokens expire after 7 days. Once app is verified (or set to Internal if using Workspace), tokens persist indefinitely. For a local-only personal tool, Internal type is simplest if Pavlo has Google Workspace; otherwise Testing mode with periodic re-auth.
-
-**Confidence on 7-day expiry:** MEDIUM -- Google documentation states test-mode tokens expire in 7 days, but behavior varies. If this is a problem, setting the app to "Internal" (Workspace accounts only) or going through verification (overkill for personal tool) resolves it. Alternatively, just re-auth weekly -- it takes 10 seconds.
-
-## Script-to-Video Linking
-
-Scripts and videos exist independently and need an explicit link. Two approaches:
-
-**Recommended: Manual link via dropdown.** When viewing a script, Pavlo selects which YouTube video it became. This is reliable (no title-matching heuristics) and takes 2 seconds.
-
-**Implementation:** The `videos` table has an optional `scriptId` column. A dropdown on the script editor page shows unlinked videos. Selecting one writes the `scriptId`.
-
-**Why not automatic matching:** Script titles and YouTube video titles often differ. Matching by date is unreliable (script created days before upload). Manual linking is trivial at 1 video/week.
-
-## Scaling Considerations
-
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 1-20 videos | Current design. Manual sync button. Metrics snapshots in SQLite. |
-| 20-50 videos | Add "last synced" timestamp, auto-sync on dashboard load if stale (>24h). Consider cron-like background sync via Next.js middleware or external scheduler. |
-| 50+ videos | YouTube API quota (10,000 units/day) becomes relevant. Batch video metrics queries. Add pagination to dashboard. Still fine in SQLite. |
-
-### Scaling Priorities
-
-1. **First concern: API quotas.** YouTube Data API costs 1 unit per search.list call, 1 per channels.list. Analytics API reports.query costs 1 unit. At 6 videos with daily sync: ~12 units/day. 10,000 daily quota is nowhere near a concern at this scale.
-2. **Second concern: Token expiry in test mode.** If Pavlo forgets to re-auth, metrics sync silently fails. The UI must clearly show connection status and time since last successful sync.
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Using MCP as a Data Bridge
-
-**What people do:** Set up a YouTube MCP server and have Claude call it during generation to fetch live metrics.
-**Why it's wrong:** Adds latency (MCP roundtrip + YouTube API call) to every generation. Metrics don't change minute-to-minute. Generation becomes dependent on YouTube being reachable.
-**Do this instead:** Fetch metrics on a separate schedule (sync button / periodic). Store in SQLite. Read from SQLite during generation. Decoupled, fast, offline-capable.
-
-### Anti-Pattern 2: Storing Metrics as JSON Blobs per Script
-
-**What people do:** Fetch metrics once and store them as a JSON column on the scripts table.
-**Why it's wrong:** Metrics change over time. A video's 48-hour metrics differ from its 7-day metrics. Overwriting loses history. Storing on scripts table couples video performance to script records.
-**Do this instead:** Separate `videos` and `video_metrics` tables. Time-series snapshots. Link scripts to videos via foreign key.
-
-### Anti-Pattern 3: Having AI Analyze Metrics and Make Recommendations
-
-**What people do:** Ask the AI to analyze 6 data points and say "your audience prefers X format."
-**Why it's wrong:** 6-10 videos is not a statistically meaningful sample. AI will confidently state patterns that are noise. This erodes trust in the tool.
-**Do this instead:** Inject raw metrics as context. Explicitly tell AI "small sample, do not draw conclusions." Let the AI's pattern recognition inform creative choices subconsciously, without it making explicit data claims. Revisit at 20+ videos.
-
-### Anti-Pattern 4: Building a YouTube MCP Server from Scratch
-
-**What people do:** Build a custom MCP server wrapping YouTube APIs "for future flexibility."
-**Why it's wrong:** YAGNI. This is a single-user local app. The only consumer of YouTube data is the Next.js server actions and the Claude prompt. MCP adds protocol overhead, process management, and debugging complexity for zero benefit.
-**Do this instead:** Direct `googleapis` import in `youtube-client.ts`. If MCP is ever needed (e.g., giving Claude Desktop direct YouTube access), it can wrap the same client later.
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Key Gotchas |
-|---------|---------------------|-------------|
-| YouTube Analytics API | `googleapis` npm, OAuth2 with refresh token | Test-mode tokens expire in 7 days; `engagedViews` metric added 2025; retention curve via `audienceWatchRatio` + `elapsedVideoTimeRatio` dimension |
-| YouTube Data API v3 | `googleapis` npm, same OAuth2 client | Needed to list channel videos (IDs, titles, publish dates); shares same auth tokens |
-| Claude Agent SDK | `@anthropic-ai/claude-agent-sdk` (existing) | Modified to accept optional `metricsContext` string; no new dependencies |
-| Google Cloud Console | Manual setup by Pavlo | OAuth consent screen, API enablement, credentials -- one-time setup documented in settings page |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| UI components <-> Server actions | React Server Components + `"use server"` actions (existing pattern) | Metrics dashboard follows same pattern as script library |
-| Server actions <-> youtube-client.ts | Direct function import | Same as agent.ts pattern -- service functions called from actions |
-| Server actions <-> SQLite | Drizzle ORM queries (existing pattern) | New tables follow same schema conventions (timestamps, json columns) |
-| generate.ts <-> metrics-query.ts | Direct function import | Metrics context is a plain string, injected into prompt |
-| OAuth callback route <-> youtube-client.ts | Import storeTokens function | Only API route in the app, handles Google redirect |
-
-## Build Order (Dependency-Aware)
-
-Based on component dependencies, suggested implementation order:
-
-1. **Schema + Migration** -- `videos` and `video_metrics` tables. Everything else depends on this.
-2. **youtube-client.ts** -- OAuth2 client, token storage, API wrappers. Depends on nothing except env vars.
-3. **OAuth flow** -- Settings page + callback route. Depends on youtube-client.ts.
-4. **Metrics sync** -- `metrics.ts` action + sync logic. Depends on youtube-client.ts + schema.
-5. **Metrics display** -- Dashboard components + metrics cards. Depends on stored metrics in DB.
-6. **Script-video linking** -- Dropdown on script editor. Depends on videos table populated.
-7. **Data-aware generation** -- Modify agent.ts + generate.ts. Depends on metrics being in DB and scripts linked to videos.
-
-Steps 1-2 can be done in parallel. Steps 3-4 depend on 1-2. Step 5 depends on 4. Steps 6-7 depend on 5. This ordering means each phase delivers visible value: after step 4, Pavlo can sync and see metrics in the DB (even before UI). After step 5, the dashboard works. After step 7, generation becomes data-aware.
-
-## Environment Variables (NEW)
-
-```
-# .env.local (add to existing)
-YOUTUBE_CLIENT_ID=...
-YOUTUBE_CLIENT_SECRET=...
-YOUTUBE_REDIRECT_URI=http://localhost:3000/api/youtube/callback
+After inserting rows with explicit IDs, PostgreSQL serial sequences are out of sync. Must reset:
+```sql
+SELECT setval('scripts_id_seq', (SELECT COALESCE(MAX(id), 0) FROM scripts));
+SELECT setval('beats_id_seq', (SELECT COALESCE(MAX(id), 0) FROM beats));
+SELECT setval('videos_id_seq', (SELECT COALESCE(MAX(id), 0) FROM videos));
+SELECT setval('video_metrics_id_seq', (SELECT COALESCE(MAX(id), 0) FROM video_metrics));
 ```
 
-## Files to .gitignore (NEW)
+### Migration Order (FK-aware)
 
-```
-# Add to existing .gitignore
-web/data/.youtube-tokens.json
-```
+1. `scripts` (no dependencies)
+2. `beats` (depends on scripts)
+3. `videos` (depends on scripts)
+4. `videoMetrics` (depends on videos)
+
+### Data Volume
+
+Current dataset is small: ~10 scripts, ~50 beats, ~6 videos, ~6 metrics rows. Migration will complete in under 1 second. No batching or streaming needed.
+
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Using Supabase JS client instead of Drizzle
+**What:** Replacing Drizzle queries with `@supabase/supabase-js` `from().select()` calls.
+**Why bad:** Rewrites every query in a different API. Loses Drizzle's type safety, migration tooling, and the ability to switch databases again later. The entire codebase (8 files, 46 call sites) uses Drizzle.
+**Instead:** Keep Drizzle ORM. Only change the driver layer (better-sqlite3 -> postgres-js). All query logic stays identical except for terminal methods.
+
+### Anti-Pattern 2: Direct connection without pooler
+**What:** Using port 5432 (direct) instead of 6543 (pooler) in DATABASE_URL.
+**Why bad:** Next.js dev server hot reload opens many connections. Direct connections exhaust the ~60 connection limit on Supabase free tier within minutes of development.
+**Instead:** Always use the pooler URL (port 6543) with `prepare: false`.
+
+### Anti-Pattern 3: Forgetting `prepare: false`
+**What:** Connecting postgres-js without disabling prepared statements.
+**Why bad:** Works fine locally with direct connection, then intermittent `prepared statement "s1" does not exist` errors in production or with pooler. Hard to debug because it is intermittent.
+**Instead:** Always pass `{ prepare: false }` when using Supabase connection pooler.
+
+### Anti-Pattern 4: Incomplete await migration
+**What:** Missing `await` on some DB calls after converting to async driver.
+**Why bad:** Returns `Promise` objects instead of data. TypeScript may not catch this if the variable is typed as `any` or the result is used in a truthy check (Promise is always truthy).
+**Instead:** Systematic grep for `.get()`, `.all()`, `.run()` and verify every instance has `await`. The terminal methods themselves disappear in postgres-js.
+
+### Anti-Pattern 5: Keeping SQLite timestamp math
+**What:** Leaving `result.maxSync * 1000` in `getLastSyncTime()` after migration.
+**Why bad:** PostgreSQL returns proper Date objects for timestamp columns. Multiplying by 1000 produces dates in year ~64000.
+**Instead:** Remove all `* 1000` timestamp conversions. Drizzle + pg-core handles timestamp serialization/deserialization natively.
+
+### Anti-Pattern 6: Running schema push instead of migrations
+**What:** Using `drizzle-kit push` to sync schema to Supabase instead of generating migration files.
+**Why bad:** Push is destructive -- it can drop columns to match schema. No rollback, no audit trail.
+**Instead:** Use `drizzle-kit generate` to create migration SQL files, review them, then `drizzle-kit migrate` to apply. Keep migration files in version control.
+
+## Environment Variables
+
+| Variable | Value Pattern | Used By |
+|----------|--------------|---------|
+| `DATABASE_URL` | `postgresql://postgres.[ref]:[pass]@aws-0-[region].pooler.supabase.com:6543/postgres` | `lib/db/index.ts`, `drizzle.config.ts` |
+
+YouTube OAuth credentials (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`) remain unchanged. YouTube tokens remain in filesystem (`data/.youtube-tokens.json`) -- migrating them to Supabase is a separate future concern.
+
+## Rollback Strategy
+
+Keep `data/scripts.db` intact throughout migration. If Supabase migration fails:
+1. `git revert` the migration commit
+2. `npm install` to restore better-sqlite3
+3. App works exactly as before with local SQLite
+4. No data loss -- SQLite file was never modified or deleted
 
 ## Sources
 
-- [YouTube Analytics API - Metrics Reference](https://developers.google.com/youtube/analytics/metrics) -- official metric definitions (HIGH confidence)
-- [YouTube Analytics API - OAuth2 Authorization](https://developers.google.com/youtube/reporting/guides/authorization) -- auth requirements, no service accounts (HIGH confidence)
-- [googleapis npm package](https://www.npmjs.com/package/googleapis) -- official Google Node.js client (HIGH confidence)
-- [@googleapis/youtubeanalytics npm](https://www.npmjs.com/package/@googleapis/youtubeanalytics) -- typed YouTube Analytics client (HIGH confidence)
-- [google-auth-library npm](https://www.npmjs.com/package/google-auth-library) -- OAuth2 with auto-refresh (HIGH confidence)
-- [pauling-ai/youtube-mcp-server](https://github.com/pauling-ai/youtube-mcp-server) -- evaluated and rejected; Python-based, 40 tools, overkill (HIGH confidence)
-- [YouTube API Guide 2026](https://zernio.com/blog/youtube-api) -- quota limits, setup walkthrough (MEDIUM confidence)
-- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) -- evaluated for MCP client approach, rejected (HIGH confidence)
-- [YouTube Analytics API Revision History](https://developers.google.com/youtube/reporting/revision_history) -- March 2025 Shorts metrics change (HIGH confidence)
-
----
-*Architecture research for: YouTube Analytics integration into Devlog Scriptwriter Pipeline*
-*Researched: 2026-03-29*
+- [Drizzle ORM + Supabase connection guide](https://orm.drizzle.team/docs/connect-supabase) -- HIGH confidence
+- [Drizzle with Supabase Database tutorial](https://orm.drizzle.team/docs/tutorials/drizzle-with-supabase) -- HIGH confidence
+- [Get Started with Drizzle and Supabase (existing project)](https://orm.drizzle.team/docs/get-started/supabase-existing) -- HIGH confidence
+- [Supabase Database connection docs](https://supabase.com/docs/guides/database/connecting-to-postgres) -- HIGH confidence
+- [Supabase Drizzle integration guide](https://supabase.com/docs/guides/database/drizzle) -- HIGH confidence

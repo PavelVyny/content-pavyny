@@ -1,215 +1,180 @@
 # Project Research Summary
 
-**Project:** Devlog Scriptwriter Pipeline — YouTube Analytics Integration (v2.1)
-**Domain:** YouTube Analytics API + data-aware AI script generation for existing Next.js local app
-**Researched:** 2026-03-29
+**Project:** Devlog Scriptwriter Pipeline — SQLite to Supabase Migration (v3.0)
+**Domain:** Database migration — SQLite (better-sqlite3) to Supabase PostgreSQL in Next.js 16 + Drizzle ORM
+**Researched:** 2026-03-30
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This milestone adds YouTube Analytics integration to an already-running Next.js scriptwriting app (v2.0). The existing app has script generation with 7 formats, a dual-track beat editor, anti-slop scoring, and a script library. The v2.1 addition closes the feedback loop: Pavlo can connect his YouTube channel via OAuth2, sync video metrics on demand, view retention curves alongside his scripts, and have the AI use past performance data as context during new script generation. The architecture decision is settled: use the `googleapis` npm package directly from Next.js server actions — not an MCP server. This keeps the integration simple, server-side, and consistent with patterns already established in the codebase.
+This migration replaces a local SQLite file-based database with Supabase-hosted PostgreSQL so that the devlog scriptwriting tool works identically on both Windows PC and MacBook Air M1 without manual file copying. The scope is deliberately narrow: swap the driver and dialect, rewrite the schema, convert ~46 synchronous DB call sites to async, migrate ~10 existing rows, and remove the native `better-sqlite3` dependency that causes cross-platform build friction. All application logic — script generation, anti-slop scoring, YouTube OAuth, UI components — is untouched. The migration is a driver-layer swap, not an application rewrite.
 
-The key innovation of v2.1 is a closed feedback loop that no existing scriptwriting tool provides. YouTube Studio shows metrics but has no concept of "script." Subscribr generates scripts from viral trends but does not track your own performance. This integration is the only one where script format, video metrics, and AI generation form a closed loop. The implementation scope is deliberately narrow: two new npm packages (`googleapis` + `recharts`), two new database tables, three new files, and modifications to three existing ones.
+The recommended approach uses `postgres` (postgres-js) as the PostgreSQL driver connected through Supabase's connection pooler (port 6543) with `prepare: false`. Drizzle ORM stays at current versions and handles both dialects with the same query API; only the schema file imports and terminal methods change. This is a well-documented, low-risk migration with guidance sourced entirely from official Drizzle and Supabase documentation.
 
-The most important risk is not technical — it is the temptation to have the AI draw strategic conclusions from 6 videos. With N=6, any detected pattern is noise dressed as signal. The AI prompt must explicitly forbid trend analysis; metrics are for specificity only (referencing actual numbers), not recommendations. A second significant risk is the OAuth 7-day token expiry in Google's "Testing" consent mode — this must be resolved at setup time by switching the consent screen to Production mode and creating fresh credentials. Discovering this a week into production use means a 30-minute fix on a broken app.
+The single most dangerous pitfall is the synchronous-to-async API shift. `better-sqlite3` is the only popular Node.js database driver that is fully synchronous. Every `.get()`, `.all()`, and `.run()` call across 5 action files and 2 page files must gain `await` and change terminal method syntax. A systematic grep-and-convert approach is required — missing even one call produces silent data loss (un-awaited Promises are always truthy, TypeScript may not catch the error). Timestamp conversion during data migration is the second trap: SQLite stores dates as integer epoch seconds, PostgreSQL expects native `timestamp` objects, and leaving the `* 1000` multiplication in `getLastSyncTime()` produces dates in year ~64000.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The entire milestone adds exactly two npm packages to the validated existing stack. `googleapis` (^171.4.0) is Google's official Node.js monorepo client — it provides typed access to both YouTube Data API v3 (listing channel videos) and YouTube Analytics API v2 (metrics and retention curves), and bundles `google-auth-library` with auto-refreshing OAuth2 support. Do not install `google-auth-library` separately — it is already a direct dependency of `googleapis` and installing it separately risks version conflicts. `recharts` (^3.8.1) provides React-native SVG charts for the retention curve visualization with full React 19 support.
+The stack change is minimal by design. One package is added (`postgres@^3.4.8`), two are removed (`better-sqlite3`, `@types/better-sqlite3`). Drizzle ORM and Drizzle Kit stay at current versions unchanged. The `@supabase/supabase-js` client is explicitly excluded — it would create a competing data-access layer over HTTP while the app already has direct SQL access via Drizzle.
 
 **Core technologies:**
-- `googleapis` ^171.4.0: YouTube Data API v3 + Analytics API v2 access — single package, fully typed, includes OAuth2 auto-refresh via bundled `google-auth-library`
-- `recharts` ^3.8.1: Retention curve line charts — React component model fits existing architecture, React 19 compatible, zero configuration for basic line charts
-- Existing stack unchanged: Next.js 16.2.1, React 19.2.4, TypeScript 5.x, Tailwind CSS 4.x, shadcn/ui v4, SQLite (better-sqlite3 12.8.0), Drizzle ORM 0.45.2, Claude Agent SDK 0.2.86, Zod 4.3.6
+- `postgres` (postgres-js): PostgreSQL driver — Drizzle's recommended driver for Supabase; pure JS (no native compilation), works on both Windows and macOS, supports the pooler's transaction mode via `prepare: false`
+- `drizzle-orm@0.45.2`: ORM stays — query API is dialect-agnostic; only schema imports and config change
+- `drizzle-kit@0.31.10`: Schema tooling stays — supports both dialects; only config dialect changes
+- Supabase connection pooler (port 6543, Transaction mode): handles Next.js hot-reload connection churn within free tier's ~60 connection limit
 
-**What NOT to use:**
-- `google-auth-library` (separate install) — already bundled in `googleapis`; separate install causes version conflicts
-- `@googleapis/youtube` + `@googleapis/youtubeanalytics` (individual packages) — more boilerplate, same result; monorepo tree-shakes in production
-- YouTube MCP servers (Python-based, 40+ tools) — designed for LLM agent access, not direct API calls from a web app; adds cross-language process management for zero benefit
-- `node-cron` for scheduled sync — at 1 video/week, a "Sync Now" button is sufficient; auto-sync adds complexity without need
-- `@tanstack/react-query` — metrics are fetched from YouTube API, stored in SQLite, then read from SQLite for display; no client-side API caching is needed
-- SaaS analytics tools (VidIQ, TubeBuddy) — subscriptions, generic features, not integrated with scripts
+**What NOT to add:**
+- `@supabase/supabase-js` — creates a competing data-access layer; PostgREST HTTP adds latency vs direct SQL; all DB access is server-side already
+- `pg` (node-postgres) — has native C bindings causing cross-platform build issues; postgres-js is faster and pure JS
+- `dotenv` — Next.js handles `.env.local` automatically
 
 ### Expected Features
 
-The feature set is organized around a hard dependency chain: OAuth connection enables video discovery, video discovery enables metrics fetch, metrics fetch enables dashboard display, and script-to-video linking enables data-aware generation. All P1 features form a complete end-to-end working loop. P2 features add depth once the loop is validated with real usage.
+All P1 work is migration completeness — nothing new is being built. The migration is done when every existing feature works identically against Supabase.
 
-**Must have (P1 — table stakes, loop must work end-to-end):**
-- YouTube OAuth connection flow — settings page, Google consent screen, token file storage; blocks everything else
-- Video list auto-discovery — all channel videos appear after connecting, no manual entry
-- Basic metrics per video — views, engaged views, likes, comments, subs gained, average view percentage; stored as time-series snapshots
-- Retention curve per video — 100-point `audienceWatchRatio` data, displayed as sparkline; fetched per-video (API limitation, cannot be batched)
-- Manual sync button with staleness indicator — "Sync Now" + last-synced timestamp, color-coded: green (<1h), yellow (<24h), red (>24h)
-- Connection status indicator — disconnected / connected / expired states, visible at all times; non-blocking banner when token expires
-- Script-to-video linking — manual dropdown on script page; automatic matching is unreliable (title differences, date gaps)
-- Metrics display alongside scripts — mini cards in library view, detail panel in editor view
-- Data-aware script generation — metrics injected into Claude prompt with explicit "small sample, do NOT draw conclusions" guardrail
-- Metrics context toggle — checkbox on generation form to enable/disable injection; default on; lets Pavlo A/B test impact
+**Must have (v3.0 blockers):**
+- Supabase project created with correct region and `DATABASE_URL` in `.env.local`
+- PostgreSQL schema via Drizzle: all 4 tables (`scripts`, `beats`, `videos`, `videoMetrics`) rewritten with `pgTable`, JSON columns as `jsonb`, timestamps as `timestamp`
+- Connection module rewrite: `getDb()` function replaced with direct `db` export using `postgres-js`
+- All 4 server action files and 2 pages verified working end-to-end
+- One-shot data migration script: reads SQLite, converts types, writes to Supabase, verifies row counts, resets serial sequences
+- Environment variable documented on both machines
+- `better-sqlite3` removed from dependencies; `serverExternalPackages` removed from `next.config.ts`
+- Verified working from both Windows PC and MacBook Air against same Supabase instance
 
-**Should have (P2 — add after 3+ videos used with the feedback loop):**
-- Format-to-performance mapping — which script formats correlate with which metrics; SQL join on existing data, no API calls
-- Metrics trend sparklines — views/retention change across sync snapshots over time
-- "Generate like my best video" — pre-fill generation form from highest-performing video (query + form pre-fill)
-- Auto-sync on dashboard load when data is stale >24h
+**Should have (add post-validation, v3.x):**
+- JSONB-powered script filtering — filter library by anti-slop score range once 15+ scripts accumulate
+- Supabase Edge Function for scheduled metric sync — when manual Sync button becomes tedious at 3+ videos/week
 
-**Defer (v2.2+):**
-- Retention curve overlay with beat timestamps — requires beat timing data that does not yet exist; HIGH complexity; unique concept but not ready
-- AI content recommendations — harmful until 20+ videos; revisit with explicit "N=X, not statistically significant" disclaimer
-- Demographic breakdowns — YouTube suppresses below undocumented thresholds; at 55 subscribers these queries return empty results
-- Impressions/CTR as primary metrics — less meaningful signal for Shorts than `averageViewPercentage`
-
-**Confirmed anti-features (do not build):**
-"Viewed vs Swiped Away" metric (only in Studio UI, not in API); real-time streaming analytics (YouTube has 24-48h processing delay); multi-channel competitor comparison (demoralizing and actionless at 55 subs); full YouTube Studio replacement (100+ features, not the goal).
+**Defer (v4+):**
+- Supabase Auth + Row Level Security — only if multi-user or public deployment is considered
+- Supabase Realtime — only if collaborative editing is ever needed
+- Full-text search — client-side filtering sufficient until 100+ scripts
 
 ### Architecture Approach
 
-The integration slots into existing patterns without introducing new layers or abstractions. A new `youtube-client.ts` service module wraps the `googleapis` OAuth2 client and API calls, following the same pattern as the existing `agent.ts`. Two new server action files handle OAuth flow and metrics sync. Two new Drizzle ORM tables extend the existing SQLite schema. The `agent.ts` AI service accepts one new optional parameter. Token storage uses a local JSON file (`data/.youtube-tokens.json`, gitignored) separate from the SQLite database — consistent with the single-user local tool nature of the app.
+The post-migration data flow changes from synchronous local file access to async network calls: `Browser -> Server Component/Action -> db (module export) -> postgres-js (async) -> Supabase Supavisor (pooler) -> PostgreSQL`. The `getDb()` function-based singleton disappears; `db` is exported as a module-level constant (postgres-js manages its own connection pool internally). YouTube OAuth tokens remain on the local filesystem unchanged — that is out of scope for v3.0.
+
+The change scope is precisely bounded: 11 files change, ~46 individual DB call sites gain `await`. Every file outside the DB layer is unaffected.
 
 **Major components:**
-1. `lib/youtube-client.ts` (NEW) — OAuth2 client singleton, token file read/write/isConnected check, `googleapis` wrappers for `listChannelVideos()`, `getVideoMetrics()`, `getRetentionData()`
-2. `app/actions/youtube.ts` (NEW) — server actions for OAuth flow initiation and connection status
-3. `app/actions/metrics.ts` (NEW) — server actions for `syncAllMetrics()` and per-video metrics queries
-4. `app/api/youtube/callback/route.ts` (NEW) — OAuth2 redirect handler; only new API route in the app
-5. `lib/metrics-query.ts` (NEW) — SQLite queries that format stored metrics as readable text for AI context injection
-6. `lib/db/schema.ts` (MODIFIED) — adds `videos` table (youtubeId, title, publishedAt, scriptId FK) and `video_metrics` table (time-series snapshots with views, retention, subs)
-7. `lib/agent.ts` (MODIFIED) — accepts optional `metricsContext` string, inserts it into prompt with small-sample guardrail
-8. Dashboard UI: `components/metrics-card.tsx`, `components/retention-chart.tsx`, `components/metrics-dashboard.tsx`, `app/settings/page.tsx` (all NEW)
+1. `web/src/lib/db/schema.ts` — full rewrite: `sqliteTable` to `pgTable`, 4 PKs to `serial`, 4 JSON-text columns to `jsonb`, 6 timestamp columns to `timestamp`, all `$defaultFn(() => new Date())` to `defaultNow()`
+2. `web/src/lib/db/index.ts` — full rewrite: 15-line singleton to 4-line direct export using `postgres-js` with `prepare: false`
+3. `web/drizzle.config.ts` — dialect `sqlite` to `postgresql`, credentials from file path to `DATABASE_URL` env var
+4. 4 action files + 2 pages (8 files) — mechanical async conversion: ~46 call sites gain `await`, terminal methods removed or changed per PostgreSQL Drizzle conventions
+5. One-time ETL migration script — standalone Node.js: reads SQLite, converts timestamps (epoch seconds -> Date) and JSON (text -> parsed objects), writes in FK-safe order (scripts -> beats -> videos -> videoMetrics), resets sequences, verifies row counts
 
-**Key data flows:**
-- OAuth setup: user clicks Connect → consent URL generated → Google redirect → callback handler exchanges code for tokens → stored to file → settings page shows Connected
-- Metrics sync: user clicks Sync → `listChannelVideos()` → upsert to `videos` table → `getVideoMetrics()` per video → INSERT snapshot to `video_metrics` → `getRetentionData()` per video → store 100-point array as JSON column
-- Data-aware generation: `getMetricsContextForGeneration()` queries latest metrics per video joined with script format → formats as text string → passed to `agent.ts` → injected into Claude prompt with guardrail
+**Key type mappings:**
+- `integer().primaryKey({ autoIncrement: true })` -> `serial().primaryKey()`
+- `text({ mode: "json" }).$type<T>()` -> `jsonb().$type<T>()`
+- `integer({ mode: "timestamp" })` -> `timestamp()`
+- `.$defaultFn(() => new Date())` -> `.defaultNow()`
+- `.get()` terminal method -> `const [row] = await ...` with `.limit(1)`
+- `.all()` terminal method -> `await ...` (array by default)
+- `.run()` terminal method -> `await ...` (execute without return)
+- `.returning().get()` -> `const [row] = await ...returning()`
 
 ### Critical Pitfalls
 
-1. **OAuth 7-day token expiry in "Testing" mode** — Google refresh tokens expire after 7 days when the consent screen is in Testing status. Must switch to "In production" before first use AND create new OAuth credentials after switching (old credentials still produce 7-day tokens even after the switch). For personal Gmail, "Internal" user type is not available. Prevention: Production mode + new credentials on day one. Show clear "YouTube disconnected" banner with one-click reconnect when this happens.
+1. **Synchronous-to-async API shift** — grep for every `.run()`, `.get()`, `.all()` before starting; convert systematically; TypeScript will catch missing `.get()` (method doesn't exist on pg-core) but NOT missing `await` (Promise is truthy, server actions appear to succeed but write nothing)
 
-2. **Using the wrong API (Data API v3 for analytics)** — YouTube Data API v3 returns video metadata and view/like counts but NOT retention curves, subscriber change, or watch percentage. Those are YouTube Analytics API (`youtubeAnalytics.reports.query`) only. Prevention: choose the correct API before designing the data layer. The data model is fundamentally different (date ranges, dimensions, filters) and cannot be patched in later.
+2. **Timestamp epoch math left in place** — remove the `* 1000` multiplication in `getLastSyncTime()` and the data migration script; PostgreSQL returns proper Date objects from `timestamp` columns; leaving it produces year ~64000 dates; verify by reading one SQLite row — values ~1.7 billion = seconds (multiply by 1000 for JS Date), values ~1.7 trillion = milliseconds
 
-3. **Retention curves require one API call per video** — the `audienceRetention` report does not support batch requests or multi-video filters. Must iterate per video. Cache in SQLite aggressively — historical retention data does not change. Never fetch all retention curves on page load. Prevention: design fetch layer for per-video iteration from the start; display basic metrics immediately while retention loads per-video.
+3. **`prepare: false` omitted on connection** — intermittent "prepared statement does not exist" errors appear only under pooler transaction mode; easy to miss because it works fine with direct connection (port 5432); always set `{ prepare: false }` when using Supabase's port 6543 pooler
 
-4. **AI drawing conclusions from 6 videos** — LLMs are pattern-matching machines. Given N=6 data points they will confidently identify patterns that are pure noise. Prevention: prepend metrics context with explicit instructions: "small sample (N=6), do NOT make recommendations, do NOT identify trends, do NOT say 'your audience prefers X'." Test: shuffle metrics order in the context string and verify AI script output does not change directionally.
+4. **Serial sequence not reset after data migration** — after bulk-inserting migrated rows with explicit IDs, all four `serial` sequences still start at 1; first new insert will fail with "duplicate key value violates unique constraint"; run `setval` for each table immediately after migration completes
 
-5. **Analytics data threshold suppression** — YouTube silently suppresses granular breakdowns (demographics, geography, traffic source) for small channels; the API returns empty or zero rows without an error. Prevention: only query dimensions that work reliably at this scale (`day`, `video`, `elapsedVideoTimeRatio`). Build UI to show "Not enough data yet" for empty responses, not zeros or errors.
+5. **RLS enabled without policies** — Supabase dashboard nudges you to enable RLS; for a single-user app with server-action-only data access, leave RLS disabled and use the service role key server-side only; enabling RLS without policies makes all queries return empty arrays silently
 
 ## Implications for Roadmap
 
-Based on the hard dependency chain in FEATURES.md and the build order in ARCHITECTURE.md, implementation splits into three sequential phases. No phase can be reordered — each depends on the previous.
+Based on research, dependency analysis, and pitfall mapping, the migration splits into four sequential phases. Phases cannot be reordered — each depends on the previous.
 
-### Phase 1: OAuth Foundation and Database Schema
+### Phase 1: Project Setup and Schema Rewrite
 
-**Rationale:** Everything else is blocked on this. Without OAuth tokens, no API calls work. Without the schema, no data can be stored. These two tracks (GCP setup + schema migration) can be built in parallel within the phase but must both complete before Phase 2 begins. This is also where the most critical pitfalls live — 7-day token expiry, wrong API choice, redirect URI mismatch — which are cheap to prevent at the start and expensive to fix in production.
+**Rationale:** The Supabase project and a valid PostgreSQL schema are unblockable prerequisites. Drizzle cannot connect without credentials; action files cannot be converted until imports resolve; nothing can be tested without working tables. This phase also resolves the highest-risk decisions upfront: RLS strategy, connection string format, and `prepare: false` — all cheap to get right at the start and expensive to debug later.
+**Delivers:** Supabase project created; `schema.ts` fully rewritten for `pg-core`; `drizzle.config.ts` updated to `postgresql`; `db/index.ts` rewritten with `postgres-js` and `prepare: false`; `drizzle-kit push` succeeds against Supabase; all 4 tables exist in Supabase dashboard; `next.config.ts` cleaned; `npm install postgres && npm uninstall better-sqlite3 @types/better-sqlite3` complete
+**Addresses:** PostgreSQL schema equivalent, connection module rewrite, environment variable setup, `better-sqlite3` removal
+**Avoids:** RLS blocking all queries (decide: leave disabled, use service role key), `prepare: false` omission, `autoIncrement` -> `serial` type error, `@supabase/supabase-js` creep
 
-**Delivers:** A connected YouTube channel with working OAuth2 flow, auto-refreshing tokens stored in `data/.youtube-tokens.json`, a `settings/page.tsx` with Connect/Disconnect UI, and the complete `videos` + `video_metrics` Drizzle schema migrated to SQLite. After this phase, running `syncAllMetrics()` from a REPL should work even before any dashboard UI exists.
+### Phase 2: Async Conversion of Action Files and Pages
 
-**Addresses:** YouTube OAuth connection flow, connection status indicator
-**Avoids:** 7-day token expiry (Production mode + new credentials on day one), redirect URI mismatch (both `localhost` and `127.0.0.1` registered in GCP, `http` not `https`), MCP security surface (no MCP server, direct googleapis)
+**Rationale:** With a working connection, the ~46 synchronous DB call sites can be systematically converted. This is the highest-volume mechanical change. It must be done as a complete sweep — partial conversion leaves the app in an inconsistent state where some calls work and others silently fail.
+**Delivers:** All 4 action files (`generate.ts`, `editor.ts`, `library.ts`, `metrics.ts`) and 2 pages (`page.tsx`, `script/[id]/page.tsx`) converted to async Drizzle; `Home` server component made `async`; `getDb()` -> `db` import updated across all consumer files; app boots and runs all operations correctly against empty Supabase DB
+**Uses:** `const [row] = await db.select().from(x).limit(1)` for single-row selects; `const [row] = await db.insert().values().returning()` for insert-and-return; `await db.update/delete()` for mutations
+**Avoids:** Missing `await` silent failures (grep `.run()`, `.get()`, `.all()` to verify zero remaining); `.returning().get()` removal in `generate.ts` (critical — `script.id` feeds all beat insertions); `getLastSyncTime()` raw SQL aggregate fix (remove `* 1000`); `onConflictDoUpdate` syntax review in `metrics.ts`
 
-**GCP checklist before writing code:**
-- Enable YouTube Data API v3 AND YouTube Analytics API (both required)
-- Set OAuth consent screen to External + "In production" status (not Testing)
-- Create OAuth 2.0 Web Application credentials (NOT API key)
-- Add `http://localhost:3000/api/youtube/callback` as authorized redirect URI
-- Add own email as test user on consent screen
+### Phase 3: Data Migration and Cleanup
 
-### Phase 2: Metrics Sync and Dashboard
+**Rationale:** Only after the app works against an empty Supabase DB is it safe to migrate real data. Running migration before Phase 2 risks inserting data that can't be read correctly. The ETL script is a one-off and should be written, run, verified, and deleted — not maintained.
+**Delivers:** One-shot ETL script that reads from local SQLite (keeping `better-sqlite3` as temp devDependency), converts epoch integer timestamps to `Date` objects and JSON text to parsed objects, inserts in FK-safe order (scripts -> beats -> videos -> videoMetrics) with batch inserts, runs `setval` sequence resets for all 4 tables, verifies row counts match source; `better-sqlite3` uninstalled after successful migration; `data/scripts.db` and `data/` directory deleted
+**Avoids:** Timestamp corruption (convert `intValue * 1000` -> `new Date()` in script; verify year is ~2024-2026 not year 1970 or 64000), sequence collision on first new insert after migration, partial migration failure (run in transaction; SQLite source is read-only so re-running is safe)
 
-**Rationale:** With OAuth working and schema in place, the next step is populating the database and making the data visible. The fetch layer must be designed correctly before any UI is built on top of it: basic metrics can be batched, retention must be fetched per-video and cached. Building the dashboard against real data from Pavlo's channel immediately surfaces API response format issues before they become hard-to-debug UI problems.
+### Phase 4: Cross-Device Verification and Documentation
 
-**Delivers:** A working "Sync Now" button that fetches all channel videos and their metrics into SQLite. A metrics dashboard showing per-video cards with views, retention %, and subs gained. A retention curve sparkline for each video. Script-to-video linking via dropdown in the script editor. Metrics mini-cards on the script library page. After this phase, Pavlo can see his YouTube performance data alongside his scripts.
-
-**Addresses:** Video list auto-discovery, basic metrics per video, retention curve per video, manual sync button, connection status indicator, script-to-video linking, metrics display alongside scripts
-**Avoids:** Batch retention anti-pattern (per-video with SQLite cache), data threshold suppression (graceful "No data" UI states), API calls on every page load (display always reads from SQLite, never directly from YouTube API)
-**Uses:** `googleapis` (listChannelVideos, getVideoMetrics, getRetentionData), `recharts` (retention curve LineChart), Drizzle ORM (time-series INSERT and latest-per-video queries)
-
-**Implementation order within the phase:**
-1. `lib/youtube-client.ts` API methods
-2. `app/actions/metrics.ts` sync logic
-3. Dashboard components (metrics-card, retention-chart, metrics-dashboard)
-4. Modify `app/scripts/page.tsx` (mini-cards) and `app/script/[id]/page.tsx` (detail panel)
-5. Script-to-video linking (dropdown + FK write)
-
-### Phase 3: Data-Aware Generation
-
-**Rationale:** This phase is last because it requires Phase 2 to be complete: OAuth tokens must exist, videos must be in the database, scripts must be linked to videos, and metrics must be stored as snapshots. Only then does `getMetricsContextForGeneration()` have meaningful data to query. This is also the highest-risk phase for the AI over-interpreting small samples — prompt engineering is the primary deliverable, not the code changes.
-
-**Delivers:** Script generation that uses real channel performance data as context, with a toggle checkbox to enable/disable. The AI references actual view counts and retention percentages in script framing without making strategic recommendations. After this phase, Pavlo can generate a script and the AI will naturally say "your last video got 8.7K views" rather than generic opener lines.
-
-**Addresses:** Data-aware script generation, metrics context toggle
-**Avoids:** AI drawing conclusions from N=6 (explicit "do NOT make recommendations" instruction in prompt, tested by shuffling metrics order), full retention curve in prompt (send summarized key numbers only: peak retention %, drop-off point, average — not all 100 data points)
-
-**Implementation:**
-1. `lib/metrics-query.ts`: `getMetricsContextForGeneration()` — queries latest metrics per video joined with linked script format, returns formatted text string
-2. Modify `lib/agent.ts`: add optional `metricsContext` parameter, insert metrics section with small-sample guardrail
-3. Modify `app/actions/generate.ts`: call `getMetricsContextForGeneration()` when toggle is on, pass to agent
-4. Add toggle checkbox to generation form UI
-5. Test: generate WITH and WITHOUT metrics context; verify AI uses numbers but makes no recommendations
-6. Test: shuffle metrics order; verify AI output does not change directionally
+**Rationale:** The entire motivation is multi-device access. The migration is not done until both machines connect to the same Supabase instance and all features work. This phase also resolves the only remaining gap: explicit foreign key indexes (PostgreSQL does not auto-create them unlike SQLite) and the YouTube OAuth token limitation.
+**Delivers:** App verified on both Windows PC and MacBook Air; `DATABASE_URL` documented in project (not committed — `.env.local` only); foreign key indexes added to schema (`beats.scriptId`, `videos.scriptId`, `videoMetrics.videoId`); YouTube OAuth token limitation documented as a known gap with remediation options if both machines need YouTube features simultaneously
 
 ### Phase Ordering Rationale
 
-- Phase 1 must come first: OAuth tokens and schema are unblockable prerequisites; every feature depends on them. The GCP configuration pitfalls (7-day expiry, wrong credentials) are cheapest to fix before any code exists.
-- Phase 2 before Phase 3: `getMetricsContextForGeneration()` returns empty or misleading results if videos are not synced and linked to scripts. Building the AI integration before the data layer is populated would require mocking, then rebuilding.
-- Script-to-video linking belongs in Phase 2, not Phase 3: it populates the FK that Phase 3's query depends on. Keeping linking in Phase 2 means Phase 3 can be built and tested against real linked data immediately.
-- P2 features (format-to-performance mapping, trend sparklines, "generate like my best") are deferred until the core loop is validated with 3+ real videos. They require data volume that does not exist yet and should not block the primary feedback loop.
+- Schema rewrite precedes connection module because Drizzle's TypeScript inference flows from schema definitions to query types
+- Connection module precedes action conversion because `getDb()` -> `db` is an import change affecting all consumer files
+- Action conversion precedes data migration because you need the full app working before adding real data — a broken query is easier to catch against zero rows than against 10 rows with subtle data issues
+- Data migration includes sequence reset — must happen before any new data is inserted post-migration
+- Foreign key indexes deferred to Phase 4 because at current data volume (~50 beats, ~6 videos) query performance is irrelevant; correctness and working app come first
+- YouTube OAuth token migration is explicitly out of scope for v3.0 — it requires a new `settings` table and is a UX gap, not a migration blocker
 
 ### Research Flags
 
-Phases needing deeper research during planning:
-- **Phase 1 (GCP OAuth Setup):** The 7-day token expiry issue has multiple solution paths depending on whether Pavlo has Google Workspace. Worth spending 15 minutes verifying the exact GCP console steps before coding. The Production mode switch requires creating new credentials — this step is easy to miss.
-- **Phase 2 (Retention API format):** The exact response format for `audienceWatchRatio` + `elapsedVideoTimeRatio` should be verified with a real API call against Pavlo's channel before building the chart component. The 100-point array assumption holds for most videos but may vary for very short Shorts. Consider adding a one-off "verify API response" exploratory task at the start of Phase 2.
+Phases with standard, well-documented patterns (research-phase not needed):
+- **Phase 1:** Official Drizzle + Supabase docs cover every step precisely; no ambiguity in the recommended approach
+- **Phase 2:** Mechanical transformation with complete before/after patterns enumerated in ARCHITECTURE.md; ~46 sites all follow the same 3-4 conversion patterns
+- **Phase 3:** Standard ETL pattern; the only gotcha (timestamp conversion, sequence reset) is explicitly documented with exact SQL
 
-Phases with standard well-documented patterns (skip research-phase):
-- **Phase 3 (Data-Aware Generation):** Injecting a context string into an existing `agent.ts` prompt follows a clear established pattern. The prompt engineering constraint is already specified. No novel patterns needed.
+Phases that may benefit from a targeted check during planning:
+- **Phase 4:** Drizzle `index()` helper syntax for explicit FK indexes (minor — 2-minute docs check); YouTube OAuth token Supabase storage approach if Pavlo decides to pursue cross-device YouTube features
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Only 2 new packages. Both are official/Google-maintained. `googleapis` is the canonical Node.js client. `recharts` has verified React 19 support. Existing stack is already validated in production. |
-| Features | HIGH | Feature list is grounded in official YouTube Analytics API docs. Anti-features are backed by documented API limitations (retention batch restriction, data thresholds, "Viewed vs Swiped Away" API unavailability). Competitor analysis confirms unique feedback loop positioning. |
-| Architecture | HIGH | No-MCP decision is well-justified against evaluated alternatives. Build order is dependency-accurate and matches existing codebase patterns precisely. Time-series schema is correct for the use case. |
-| Pitfalls | HIGH | All critical pitfalls sourced from official Google documentation and confirmed community reports. 7-day token expiry is a widely reported real problem with documented fix. No speculative pitfalls included. |
+| Stack | HIGH | Official Drizzle + Supabase docs are the primary source for all package choices; alternatives evaluated and rejected with documented rationale |
+| Features | HIGH | Migration scope is clearly bounded; what to include vs defer is explicitly documented with rationale from official Supabase feature docs |
+| Architecture | HIGH | File-by-file change inventory with exact before/after code patterns; 11 files and 46 call sites fully enumerated; no speculative changes |
+| Pitfalls | HIGH | All critical pitfalls sourced from official Drizzle/Supabase docs, real-world failure reports, and known library behavior differences; all have concrete prevention steps and recovery strategies |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Brand Account channel listing:** Pavlo's YouTube channel is under a Brand Account. The `search.list` API with `forMine: true` may behave differently for Brand Accounts vs personal channels — sometimes requires listing managed channels first via `channels.list` with `managedByMe: true`. Verify which channel ID is returned during Phase 1 API testing and confirm it matches the devlog channel before building the video discovery logic.
+- **YouTube OAuth tokens multi-device access:** Three options documented (Supabase table, env var, accept limitation) but no decision made. Recommended default: accept limitation and document it. Revisit only if Pavlo needs YouTube sync from both machines simultaneously.
 
-- **Retention curve point count for short Shorts:** The `audienceWatchRatio` API returns 100 evenly-spaced points for most videos. For a 30-second Short, this is ~0.3s per point. Whether YouTube actually returns 100 points for very short content needs to be verified with a real API call. Handle fewer-than-100-points gracefully in the schema (column is `text` JSON array) and in the chart component (ResponsiveContainer handles variable length).
+- **Supabase region selection:** Research recommends EU West or similar for Ukraine-based access but does not verify latency. Low priority — any region works; 20-50ms difference is irrelevant for a personal tool.
 
-- **`engagedViews` for pre-March-2025 videos:** The `engagedViews` metric was added for Shorts in March 2025. Pavlo's existing 6 videos — depending on their publish dates — may have null `engagedViews`. Schema column should be nullable; UI should display "N/A" not zero for this metric on older videos.
+- **Foreign key index syntax:** Research identifies the need (PostgreSQL does not auto-create FK indexes) and the tables requiring them, but does not include the exact Drizzle `index()` call for the schema file. A 2-minute docs check resolves this during Phase 4 planning.
 
-- **Google Workspace vs personal Gmail:** If Pavlo has Google Workspace (even a paid personal account), the "Internal" user type on the OAuth consent screen eliminates the 7-day token expiry entirely with no verification required. Worth a 30-second check before creating the consent screen.
+- **`getLastSyncTime()` raw SQL pattern:** This function uses a raw `sql<number>` template literal that bypasses Drizzle's type mapping. The exact fix (remove `* 1000`, handle Date vs string return) needs verification against a real PostgreSQL response during Phase 2 execution.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [googleapis npm](https://www.npmjs.com/package/googleapis) — v171.4.0, confirms bundled google-auth-library
-- [googleapis GitHub package.json](https://github.com/googleapis/google-api-nodejs-client/blob/main/package.json) — google-auth-library as direct dependency, not peer
-- [YouTube Analytics API metrics reference](https://developers.google.com/youtube/analytics/metrics) — available metrics, Shorts-specific notes, March 2025 changes
-- [YouTube Analytics API channel reports](https://developers.google.com/youtube/analytics/channel_reports) — retention report format, per-video limitation
-- [YouTube Analytics API data model](https://developers.google.com/youtube/analytics/data_model) — data thresholds for small channels
-- [YouTube Analytics API sample requests](https://developers.google.com/youtube/analytics/sample-requests) — request format, dimensions, filters
-- [YouTube Analytics API OAuth2 authorization](https://developers.google.com/youtube/reporting/guides/authorization) — required scopes, no API key support for Analytics
-- [Google OAuth2 official docs](https://developers.google.com/identity/protocols/oauth2) — Testing vs Production mode, 7-day token expiry
-- [recharts npm](https://www.npmjs.com/package/recharts) — v3.8.1, React 19 support confirmed
-- [YouTube Analytics API revision history](https://developers.google.com/youtube/reporting/revision_history) — March 2025 Shorts metrics change
+- [Drizzle + Supabase existing project guide](https://orm.drizzle.team/docs/get-started/supabase-existing) — setup steps, package list, connection module pattern
+- [Drizzle Supabase connection reference](https://orm.drizzle.team/docs/connect-supabase) — `prepare: false` requirement, pooler vs direct connection
+- [Drizzle PostgreSQL column types](https://orm.drizzle.team/docs/column-types/pg) — `serial`, `jsonb`, `timestamp` definitions and usage
+- [Drizzle ORM: Upsert Guide](https://orm.drizzle.team/docs/guides/upsert) — `onConflictDoUpdate` syntax differences per dialect
+- [Drizzle ORM: Insert returning](https://orm.drizzle.team/docs/insert) — `.returning()` array behavior in PostgreSQL vs SQLite
+- [Drizzle with Supabase tutorial](https://orm.drizzle.team/docs/tutorials/drizzle-with-supabase) — end-to-end walkthrough
+- [Supabase Docs: Drizzle integration](https://supabase.com/docs/guides/database/drizzle) — official Supabase-side setup guide
+- [Supabase Docs: Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security) — RLS behavior when enabled without policies
+- [postgres npm](https://www.npmjs.com/package/postgres) — v3.4.8, latest stable, pure JS
 
 ### Secondary (MEDIUM confidence)
-- [jwz: YouTube OAuth API fuckery (Feb 2026)](https://www.jwz.org/blog/2026/02/youtube-oauth-api-fuckery/) — real-world confirmation of 7-day token expiry pain in practice
-- [Nango: Google OAuth invalid_grant explained](https://www.nango.dev/blog/google-oauth-invalid-grant-token-has-been-expired-or-revoked) — root causes and recovery for invalid_grant errors
-- [OAuth2 refresh token expiration discussion](https://discuss.google.dev/t/oauth2-refresh-token-expiration-and-youtube-api-v3/160874) — community confirmation of Testing mode behavior
-- [Buffer: Creator's Guide to YouTube Shorts Analytics](https://buffer.com/resources/the-creators-guide-to-youtube-shorts-analytics/) — Shorts-specific metrics guidance
-- [MCP Server Security Best Practices 2026](https://toolradar.com/blog/mcp-server-security-best-practices) — security rationale for not using third-party MCP servers
-
-### Tertiary (LOW confidence — evaluated and rejected as architecture options)
-- [pauling-ai/youtube-mcp-server](https://github.com/pauling-ai/youtube-mcp-server) — Python-based MCP server, reviewed and rejected
-- [YouTube MCP Server Comparison 2026](https://www.ekamoira.com/blog/youtube-mcp-server-comparison-2026-which-one-should-you-use) — reference for what was rejected
+- [MakerKit: Drizzle with Supabase in Next.js](https://makerkit.dev/blog/tutorials/drizzle-supabase) — confirms no need for `@supabase/supabase-js` when using Drizzle directly
+- [Medium: PostgreSQL Migration That Corrupted Every Timestamp](https://medium.com/@rudra910203/the-postgresql-migration-that-corrupted-every-timestamp-26bf21b6dd7f) — real-world seconds vs milliseconds timestamp corruption failure
+- [pgloader: SQLite integer timestamp conversion issues](https://github.com/dimitri/pgloader/issues/1177) — community confirmation of seconds vs milliseconds ambiguity in SQLite timestamp storage
 
 ---
-*Research completed: 2026-03-29*
+*Research completed: 2026-03-30*
 *Ready for roadmap: yes*
