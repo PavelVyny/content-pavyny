@@ -1,13 +1,15 @@
 import { google } from "googleapis";
-import fs from "fs";
-import path from "path";
-
-const TOKEN_PATH = path.join(process.cwd(), "data", ".youtube-tokens.json");
+import { getDb } from "./db";
+import { youtubeTokens } from "./db/schema";
+import { eq } from "drizzle-orm";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/yt-analytics.readonly",
   "https://www.googleapis.com/auth/youtube.readonly",
 ];
+
+// Single-row ID for the token record
+const TOKEN_ROW_ID = 1;
 
 // Types for stored token data
 interface StoredTokens {
@@ -34,27 +36,33 @@ export function getOAuth2Client() {
       process.env.YOUTUBE_REDIRECT_URI
     );
 
-    const tokens = loadTokens();
-    if (tokens) {
-      oauth2Client.setCredentials(tokens);
-    }
-
     // CRITICAL: Merge new tokens with existing to preserve refresh_token
     // (Pitfall 2 from RESEARCH.md: on("tokens") only receives access_token on refresh)
-    oauth2Client.on("tokens", (newTokens) => {
-      const existing = loadTokens() || {};
+    oauth2Client.on("tokens", async (newTokens) => {
+      const existing = await loadTokens();
+      const prev = existing || {};
       // Strip nulls from googleapis token response before merging
       const clean: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(newTokens)) {
         if (v != null) clean[k] = v;
       }
-      const merged = { ...existing, ...clean };
-      saveTokens(merged as StoredTokens);
+      const merged = { ...prev, ...clean } as StoredTokens;
+      await saveTokens(merged);
       // Also update in-memory client (Pitfall 3: singleton staleness)
       oauth2Client!.setCredentials(merged);
     });
   }
   return oauth2Client;
+}
+
+// Initialize oauth2Client with tokens from DB (call once at startup)
+export async function initOAuth2Client() {
+  const client = getOAuth2Client();
+  const tokens = await loadTokens();
+  if (tokens) {
+    client.setCredentials(tokens);
+  }
+  return client;
 }
 
 export function resetOAuth2Client() {
@@ -70,46 +78,77 @@ export function getAuthUrl(): string {
   });
 }
 
-export function loadTokens(): StoredTokens | null {
+export async function loadTokens(): Promise<StoredTokens | null> {
   try {
-    if (fs.existsSync(TOKEN_PATH)) {
-      return JSON.parse(fs.readFileSync(TOKEN_PATH, "utf-8"));
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(youtubeTokens)
+      .where(eq(youtubeTokens.id, TOKEN_ROW_ID));
+    if (!row) return null;
+
+    const tokens: StoredTokens = {};
+    if (row.accessToken) tokens.access_token = row.accessToken;
+    if (row.refreshToken) tokens.refresh_token = row.refreshToken;
+    if (row.expiryDate) tokens.expiry_date = row.expiryDate;
+    if (row.tokenType) tokens.token_type = row.tokenType;
+    if (row.scope) tokens.scope = row.scope;
+    if (row.channelTitle) {
+      tokens.channel = {
+        title: row.channelTitle,
+        thumbnailUrl: row.channelThumbnailUrl ?? "",
+        subscriberCount: row.channelSubscriberCount ?? 0,
+        videoCount: row.channelVideoCount ?? 0,
+      };
     }
+    return tokens;
   } catch {
-    // Corrupted file -- treat as disconnected
-  }
-  return null;
-}
-
-export function saveTokens(tokens: StoredTokens) {
-  const dir = path.dirname(TOKEN_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
-}
-
-export function deleteTokens() {
-  try {
-    if (fs.existsSync(TOKEN_PATH)) {
-      fs.unlinkSync(TOKEN_PATH);
-    }
-  } catch {
-    // Already gone
+    return null;
   }
 }
 
-// Quick status check for header icon (no API call -- file check only)
-export function getQuickConnectionStatus():
-  | "disconnected"
-  | "connected"
-  | "expired" {
-  const tokens = loadTokens();
+export async function saveTokens(tokens: StoredTokens) {
+  const db = getDb();
+  const data = {
+    accessToken: tokens.access_token ?? null,
+    refreshToken: tokens.refresh_token ?? null,
+    expiryDate: tokens.expiry_date ?? null,
+    tokenType: tokens.token_type ?? null,
+    scope: tokens.scope ?? null,
+    channelTitle: tokens.channel?.title ?? null,
+    channelThumbnailUrl: tokens.channel?.thumbnailUrl ?? null,
+    channelSubscriberCount: tokens.channel?.subscriberCount ?? null,
+    channelVideoCount: tokens.channel?.videoCount ?? null,
+    updatedAt: new Date(),
+  };
+
+  const [existing] = await db
+    .select({ id: youtubeTokens.id })
+    .from(youtubeTokens)
+    .where(eq(youtubeTokens.id, TOKEN_ROW_ID));
+
+  if (existing) {
+    await db
+      .update(youtubeTokens)
+      .set(data)
+      .where(eq(youtubeTokens.id, TOKEN_ROW_ID));
+  } else {
+    await db.insert(youtubeTokens).values({ id: TOKEN_ROW_ID, ...data });
+  }
+}
+
+export async function deleteTokens() {
+  const db = getDb();
+  await db.delete(youtubeTokens).where(eq(youtubeTokens.id, TOKEN_ROW_ID));
+}
+
+// Quick status check for header icon (DB query, no YouTube API call)
+export async function getQuickConnectionStatus(): Promise<
+  "disconnected" | "connected" | "expired"
+> {
+  const tokens = await loadTokens();
   if (!tokens) return "disconnected";
   if (!tokens.refresh_token) return "expired";
-
-  // Token expired but refresh token exists -- likely still valid
-  // Actual refresh happens on next API call via googleapis auto-refresh
   return "connected";
 }
 
@@ -117,11 +156,11 @@ export function getQuickConnectionStatus():
 export async function getFullConnectionStatus(): Promise<
   "disconnected" | "connected" | "expired"
 > {
-  const tokens = loadTokens();
+  const tokens = await loadTokens();
   if (!tokens) return "disconnected";
 
   try {
-    const client = getOAuth2Client();
+    const client = await initOAuth2Client();
     const youtube = google.youtube("v3");
     await youtube.channels.list({
       auth: client,
@@ -135,7 +174,7 @@ export async function getFullConnectionStatus(): Promise<
     if (err.code === 401 || err.message?.includes("invalid_grant")) {
       return "expired";
     }
-    // Network error -- assume connected since token file exists
+    // Network error -- assume connected since token exists
     return "connected";
   }
 }
@@ -143,7 +182,7 @@ export async function getFullConnectionStatus(): Promise<
 // --- YouTube Data & Analytics API methods ---
 
 export async function listChannelVideos() {
-  const client = getOAuth2Client();
+  const client = await initOAuth2Client();
   const youtube = google.youtube("v3");
 
   // Step 1: Get uploads playlist ID (1 quota unit)
@@ -197,7 +236,7 @@ export async function getVideoMetrics(
 ) {
   if (videoIds.length === 0) return [];
 
-  const client = getOAuth2Client();
+  const client = await initOAuth2Client();
   const analytics = google.youtubeAnalytics("v2");
 
   const today = new Date().toISOString().split("T")[0];
@@ -222,7 +261,7 @@ export async function getRetentionData(
   videoId: string,
   channelStartDate: string
 ) {
-  const client = getOAuth2Client();
+  const client = await initOAuth2Client();
   const analytics = google.youtubeAnalytics("v2");
 
   const today = new Date().toISOString().split("T")[0];
@@ -247,17 +286,17 @@ export async function getRetentionData(
   return retentionCurve;
 }
 
-// Fetch channel info after OAuth (stored in token file alongside tokens)
+// Fetch channel info after OAuth (stored in DB alongside tokens)
 export async function getChannelInfo(): Promise<
   StoredTokens["channel"] | null
 > {
   // First check cached channel info
-  const tokens = loadTokens();
+  const tokens = await loadTokens();
   if (tokens?.channel) return tokens.channel;
 
   // Fetch from API
   try {
-    const client = getOAuth2Client();
+    const client = await initOAuth2Client();
     const youtube = google.youtube("v3");
     const response = await youtube.channels.list({
       auth: client,
@@ -275,9 +314,9 @@ export async function getChannelInfo(): Promise<
       videoCount: Number(ch.statistics?.videoCount ?? 0),
     };
 
-    // Cache channel info in token file
+    // Cache channel info in DB
     if (tokens) {
-      saveTokens({ ...tokens, channel });
+      await saveTokens({ ...tokens, channel });
     }
 
     return channel;

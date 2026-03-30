@@ -17,7 +17,7 @@ export async function getAuthUrlAction(): Promise<string> {
 }
 
 export async function disconnectYouTube(): Promise<{ success: boolean }> {
-  const tokens = loadTokens();
+  const tokens = await loadTokens();
   if (tokens?.access_token) {
     try {
       const client = getOAuth2Client();
@@ -26,7 +26,7 @@ export async function disconnectYouTube(): Promise<{ success: boolean }> {
       // Token may already be revoked -- continue with local cleanup
     }
   }
-  deleteTokens();
+  await deleteTokens();
   resetOAuth2Client();
   revalidatePath("/", "layout");
   return { success: true };

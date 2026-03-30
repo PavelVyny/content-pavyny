@@ -70,6 +70,20 @@ export const videos = pgTable("videos", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const youtubeTokens = pgTable("youtube_tokens", {
+  id: serial("id").primaryKey(),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  expiryDate: integer("expiry_date"), // epoch ms
+  tokenType: text("token_type"),
+  scope: text("scope"),
+  channelTitle: text("channel_title"),
+  channelThumbnailUrl: text("channel_thumbnail_url"),
+  channelSubscriberCount: integer("channel_subscriber_count"),
+  channelVideoCount: integer("channel_video_count"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const videoMetrics = pgTable("video_metrics", {
   id: serial("id").primaryKey(),
   videoId: integer("video_id")

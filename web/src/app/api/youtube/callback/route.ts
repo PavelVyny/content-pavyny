@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const client = getOAuth2Client();
     const { tokens } = await client.getToken(code);
-    saveTokens(tokens as Record<string, unknown>);
+    await saveTokens(tokens as Record<string, unknown>);
     client.setCredentials(tokens);
 
     // Immediately fetch and cache channel info

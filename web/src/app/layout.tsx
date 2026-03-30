@@ -18,12 +18,12 @@ export const metadata: Metadata = {
     "AI-powered script generation and analytics for YouTube Shorts",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const connectionStatus = getQuickConnectionStatus();
+  const connectionStatus = await getQuickConnectionStatus();
   return (
     <html
       lang="en"
