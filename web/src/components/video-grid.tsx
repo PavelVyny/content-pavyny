@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RetentionChart } from "./retention-chart";
 import type { VideoMetricsData, VideoData } from "@/lib/types";
 import { TruncatedText } from "./truncated-text";
+import { ImageWithFallback } from "./image-with-fallback";
 import {
   Select,
   SelectContent,
@@ -127,7 +128,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
             >
               <div className="flex gap-3 p-3">
                 {video.thumbnailUrl && (
-                  <img
+                  <ImageWithFallback
                     src={video.thumbnailUrl}
                     alt=""
                     className="w-28 h-20 rounded object-cover shrink-0"

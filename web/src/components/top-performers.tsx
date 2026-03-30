@@ -1,5 +1,7 @@
 "use client";
 
+import { ImageWithFallback } from "./image-with-fallback";
+
 interface TopVideo {
   title: string;
   thumbnailUrl: string | null;
@@ -23,7 +25,7 @@ export function TopPerformersGrid({ videos }: { videos: TopVideo[] }) {
           className="border rounded-lg overflow-hidden"
         >
           {v.thumbnailUrl && (
-            <img
+            <ImageWithFallback
               src={v.thumbnailUrl}
               alt=""
               className="w-full h-28 object-cover"

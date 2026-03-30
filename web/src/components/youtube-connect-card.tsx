@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ImageWithFallback } from "@/components/image-with-fallback";
 import {
   getAuthUrlAction,
   disconnectYouTube,
@@ -112,10 +113,11 @@ export function YouTubeConnectCard() {
       <CardContent className="py-6">
         <div className="flex items-center gap-4">
           {channel?.thumbnailUrl && (
-            <img
+            <ImageWithFallback
               src={channel.thumbnailUrl}
               alt={channel.title}
               className="w-12 h-12 rounded-full"
+              fallbackIcon="avatar"
             />
           )}
           <div className="flex-1 min-w-0">
