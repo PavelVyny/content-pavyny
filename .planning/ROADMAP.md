@@ -214,7 +214,11 @@ Plans:
   2. New scripts can be created after migration without primary key conflicts (serial sequences reset correctly)
   3. better-sqlite3 is gone from package.json and node_modules — npm install produces no native compilation step
   4. The app runs on both Windows PC and MacBook Air M1 against the same Supabase instance with identical behavior (same scripts visible, same metrics, same YouTube connection status)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — One-shot SQLite-to-Supabase migration script with timestamp conversion, sequence reset, and dependency cleanup
+- [ ] 11-02-PLAN.md — Cross-device verification (Windows PC + MacBook Air M1)
 
 ## Progress
 
@@ -233,4 +237,4 @@ Phases execute in numeric order: 10 -> 11
 | 8. Metrics & Dashboard | v2.1 | 3/3 | Complete | 2026-03-29 |
 | 9. Data-Aware Generation | v2.1 | 0/? | Deferred | - |
 | 10. Schema & Async Rewrite | v3.0 | 0/2 | Complete    | 2026-03-30 |
-| 11. Data Migration & Cleanup | v3.0 | 0/? | Not started | - |
+| 11. Data Migration & Cleanup | v3.0 | 0/2 | Not started | - |
