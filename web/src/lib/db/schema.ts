@@ -1,7 +1,14 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import {
+  pgTable,
+  serial,
+  text,
+  integer,
+  jsonb,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
-export const scripts = sqliteTable("scripts", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const scripts = pgTable("scripts", {
+  id: serial("id").primaryKey(),
   title: text("title").notNull(),
   format: text("format").notNull(), // "the-bug", "the-satisfaction", etc.
   status: text("status", {
@@ -10,7 +17,7 @@ export const scripts = sqliteTable("scripts", {
     .notNull()
     .default("draft"),
   // Hook variants stored as JSON (small, always read together)
-  hooks: text("hooks", { mode: "json" }).$type<
+  hooks: jsonb("hooks").$type<
     {
       variant: string;
       visual: string;
@@ -19,11 +26,11 @@ export const scripts = sqliteTable("scripts", {
   >(),
   selectedHook: text("selected_hook"), // "A", "B", or "C"
   // Titles stored as JSON (always 3, small array)
-  titles: text("titles", { mode: "json" }).$type<string[]>(),
+  titles: jsonb("titles").$type<string[]>(),
   thumbnail: text("thumbnail"),
   durationEstimate: text("duration_estimate"),
   // Anti-slop score as JSON (5 dimensions + total + notes)
-  antiSlopScore: text("anti_slop_score", { mode: "json" }).$type<{
+  antiSlopScore: jsonb("anti_slop_score").$type<{
     directness: number;
     rhythm: number;
     trust: number;
@@ -33,16 +40,12 @@ export const scripts = sqliteTable("scripts", {
     notes: string;
   }>(),
   devContext: text("dev_context"), // Original input
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const beats = sqliteTable("beats", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const beats = pgTable("beats", {
+  id: serial("id").primaryKey(),
   scriptId: integer("script_id")
     .notNull()
     .references(() => scripts.id, { onDelete: "cascade" }),
@@ -52,27 +55,23 @@ export const beats = sqliteTable("beats", {
   duration: text("duration"), // "2-3s"
 });
 
-export const videos = sqliteTable("videos", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const videos = pgTable("videos", {
+  id: serial("id").primaryKey(),
   youtubeId: text("youtube_id").notNull().unique(),
   title: text("title").notNull(),
   description: text("description"),
   thumbnailUrl: text("thumbnail_url"),
-  publishedAt: integer("published_at", { mode: "timestamp" }),
+  publishedAt: timestamp("published_at"),
   channelTitle: text("channel_title"),
   scriptId: integer("script_id").references(() => scripts.id, {
     onDelete: "set null",
   }),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const videoMetrics = sqliteTable("video_metrics", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const videoMetrics = pgTable("video_metrics", {
+  id: serial("id").primaryKey(),
   videoId: integer("video_id")
     .notNull()
     .references(() => videos.id, { onDelete: "cascade" })
@@ -86,8 +85,6 @@ export const videoMetrics = sqliteTable("video_metrics", {
   subscribersLost: integer("subscribers_lost").default(0),
   averageViewPercentage: integer("average_view_percentage"),
   averageViewDuration: integer("average_view_duration"),
-  retentionCurve: text("retention_curve", { mode: "json" }).$type<number[]>(),
-  lastSyncedAt: integer("last_synced_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
+  retentionCurve: jsonb("retention_curve").$type<number[]>(),
+  lastSyncedAt: timestamp("last_synced_at").notNull().defaultNow(),
 });
