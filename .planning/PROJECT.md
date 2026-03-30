@@ -29,11 +29,16 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 - ✓ Script library with status workflow (draft/ready/recorded) — v2.0
 - ✓ Voiceover-only clipboard copy for recording sessions — v2.0
 
+- ✓ YouTube Analytics API integration via googleapis (retention curves, views, engaged views) — v2.1
+- ✓ Metrics dashboard in web UI (expandable cards, retention charts, video grid) — v2.1
+- ✓ Script-to-video linking with auto-status management — v2.1
+- ✓ Channel analytics page (hero stats, growth timeline, top performers) — v2.1
+
 ### Active
 
-- [ ] YouTube Analytics API integration via MCP server (retention curves, views, CTR)
-- [ ] Metrics dashboard in web UI (mini-cards per video alongside scripts)
-- [ ] Data-aware generation — AI receives metrics as context during script creation
+- [ ] Migrate from SQLite to Supabase (PostgreSQL) for remote database access
+- [ ] Data migration: scripts, videos, metrics from local SQLite to Supabase
+- [ ] Remove better-sqlite3 dependency, switch Drizzle to PostgreSQL driver
 
 ## Shipped: v2.0 Web UI
 
@@ -54,6 +59,7 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 - Anti-slop inline highlighting — deferred, high complexity
 - Beat drag & drop reordering — numbered beats sufficient
 - Mobile responsive — desktop-only local tool
+- Data-aware generation (AI reads metrics at generation time) — deferred until 10+ videos published and linked
 
 ## Context
 
@@ -120,14 +126,15 @@ Scripts must sound like Pavlo — natural, specific, with real dev details — n
 | Click-to-edit over always-editable | Notion-style clean UI, save on blur, no save button | ✓ Good |
 | Manual rescore over auto-rescore | Avoids constant AI calls during editing, stale indicator shows when needed | ✓ Good |
 
-## Current Milestone: v2.1 YouTube Analytics
+## Current Milestone: v3.0 Supabase Migration
 
-**Goal:** Automatic YouTube metrics collection, in-app display alongside scripts, and data-aware generation where AI sees metrics as context without drawing conclusions on small sample sizes.
+**Goal:** Migrate from local SQLite to Supabase (PostgreSQL) so the database is remote and accessible from any device (Windows + Mac) without manual file copying.
 
 **Target features:**
-- YouTube Analytics API integration via MCP server (retention curves, views, CTR)
-- Mini metrics dashboard in web UI (per-video cards alongside scripts)
-- Data-aware generation — AI receives raw metrics as context at generation time (not recommendations)
+- Supabase project with PostgreSQL schema (migrated from current Drizzle/SQLite)
+- All server actions and queries switched to Supabase/PostgreSQL
+- Data migration script: existing scripts, videos, metrics from SQLite to Supabase
+- Remove better-sqlite3 native dependency
 
 ## Evolution
 
@@ -147,4 +154,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-29 after v2.1 YouTube Analytics milestone started*
+*Last updated: 2026-03-30 after v3.0 Supabase Migration milestone started*
