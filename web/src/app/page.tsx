@@ -5,17 +5,16 @@ import { desc } from "drizzle-orm";
 import { GenerationPage } from "@/components/generation-page";
 import type { Script } from "@/lib/types";
 
-export default function Home() {
+export default async function Home() {
   const formats = getFormatList();
   const db = getDb();
 
   // Check if a failed generation exists (to show error banner)
-  const latestScript = db
+  const [latestScript] = await db
     .select()
     .from(scripts)
     .orderBy(desc(scripts.createdAt))
-    .limit(1)
-    .get();
+    .limit(1);
 
   let failedScript: (Script & { beats: never[] }) | null = null;
 
