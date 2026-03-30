@@ -156,14 +156,14 @@ Requirements for milestone v3.0. Each maps to roadmap phases.
 
 ### Data Migration
 
-- [ ] **DATA-01**: One-shot migration script transfers all existing data from SQLite to Supabase with correct type conversions — Phase 11
-- [ ] **DATA-02**: Timestamps converted from epoch integers to proper PostgreSQL timestamp values — Phase 11
-- [ ] **DATA-03**: Serial sequences reset after data import to prevent PK conflicts — Phase 11
+- [x] **DATA-01**: One-shot migration script transfers all existing data from SQLite to Supabase with correct type conversions — Phase 11
+- [x] **DATA-02**: Timestamps converted from epoch integers to proper PostgreSQL timestamp values — Phase 11
+- [x] **DATA-03**: Serial sequences reset after data import to prevent PK conflicts — Phase 11
 
 ### Cleanup & Verification
 
-- [ ] **CLEN-01**: better-sqlite3 and @types/better-sqlite3 removed from dependencies — Phase 11
-- [ ] **CLEN-02**: serverExternalPackages removed from next.config.ts — Phase 11
+- [x] **CLEN-01**: better-sqlite3 and @types/better-sqlite3 removed from dependencies — Phase 11
+- [x] **CLEN-02**: serverExternalPackages removed from next.config.ts — Phase 11
 - [ ] **CLEN-03**: App verified working from both Windows PC and MacBook Air against same Supabase instance — Phase 11
 
 ## v3.0 Out of Scope
@@ -266,11 +266,11 @@ Requirements for milestone v3.0. Each maps to roadmap phases.
 | ASYN-01 | Phase 10 | Complete |
 | ASYN-02 | Phase 10 | Complete |
 | ASYN-03 | Phase 10 | Complete |
-| DATA-01 | Phase 11 | Pending |
-| DATA-02 | Phase 11 | Pending |
-| DATA-03 | Phase 11 | Pending |
-| CLEN-01 | Phase 11 | Pending |
-| CLEN-02 | Phase 11 | Pending |
+| DATA-01 | Phase 11 | Complete |
+| DATA-02 | Phase 11 | Complete |
+| DATA-03 | Phase 11 | Complete |
+| CLEN-01 | Phase 11 | Complete |
+| CLEN-02 | Phase 11 | Complete |
 | CLEN-03 | Phase 11 | Pending |
 
 **Coverage:**

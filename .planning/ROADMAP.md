@@ -217,7 +217,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — One-shot SQLite-to-Supabase migration script with timestamp conversion, sequence reset, and dependency cleanup
+- [x] 11-01-PLAN.md — One-shot SQLite-to-Supabase migration script with timestamp conversion, sequence reset, and dependency cleanup
 - [ ] 11-02-PLAN.md — Cross-device verification (Windows PC + MacBook Air M1)
 
 ## Progress
@@ -237,4 +237,4 @@ Phases execute in numeric order: 10 -> 11
 | 8. Metrics & Dashboard | v2.1 | 3/3 | Complete | 2026-03-29 |
 | 9. Data-Aware Generation | v2.1 | 0/? | Deferred | - |
 | 10. Schema & Async Rewrite | v3.0 | 0/2 | Complete    | 2026-03-30 |
-| 11. Data Migration & Cleanup | v3.0 | 0/2 | Not started | - |
+| 11. Data Migration & Cleanup | v3.0 | 1/2 | In progress | - |
