@@ -15,8 +15,8 @@ type GenerateResult =
  */
 export async function deleteScript(scriptId: number): Promise<void> {
   const db = getDb();
-  db.delete(beats).where(eq(beats.scriptId, scriptId)).run();
-  db.delete(scripts).where(eq(scripts.id, scriptId)).run();
+  await db.delete(beats).where(eq(beats.scriptId, scriptId));
+  await db.delete(scripts).where(eq(scripts.id, scriptId));
   revalidatePath("/");
 }
 
@@ -44,7 +44,7 @@ export async function generateNewScript(
   const db = getDb();
 
   // Insert placeholder so the UI can show "generating" state
-  const script = db
+  const [script] = await db
     .insert(scripts)
     .values({
       title: "Generating...",
@@ -52,14 +52,14 @@ export async function generateNewScript(
       status: "generating" as const,
       devContext,
     })
-    .returning()
-    .get();
+    .returning();
 
   try {
     const output = await generateScript(format, devContext);
 
     // Update script with generated data
-    db.update(scripts)
+    await db
+      .update(scripts)
       .set({
         title: output.titles[0] ?? "Untitled Script",
         hooks: output.hooks,
@@ -70,8 +70,7 @@ export async function generateNewScript(
         status: "draft" as const,
         updatedAt: new Date(),
       })
-      .where(eq(scripts.id, script.id))
-      .run();
+      .where(eq(scripts.id, script.id));
 
     // Insert beats as separate rows
     const beatValues = output.beats.map((beat, index) => ({
@@ -83,21 +82,21 @@ export async function generateNewScript(
     }));
 
     if (beatValues.length > 0) {
-      db.insert(beats).values(beatValues).run();
+      await db.insert(beats).values(beatValues);
     }
 
     revalidatePath("/");
     return { success: true, scriptId: script.id };
   } catch (error) {
     // Update placeholder to reflect failure
-    db.update(scripts)
+    await db
+      .update(scripts)
       .set({
         title: "Generation failed",
         status: "draft" as const,
         updatedAt: new Date(),
       })
-      .where(eq(scripts.id, script.id))
-      .run();
+      .where(eq(scripts.id, script.id));
 
     return {
       error:
@@ -129,22 +128,23 @@ export async function regenerateScript(
   const db = getDb();
 
   // Delete existing beats for this script
-  db.delete(beats).where(eq(beats.scriptId, scriptId)).run();
+  await db.delete(beats).where(eq(beats.scriptId, scriptId));
 
   // Set status to generating
-  db.update(scripts)
+  await db
+    .update(scripts)
     .set({
       status: "generating" as const,
       updatedAt: new Date(),
     })
-    .where(eq(scripts.id, scriptId))
-    .run();
+    .where(eq(scripts.id, scriptId));
 
   try {
     const output = await generateScript(format, devContext);
 
     // Update script with new generated data
-    db.update(scripts)
+    await db
+      .update(scripts)
       .set({
         title: output.titles[0] ?? "Untitled Script",
         hooks: output.hooks,
@@ -157,8 +157,7 @@ export async function regenerateScript(
         format,
         updatedAt: new Date(),
       })
-      .where(eq(scripts.id, scriptId))
-      .run();
+      .where(eq(scripts.id, scriptId));
 
     // Insert new beats
     const beatValues = output.beats.map((beat, index) => ({
@@ -170,21 +169,21 @@ export async function regenerateScript(
     }));
 
     if (beatValues.length > 0) {
-      db.insert(beats).values(beatValues).run();
+      await db.insert(beats).values(beatValues);
     }
 
     revalidatePath("/");
     return { success: true, scriptId };
   } catch (error) {
     // Revert status on failure
-    db.update(scripts)
+    await db
+      .update(scripts)
       .set({
         title: "Generation failed",
         status: "draft" as const,
         updatedAt: new Date(),
       })
-      .where(eq(scripts.id, scriptId))
-      .run();
+      .where(eq(scripts.id, scriptId));
 
     return {
       error:
