@@ -97,13 +97,34 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
     videoCount: filtered.length,
   };
 
+  // Previous period comparison (same duration, shifted back)
+  const prevPeriod = (() => {
+    if (period === "all") return null;
+    const duration = Date.now() - cutoff;
+    const prevCutoff = cutoff - duration;
+    const prev = timeline.filter((d) => d.timestamp >= prevCutoff && d.timestamp < cutoff);
+    const prevViews = prev.reduce((sum, d) => sum + d.views, 0);
+    return { views: prevViews, videoCount: prev.length };
+  })();
+
+  function getDelta(current: number, previous: number | null): { value: string; positive: boolean } | null {
+    if (previous === null || previous === 0) return current > 0 ? { value: `+${formatBig(current)}`, positive: true } : null;
+    const diff = current - previous;
+    const pct = Math.round((diff / previous) * 100);
+    if (pct === 0) return null;
+    return { value: `${pct > 0 ? "+" : ""}${pct}%`, positive: pct > 0 };
+  }
+
+  const viewsDelta = prevPeriod ? getDelta(filteredViews, prevPeriod.views) : null;
+  const videosDelta = prevPeriod ? getDelta(filtered.length, prevPeriod.videoCount) : null;
+
   return (
     <div className="space-y-8">
       {/* Hero Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <HeroStat value={formatBig(displayStats.totalViews)} label="Total Views" />
+        <HeroStat value={formatBig(displayStats.totalViews)} label="Total Views" delta={viewsDelta} />
         <HeroStat value={String(displayStats.subscriberCount)} label="Subscribers" />
-        <HeroStat value={String(displayStats.videoCount)} label="Videos" />
+        <HeroStat value={String(displayStats.videoCount)} label="Videos" delta={videosDelta} />
       </div>
 
       {/* Growth Timeline */}
@@ -151,10 +172,21 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
   );
 }
 
-function HeroStat({ value, label }: { value: string; label: string }) {
+function HeroStat({ value, label, delta }: {
+  value: string;
+  label: string;
+  delta?: { value: string; positive: boolean } | null;
+}) {
   return (
     <div className="text-center py-6 rounded-lg border">
-      <p className="text-3xl font-bold text-zinc-900">{value}</p>
+      <div className="flex items-center justify-center gap-2">
+        <p className="text-3xl font-bold text-zinc-900">{value}</p>
+        {delta && (
+          <span className={`text-xs font-medium ${delta.positive ? "text-emerald-600" : "text-red-500"}`}>
+            {delta.positive ? "↑" : "↓"} {delta.value}
+          </span>
+        )}
+      </div>
       <p className="text-sm text-muted-foreground mt-1">{label}</p>
     </div>
   );
