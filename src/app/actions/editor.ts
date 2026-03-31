@@ -19,6 +19,19 @@ export async function updateBeat(
   return { success: true };
 }
 
+export async function reorderBeats(
+  beatIds: number[]
+): Promise<{ success: boolean }> {
+  const db = getDb();
+  for (let i = 0; i < beatIds.length; i++) {
+    await db
+      .update(beats)
+      .set({ order: i + 1 })
+      .where(eq(beats.id, beatIds[i]));
+  }
+  return { success: true };
+}
+
 export async function updateHook(
   scriptId: number,
   variant: string,

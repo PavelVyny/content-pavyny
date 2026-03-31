@@ -8,8 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { EditableField } from "@/components/editable-field";
 import { HookSection } from "@/components/hook-section";
 import { ScorePanel } from "@/components/score-panel";
-import { updateBeat, regenerateBeat, selectTitle } from "@/app/actions/editor";
-import { RefreshCw } from "lucide-react";
+import { updateBeat, regenerateBeat, selectTitle, reorderBeats } from "@/app/actions/editor";
+import { RefreshCw, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -45,7 +45,42 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
   const [selectedTitleIndex, setSelectedTitleIndex] = useState<number>(
     script.titles?.indexOf(script.title) ?? 0
   );
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [, startTransition] = useTransition();
+
+  function handleDragStart(idx: number) {
+    setDragIdx(idx);
+  }
+
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault();
+    if (dragIdx !== null && idx !== dragIdx) {
+      setDragOverIdx(idx);
+    }
+  }
+
+  function handleDrop(idx: number) {
+    if (dragIdx === null || dragIdx === idx) {
+      setDragIdx(null);
+      setDragOverIdx(null);
+      return;
+    }
+    const reordered = [...localBeats];
+    const [moved] = reordered.splice(dragIdx, 1);
+    reordered.splice(idx, 0, moved);
+    setLocalBeats(reordered);
+    setDragIdx(null);
+    setDragOverIdx(null);
+    startTransition(() => {
+      reorderBeats(reordered.map((b) => b.id));
+    });
+  }
+
+  function handleDragEnd() {
+    setDragIdx(null);
+    setDragOverIdx(null);
+  }
 
   function handleBeatSave(
     beatId: number,
@@ -186,25 +221,38 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
             Script Beats
           </h3>
           <div className="space-y-3">
-            {localBeats.map((beat) => (
-              <div key={beat.id} className="group relative">
+            {localBeats.map((beat, idx) => (
+              <div
+                key={beat.id}
+                className={`group relative transition-opacity ${dragIdx === idx ? "opacity-40" : ""} ${dragOverIdx === idx ? "ring-2 ring-primary/30 rounded-lg" : ""}`}
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDrop={() => handleDrop(idx)}
+                onDragEnd={handleDragEnd}
+              >
                 <Card size="sm">
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      <EditableField
-                        value={beat.visual}
-                        onSave={(val) =>
-                          handleBeatSave(beat.id, "visual", val)
-                        }
-                        className="text-base italic text-muted-foreground leading-relaxed"
-                      />
-                      <EditableField
-                        value={beat.voiceover}
-                        onSave={(val) =>
-                          handleBeatSave(beat.id, "voiceover", val)
-                        }
-                        className="text-base text-foreground leading-relaxed"
-                      />
+                    <div className="flex gap-2">
+                      <div className="flex items-center shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+                        <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 flex-1">
+                        <EditableField
+                          value={beat.visual}
+                          onSave={(val) =>
+                            handleBeatSave(beat.id, "visual", val)
+                          }
+                          className="text-base italic text-muted-foreground leading-relaxed"
+                        />
+                        <EditableField
+                          value={beat.voiceover}
+                          onSave={(val) =>
+                            handleBeatSave(beat.id, "voiceover", val)
+                          }
+                          className="text-base text-foreground leading-relaxed"
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
