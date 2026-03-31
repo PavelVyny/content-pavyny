@@ -128,12 +128,14 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
     };
   })();
 
-  function getDelta(current: number, previous: number): { value: string; positive: boolean } | null {
-    if (previous === 0) return current > 0 ? { value: `+${formatBig(current)}`, positive: true } : null;
+  function getDelta(current: number, previous: number): { value: string; tooltip: string; positive: boolean } | null {
     const diff = current - previous;
-    const pct = Math.round((diff / previous) * 100);
-    if (pct === 0) return null;
-    return { value: `${pct > 0 ? "+" : ""}${pct}%`, positive: pct > 0 };
+    if (diff === 0) return null;
+    const positive = diff > 0;
+    const absValue = `${positive ? "+" : ""}${formatBig(diff)}`;
+    const pct = previous > 0 ? Math.round((diff / previous) * 100) : null;
+    const tooltip = pct !== null ? `${positive ? "+" : ""}${pct}% vs previous period` : "vs previous period";
+    return { value: absValue, tooltip, positive };
   }
 
   const viewsDelta = getDelta(comparison.currentViews, comparison.prevViews);
@@ -197,14 +199,17 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
 function HeroStat({ value, label, delta }: {
   value: string;
   label: string;
-  delta?: { value: string; positive: boolean } | null;
+  delta?: { value: string; tooltip: string; positive: boolean } | null;
 }) {
   return (
     <div className="text-center py-6 rounded-lg border">
       <div className="flex items-center justify-center gap-2">
         <p className="text-3xl font-bold text-zinc-900">{value}</p>
         {delta && (
-          <span className={`text-xs font-medium ${delta.positive ? "text-emerald-600" : "text-red-500"}`}>
+          <span
+            className={`text-xs font-medium cursor-default ${delta.positive ? "text-emerald-600" : "text-red-500"}`}
+            title={delta.tooltip}
+          >
             {delta.positive ? "↑" : "↓"} {delta.value}
           </span>
         )}
