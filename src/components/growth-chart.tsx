@@ -4,6 +4,7 @@ import { useState } from "react";
 
 interface GrowthPoint {
   date: string;
+  timestamp: number;
   title: string;
   views: number;
   cumulativeViews: number;
@@ -38,7 +39,10 @@ export function GrowthChart({ data }: GrowthChartProps) {
   const maxVal = Math.max(...data.map((d) => d.cumulativeViews));
   const niceMax = Math.ceil(maxVal / 1000) * 1000 || 1000;
 
-  const x = (i: number) => PAD.left + (i / (data.length - 1 || 1)) * cw;
+  const tMin = data[0].timestamp;
+  const tMax = data[data.length - 1].timestamp;
+  const tRange = tMax - tMin || 1;
+  const x = (i: number) => PAD.left + ((data[i].timestamp - tMin) / tRange) * cw;
   const y = (v: number) => PAD.top + ch - (v / niceMax) * ch;
 
   // Build smooth cubic Bézier path

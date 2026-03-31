@@ -379,6 +379,7 @@ export interface ChannelStats {
 
 export interface GrowthPoint {
   date: string;
+  timestamp: number; // epoch ms for proportional X positioning
   title: string;
   views: number;
   cumulativeViews: number;
@@ -434,6 +435,7 @@ export async function getGrowthTimeline(): Promise<GrowthPoint[]> {
     const d = r.publishedAt ? new Date(r.publishedAt) : new Date();
     return {
       date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      timestamp: d.getTime(),
       title: (r.title ?? "").replace(/\s*[|].*$/, "").replace(/\s*#\w+/g, "").trim(),
       views: r.views ?? 0,
       cumulativeViews: cumulative,
