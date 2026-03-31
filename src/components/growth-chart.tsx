@@ -111,9 +111,27 @@ export function GrowthChart({ data }: GrowthChartProps) {
           ))}
         </defs>
 
-        {/* Thumbnails above every point */}
-        {data.map((d, i) =>
-          d.thumbnailUrl ? (
+        {/* Thumbnails above points — skip overlapping, prefer newer (rightmost) */}
+        {(() => {
+          const thumbW = 56; // thumbnail box width with margins
+          // Build visible list from right to left (newer wins)
+          const visible = new Set<number>();
+          for (let i = data.length - 1; i >= 0; i--) {
+            if (!data[i].thumbnailUrl) continue;
+            const cx = x(i);
+            const cy = y(data[i].cumulativeViews) - 40; // thumbnail center Y
+            let overlaps = false;
+            for (const vi of visible) {
+              const dx = Math.abs(cx - x(vi));
+              const dy = Math.abs(cy - (y(data[vi].cumulativeViews) - 40));
+              if (dx < thumbW && dy < 44) { overlaps = true; break; }
+            }
+            if (!overlaps) visible.add(i);
+          }
+          return Array.from(visible);
+        })().map((i) => {
+          const d = data[i];
+          return d.thumbnailUrl ? (
             <g key={`thumb-${i}`}>
               <rect
                 x={x(i) - 26}
