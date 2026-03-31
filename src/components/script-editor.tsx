@@ -225,8 +225,7 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
               <div
                 key={beat.id}
                 className={`group relative transition-opacity ${dragIdx === idx ? "opacity-40" : ""} ${dragOverIdx === idx ? "ring-2 ring-primary/30 rounded-lg" : ""}`}
-                draggable
-                onDragStart={() => handleDragStart(idx)}
+                draggable={dragIdx !== null}
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={handleDragEnd}
@@ -234,7 +233,14 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
                 <Card size="sm">
                   <CardContent>
                     <div className="flex gap-2">
-                      <div className="flex items-center shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div
+                        className="flex items-center shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          handleDragStart(idx);
+                        }}
+                      >
                         <GripVertical className="h-4 w-4 text-muted-foreground/50" />
                       </div>
                       <div className="grid grid-cols-2 gap-4 flex-1">
