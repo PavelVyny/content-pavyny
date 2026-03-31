@@ -8,6 +8,7 @@ interface GrowthPoint {
   title: string;
   views: number;
   cumulativeViews: number;
+  thumbnailUrl?: string | null;
 }
 
 interface GrowthChartProps {
@@ -100,6 +101,40 @@ export function GrowthChart({ data }: GrowthChartProps) {
           strokeWidth={2.5}
           strokeLinejoin="round"
         />
+
+        {/* Thumbnail clip paths */}
+        <defs>
+          {data.map((_, i) => (
+            <clipPath key={i} id={`thumb-clip-${i}`}>
+              <rect x={x(i) - 24} y={y(data[i].cumulativeViews) - 58} width={48} height={36} rx={4} />
+            </clipPath>
+          ))}
+        </defs>
+
+        {/* Thumbnails above hovered point */}
+        {hovered !== null && data[hovered].thumbnailUrl && (
+          <g>
+            <rect
+              x={x(hovered) - 26}
+              y={y(data[hovered].cumulativeViews) - 60}
+              width={52}
+              height={40}
+              rx={6}
+              fill="#fff"
+              stroke="#e4e4e7"
+              strokeWidth={1}
+            />
+            <image
+              href={data[hovered].thumbnailUrl}
+              x={x(hovered) - 24}
+              y={y(data[hovered].cumulativeViews) - 58}
+              width={48}
+              height={36}
+              clipPath={`url(#thumb-clip-${hovered})`}
+              preserveAspectRatio="xMidYMid slice"
+            />
+          </g>
+        )}
 
         {/* Dots */}
         {data.map((d, i) => (
