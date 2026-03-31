@@ -167,7 +167,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
             </div>
 
             {isExpanded && metrics && (
-              <div className="absolute left-0 right-0 top-full z-20 px-3 pb-3 border border-t-0 rounded-b-lg bg-white shadow-lg">
+              <div className="absolute -left-px -right-px top-full z-20 px-3 pb-3 border border-t-0 rounded-b-lg bg-white shadow-lg">
                 <div className="flex flex-wrap gap-4 py-3 text-xs">
                   <div>
                     <span className="font-semibold">{formatCompact(metrics.views)}</span>
