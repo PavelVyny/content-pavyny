@@ -6,11 +6,15 @@ import {
 import { ScriptsTable } from "@/components/scripts-table";
 import { SyncButton } from "@/components/sync-button";
 import { VideoGrid } from "@/components/video-grid";
+import { getQuickConnectionStatus } from "@/lib/youtube-client";
 
 export default async function ScriptsPage() {
-  const scripts = await getScriptsWithMetrics();
-  const lastSyncedAt = await getLastSyncTime();
-  const allVideos = await getAllVideosWithMetrics();
+  const [scripts, lastSyncedAt, allVideos, ytStatus] = await Promise.all([
+    getScriptsWithMetrics(),
+    getLastSyncTime(),
+    getAllVideosWithMetrics(),
+    getQuickConnectionStatus(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -23,6 +27,7 @@ export default async function ScriptsPage() {
         </div>
         <SyncButton
           lastSyncedAt={lastSyncedAt ? lastSyncedAt.toISOString() : null}
+          connected={ytStatus === "connected"}
         />
       </div>
 

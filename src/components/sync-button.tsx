@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { discoverVideos, syncSingleVideo } from "@/app/actions/metrics";
 
 interface SyncButtonProps {
   lastSyncedAt: string | null;
+  connected?: boolean;
 }
 
 function getStalenessLabel(lastSyncedAt: string | null): string {
@@ -25,7 +27,7 @@ function getStalenessLabel(lastSyncedAt: string | null): string {
   }
 }
 
-export function SyncButton({ lastSyncedAt }: SyncButtonProps) {
+export function SyncButton({ lastSyncedAt, connected = true }: SyncButtonProps) {
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<{
     current: number;
@@ -91,6 +93,16 @@ export function SyncButton({ lastSyncedAt }: SyncButtonProps) {
     } else {
       buttonText = `Syncing ${progress.current}/${progress.total} videos...`;
     }
+  }
+
+  if (!connected) {
+    return (
+      <Link href="/settings">
+        <Button variant="outline" size="sm">
+          Connect YT
+        </Button>
+      </Link>
+    );
   }
 
   return (
