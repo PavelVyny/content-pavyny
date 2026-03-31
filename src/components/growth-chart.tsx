@@ -76,6 +76,7 @@ export function GrowthChart({ data }: GrowthChartProps) {
             tickLine={false}
             axisLine={false}
             width={45}
+            domain={[0, "auto"]}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area
