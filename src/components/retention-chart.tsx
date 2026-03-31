@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { AreaChart } from "@tremor/react";
 
 interface RetentionChartProps {
   data: number[];
@@ -16,57 +8,35 @@ interface RetentionChartProps {
 }
 
 export function RetentionChart({ data, expanded = false }: RetentionChartProps) {
-  if (!data || data.length < 10) {
+  if (!data || data.length < 10 || !expanded) {
     return (
       <span className="text-xs text-muted-foreground">Not enough data</span>
     );
   }
 
   const chartData = data.map((value, index) => ({
-    pct: index,
-    retention: value,
+    position: `${index}%`,
+    retention: Math.round(value * 100),
   }));
 
-  if (expanded) {
-    return (
-      <div style={{ width: "100%", height: 180 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ left: -10, right: 5, top: 5, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="pct"
-              tickFormatter={(v: number) => `${v}%`}
-              tick={{ fontSize: 10 }}
-              ticks={[0, 25, 50, 75, 100]}
-            />
-            <YAxis
-              domain={[0, "auto"]}
-              tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
-              tick={{ fontSize: 10 }}
-              width={40}
-            />
-            <Tooltip
-              formatter={(value: unknown) => [
-                `${Math.round(Number(value) * 100)}%`,
-                "Retention",
-              ]}
-              labelFormatter={(label: unknown) =>
-                `${label}% of video`
-              }
-            />
-            <Line
-              type="monotone"
-              dataKey="retention"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  }
+  // Show ticks at 0%, 25%, 50%, 75%, 100%
+  const tickIndices = [0, 25, 50, 75, 100];
+  const filteredData = chartData.filter((_, i) =>
+    tickIndices.includes(i) || i === chartData.length - 1
+  );
 
-  // No sparkline mode — always show expanded
-  return null;
+  return (
+    <AreaChart
+      className="h-44"
+      data={chartData}
+      index="position"
+      categories={["retention"]}
+      colors={["blue"]}
+      valueFormatter={(v) => `${v}%`}
+      showLegend={false}
+      showGridLines={true}
+      curveType="monotone"
+      showAnimation={false}
+    />
+  );
 }
