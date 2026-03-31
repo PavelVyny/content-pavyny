@@ -245,36 +245,7 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
                       >
                         <GripVertical className="h-4 w-4 text-muted-foreground/50" />
                       </div>
-                      <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-0 flex-1">
-                        {/* Visual controls — left side */}
-                        <div className="flex flex-col items-center justify-start gap-1 pr-2 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {regenerating?.beatId === beat.id && regenerating.field === "visual" ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                title="Regenerate visual"
-                                className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent"
-                                onClick={() => handleRegenerateField(beat.id, "visual")}
-                              >
-                                <RefreshCw className="h-3 w-3 text-muted-foreground" />
-                              </button>
-                              <button
-                                type="button"
-                                title="Edit visual with prompt"
-                                className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent"
-                                onClick={() => {
-                                  setGuidedEdit({ beatId: beat.id, field: "visual" });
-                                  setGuidedPrompt("");
-                                }}
-                              >
-                                <Pencil className="h-3 w-3 text-muted-foreground" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-
+                      <div className="grid grid-cols-2 gap-4 flex-1">
                         {/* Visual field */}
                         <div>
                           <EditableField
@@ -300,9 +271,7 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
                                 type="button"
                                 className="text-xs px-2 py-1 bg-zinc-900 text-white rounded hover:bg-zinc-800 cursor-pointer"
                                 onClick={() => { if (guidedPrompt.trim()) handleRegenerateField(beat.id, "visual", guidedPrompt.trim()); }}
-                              >
-                                Go
-                              </button>
+                              >Go</button>
                             </div>
                           )}
                         </div>
@@ -332,45 +301,46 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
                                 type="button"
                                 className="text-xs px-2 py-1 bg-zinc-900 text-white rounded hover:bg-zinc-800 cursor-pointer"
                                 onClick={() => { if (guidedPrompt.trim()) handleRegenerateField(beat.id, "voiceover", guidedPrompt.trim()); }}
-                              >
-                                Go
-                              </button>
+                              >Go</button>
                             </div>
-                          )}
-                        </div>
-
-                        {/* Voiceover controls — right side */}
-                        <div className="flex flex-col items-center justify-start gap-1 pl-2 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {regenerating?.beatId === beat.id && regenerating.field === "voiceover" ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                title="Regenerate voiceover"
-                                className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent"
-                                onClick={() => handleRegenerateField(beat.id, "voiceover")}
-                              >
-                                <RefreshCw className="h-3 w-3 text-muted-foreground" />
-                              </button>
-                              <button
-                                type="button"
-                                title="Edit voiceover with prompt"
-                                className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent"
-                                onClick={() => {
-                                  setGuidedEdit({ beatId: beat.id, field: "voiceover" });
-                                  setGuidedPrompt("");
-                                }}
-                              >
-                                <Pencil className="h-3 w-3 text-muted-foreground" />
-                              </button>
-                            </>
                           )}
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Visual controls — absolute left outside card */}
+                <div className="absolute -left-9 top-2 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {regenerating?.beatId === beat.id && regenerating.field === "visual" ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <>
+                      <button type="button" title="Regenerate visual" className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent" onClick={() => handleRegenerateField(beat.id, "visual")}>
+                        <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                      <button type="button" title="Edit visual with prompt" className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent" onClick={() => { setGuidedEdit({ beatId: beat.id, field: "visual" }); setGuidedPrompt(""); }}>
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Voiceover controls — absolute right outside card */}
+                <div className="absolute -right-9 top-2 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {regenerating?.beatId === beat.id && regenerating.field === "voiceover" ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <>
+                      <button type="button" title="Regenerate voiceover" className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent" onClick={() => handleRegenerateField(beat.id, "voiceover")}>
+                        <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                      <button type="button" title="Edit voiceover with prompt" className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent" onClick={() => { setGuidedEdit({ beatId: beat.id, field: "voiceover" }); setGuidedPrompt(""); }}>
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>

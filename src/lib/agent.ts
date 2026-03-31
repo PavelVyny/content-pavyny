@@ -528,6 +528,75 @@ Respond with ONLY a JSON object: { "visual": "описание на русско
 }
 
 /**
+ * Regenerate a single field of a hook variant, optionally guided by a user prompt.
+ */
+export async function regenerateHookFieldText(
+  format: string,
+  devContext: string,
+  allBeats: { order: number; visual: string; voiceover: string }[],
+  hooks: { variant: string; visual: string; voiceover: string }[],
+  targetVariant: string,
+  field: "visual" | "voiceover",
+  userPrompt?: string
+): Promise<string> {
+  const brandVoice = loadRef("brand-voice.md");
+  const antiSlop = loadRef("anti-slop-rules.md");
+
+  const beatsContext = allBeats
+    .map((b) => `Beat #${b.order}:\n  Visual: ${b.visual}\n  Voiceover: ${b.voiceover}`)
+    .join("\n\n");
+
+  const hooksContext = hooks
+    .map((h) => `Hook ${h.variant}:\n  Visual: ${h.visual}\n  Voiceover: ${h.voiceover}`)
+    .join("\n\n");
+
+  const fieldLang = field === "visual" ? "RUSSIAN (описание что на экране)" : "ENGLISH";
+  const guidedInstruction = userPrompt
+    ? `\nUSER REQUEST: "${userPrompt}"\nApply this specific change to the ${field} of hook ${targetVariant}.`
+    : `\nRegenerate with a fresh angle. This is the HOOK — first 3 seconds, must grab attention.`;
+
+  const prompt = `You are the devlog-scriptwriter for Pavlo's YouTube Shorts game devlog.
+
+Your task: regenerate ONLY the ${field} of hook variant ${targetVariant}.
+${guidedInstruction}
+
+=== FORMAT ===
+${format}
+
+=== DEV CONTEXT ===
+${devContext}
+
+=== ALL HOOK VARIANTS ===
+${hooksContext}
+
+=== SCRIPT BEATS (for context) ===
+${beatsContext}
+
+=== BRAND VOICE PROFILE ===
+${brandVoice}
+
+=== ANTI-SLOP RULES ===
+${antiSlop}
+
+=== INSTRUCTIONS ===
+- Regenerate ONLY the ${field} of hook variant ${targetVariant}
+- This is the HOOK — first 3 seconds, punchy and attention-grabbing
+- The ${field} MUST be in ${fieldLang}
+- Follow all brand voice rules
+
+Respond with ONLY a JSON object: { "${field}": "the new text" }`;
+
+  const result = await queryForJson<Record<string, string>>(prompt);
+
+  if (!result[field]) {
+    throw new Error(`Hook field regeneration result missing ${field}`);
+  }
+
+  console.log(`[agent] Regenerated ${field} of hook ${targetVariant}${userPrompt ? ` (guided: "${userPrompt}")` : ""}`);
+  return result[field];
+}
+
+/**
  * Re-score a script's text on the 5 anti-slop dimensions.
  * Returns a full AntiSlopScore object.
  */

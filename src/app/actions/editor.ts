@@ -3,7 +3,7 @@
 import { getDb } from "@/lib/db";
 import { beats, scripts } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { regenerateBeatText, regenerateBeatFieldText, regenerateHookText, rescoreScriptText } from "@/lib/agent";
+import { regenerateBeatText, regenerateBeatFieldText, regenerateHookText, regenerateHookFieldText, rescoreScriptText } from "@/lib/agent";
 import type { AntiSlopScore, HookVariant } from "@/lib/types";
 
 export async function updateBeat(
@@ -117,6 +117,45 @@ export async function regenerateHook(
     return { success: true, visual: result.visual, voiceover: result.voiceover };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Hook regeneration failed" };
+  }
+}
+
+export async function regenerateHookField(
+  scriptId: number,
+  variant: string,
+  field: "visual" | "voiceover",
+  userPrompt?: string
+): Promise<{ success: boolean; value?: string; error?: string }> {
+  const db = getDb();
+  const [script] = await db.select().from(scripts).where(eq(scripts.id, scriptId));
+  if (!script) return { success: false, error: "Script not found" };
+
+  const scriptBeats = await db.select().from(beats).where(eq(beats.scriptId, scriptId)).orderBy(asc(beats.order));
+  const hooks = (script.hooks as HookVariant[] | null) ?? [];
+
+  try {
+    const newValue = await regenerateHookFieldText(
+      script.format,
+      script.devContext ?? "",
+      scriptBeats.map((b) => ({ order: b.order, visual: b.visual, voiceover: b.voiceover })),
+      hooks.map((h) => ({ variant: h.variant, visual: h.visual, voiceover: h.voiceover })),
+      variant,
+      field,
+      userPrompt
+    );
+
+    const updatedHooks = hooks.map((h) =>
+      h.variant === variant ? { ...h, [field]: newValue } : h
+    );
+
+    await db
+      .update(scripts)
+      .set({ hooks: updatedHooks as never, updatedAt: new Date() })
+      .where(eq(scripts.id, scriptId));
+
+    return { success: true, value: newValue };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Hook field regeneration failed" };
   }
 }
 
