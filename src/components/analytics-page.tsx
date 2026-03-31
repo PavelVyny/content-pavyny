@@ -48,6 +48,17 @@ const PERIODS = [
   { value: "1w", label: "1 week" },
 ] as const;
 
+function getPeriodCompareLabel(period: string): string {
+  switch (period) {
+    case "1w": return "vs prev week";
+    case "2w": return "vs prev 2w";
+    case "1m": return "vs prev month";
+    case "3m": return "vs prev 3mo";
+    case "6m": return "vs prev 6mo";
+    default: return "vs prev 3mo";
+  }
+}
+
 function getPeriodCutoff(period: string): number {
   const now = Date.now();
   const day = 86400000;
@@ -141,14 +152,15 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
   const viewsDelta = getDelta(comparison.currentViews, comparison.prevViews);
   const subsDelta = getDelta(comparison.currentSubs, comparison.prevSubs);
   const videosDelta = getDelta(comparison.currentVideos, comparison.prevVideos);
+  const compareLabel = getPeriodCompareLabel(period);
 
   return (
     <div className="space-y-8">
       {/* Hero Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <HeroStat value={formatBig(displayStats.totalViews)} label="Total Views" delta={viewsDelta} />
-        <HeroStat value={String(displayStats.subscriberCount)} label="Subscribers" delta={subsDelta} />
-        <HeroStat value={String(displayStats.videoCount)} label="Videos" delta={videosDelta} />
+        <HeroStat value={formatBig(displayStats.totalViews)} label="Total Views" delta={viewsDelta} compareLabel={compareLabel} />
+        <HeroStat value={String(displayStats.subscriberCount)} label="Subscribers" delta={subsDelta} compareLabel={compareLabel} />
+        <HeroStat value={String(displayStats.videoCount)} label="Videos" delta={videosDelta} compareLabel={compareLabel} />
       </div>
 
       {/* Growth Timeline */}
@@ -196,10 +208,11 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
   );
 }
 
-function HeroStat({ value, label, delta }: {
+function HeroStat({ value, label, delta, compareLabel }: {
   value: string;
   label: string;
   delta?: { value: string; tooltip: string; positive: boolean } | null;
+  compareLabel?: string;
 }) {
   return (
     <div className="text-center py-6 rounded-lg border">
@@ -215,6 +228,9 @@ function HeroStat({ value, label, delta }: {
         )}
       </div>
       <p className="text-sm text-muted-foreground mt-1">{label}</p>
+      {delta && compareLabel && (
+        <p className="text-[10px] text-muted-foreground/60 mt-0.5">{compareLabel}</p>
+      )}
     </div>
   );
 }
