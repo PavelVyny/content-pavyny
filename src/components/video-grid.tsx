@@ -120,7 +120,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
         return (
           <div
             key={video.id}
-            className="relative border rounded-lg overflow-visible hover:border-zinc-400 transition-colors"
+            className={`relative border overflow-visible hover:border-zinc-400 transition-colors ${isExpanded ? "rounded-t-lg z-20" : "rounded-lg"}`}
           >
             <div
               onClick={() => setExpandedId(isExpanded ? null : video.id)}
