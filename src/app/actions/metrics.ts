@@ -118,7 +118,7 @@ export async function syncSingleVideo(
         },
       });
 
-    revalidatePath("/scripts");
+    revalidatePath("/");
 
     return { success: true };
   } catch (error: unknown) {
@@ -249,7 +249,7 @@ export async function linkVideo(
     .set({ status: "done", updatedAt: new Date() })
     .where(eq(scripts.id, scriptId));
 
-  revalidatePath("/scripts");
+  revalidatePath("/");
   revalidatePath(`/script/${scriptId}`);
 
   return { success: true };
@@ -279,7 +279,7 @@ export async function unlinkVideo(
       .where(eq(scripts.id, video.scriptId));
   }
 
-  revalidatePath("/scripts");
+  revalidatePath("/");
   revalidatePath("/script/[id]");
 
   return { success: true };
