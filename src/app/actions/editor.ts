@@ -3,7 +3,7 @@
 import { getDb } from "@/lib/db";
 import { beats, scripts } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { regenerateBeatText, regenerateHookText, rescoreScriptText } from "@/lib/agent";
+import { regenerateBeatText, regenerateBeatFieldText, regenerateHookText, rescoreScriptText } from "@/lib/agent";
 import type { AntiSlopScore, HookVariant } from "@/lib/types";
 
 export async function updateBeat(
@@ -161,6 +161,55 @@ export async function regenerateBeat(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[regenerateBeat]", message);
+    return { success: false, error: message };
+  }
+}
+
+export async function regenerateBeatField(
+  beatId: number,
+  scriptId: number,
+  field: "visual" | "voiceover",
+  userPrompt?: string
+): Promise<{ success: boolean; value?: string; error?: string }> {
+  try {
+    const db = getDb();
+
+    const [script] = await db
+      .select()
+      .from(scripts)
+      .where(eq(scripts.id, scriptId));
+    if (!script) return { success: false, error: "Script not found" };
+
+    const allBeats = await db
+      .select()
+      .from(beats)
+      .where(eq(beats.scriptId, scriptId))
+      .orderBy(asc(beats.order));
+
+    const targetBeat = allBeats.find((b) => b.id === beatId);
+    if (!targetBeat) return { success: false, error: "Beat not found" };
+
+    const hooks = (script.hooks as { variant: string; visual: string; voiceover: string }[]) || [];
+
+    const newValue = await regenerateBeatFieldText(
+      script.format,
+      script.devContext || "",
+      allBeats.map((b) => ({ order: b.order, visual: b.visual, voiceover: b.voiceover })),
+      hooks,
+      targetBeat.order,
+      field,
+      userPrompt
+    );
+
+    await db
+      .update(beats)
+      .set({ [field]: newValue })
+      .where(eq(beats.id, beatId));
+
+    return { success: true, value: newValue };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[regenerateBeatField]", message);
     return { success: false, error: message };
   }
 }

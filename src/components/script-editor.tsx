@@ -8,8 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { EditableField } from "@/components/editable-field";
 import { HookSection } from "@/components/hook-section";
 import { ScorePanel } from "@/components/score-panel";
-import { updateBeat, regenerateBeat, selectTitle, reorderBeats } from "@/app/actions/editor";
-import { RefreshCw, GripVertical } from "lucide-react";
+import { updateBeat, regenerateBeatField, selectTitle, reorderBeats } from "@/app/actions/editor";
+import { RefreshCw, GripVertical, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -38,7 +38,9 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
   const [localScore, setLocalScore] = useState<AntiSlopScore | null>(
     script.antiSlopScore ?? null
   );
-  const [regeneratingBeatId, setRegeneratingBeatId] = useState<number | null>(null);
+  const [regenerating, setRegenerating] = useState<{ beatId: number; field: "visual" | "voiceover" } | null>(null);
+  const [guidedEdit, setGuidedEdit] = useState<{ beatId: number; field: "visual" | "voiceover" } | null>(null);
+  const [guidedPrompt, setGuidedPrompt] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(script.title);
   const [localTitles, setLocalTitles] = useState<string[]>(script.titles ?? []);
@@ -97,16 +99,16 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
     });
   }
 
-  async function handleRegenerateBeat(beatId: number) {
-    setRegeneratingBeatId(beatId);
+  async function handleRegenerateField(beatId: number, field: "visual" | "voiceover", prompt?: string) {
+    setRegenerating({ beatId, field });
+    setGuidedEdit(null);
+    setGuidedPrompt("");
     try {
-      const result = await regenerateBeat(beatId, script.id);
-      if (result.success && result.visual && result.voiceover) {
+      const result = await regenerateBeatField(beatId, script.id, field, prompt);
+      if (result.success && result.value) {
         setLocalBeats((prev) =>
           prev.map((b) =>
-            b.id === beatId
-              ? { ...b, visual: result.visual!, voiceover: result.voiceover! }
-              : b
+            b.id === beatId ? { ...b, [field]: result.value! } : b
           )
         );
         setIsScoreStale(true);
@@ -116,7 +118,7 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
     } catch {
       toast.error("Regeneration failed unexpectedly");
     }
-    setRegeneratingBeatId(null);
+    setRegenerating(null);
   }
 
   return (
@@ -243,39 +245,132 @@ export function ScriptEditor({ script, videoLinkSlot, deleteSlot }: ScriptEditor
                       >
                         <GripVertical className="h-4 w-4 text-muted-foreground/50" />
                       </div>
-                      <div className="grid grid-cols-2 gap-4 flex-1">
-                        <EditableField
-                          value={beat.visual}
-                          onSave={(val) =>
-                            handleBeatSave(beat.id, "visual", val)
-                          }
-                          className="text-base italic text-muted-foreground leading-relaxed"
-                        />
-                        <EditableField
-                          value={beat.voiceover}
-                          onSave={(val) =>
-                            handleBeatSave(beat.id, "voiceover", val)
-                          }
-                          className="text-base text-foreground leading-relaxed"
-                        />
+                      <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-0 flex-1">
+                        {/* Visual controls — left side */}
+                        <div className="flex flex-col items-center justify-start gap-1 pr-2 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {regenerating?.beatId === beat.id && regenerating.field === "visual" ? (
+                            <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                title="Regenerate visual"
+                                className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent"
+                                onClick={() => handleRegenerateField(beat.id, "visual")}
+                              >
+                                <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                              </button>
+                              <button
+                                type="button"
+                                title="Edit visual with prompt"
+                                className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent"
+                                onClick={() => {
+                                  setGuidedEdit({ beatId: beat.id, field: "visual" });
+                                  setGuidedPrompt("");
+                                }}
+                              >
+                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Visual field */}
+                        <div>
+                          <EditableField
+                            value={beat.visual}
+                            onSave={(val) => handleBeatSave(beat.id, "visual", val)}
+                            className="text-base italic text-muted-foreground leading-relaxed"
+                          />
+                          {guidedEdit?.beatId === beat.id && guidedEdit.field === "visual" && (
+                            <div className="mt-2 flex gap-1">
+                              <input
+                                type="text"
+                                autoFocus
+                                value={guidedPrompt}
+                                onChange={(e) => setGuidedPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && guidedPrompt.trim()) handleRegenerateField(beat.id, "visual", guidedPrompt.trim());
+                                  if (e.key === "Escape") { setGuidedEdit(null); setGuidedPrompt(""); }
+                                }}
+                                placeholder="Describe what to change..."
+                                className="flex-1 text-xs border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary/30"
+                              />
+                              <button
+                                type="button"
+                                className="text-xs px-2 py-1 bg-zinc-900 text-white rounded hover:bg-zinc-800 cursor-pointer"
+                                onClick={() => { if (guidedPrompt.trim()) handleRegenerateField(beat.id, "visual", guidedPrompt.trim()); }}
+                              >
+                                Go
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Voiceover field */}
+                        <div>
+                          <EditableField
+                            value={beat.voiceover}
+                            onSave={(val) => handleBeatSave(beat.id, "voiceover", val)}
+                            className="text-base text-foreground leading-relaxed"
+                          />
+                          {guidedEdit?.beatId === beat.id && guidedEdit.field === "voiceover" && (
+                            <div className="mt-2 flex gap-1">
+                              <input
+                                type="text"
+                                autoFocus
+                                value={guidedPrompt}
+                                onChange={(e) => setGuidedPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && guidedPrompt.trim()) handleRegenerateField(beat.id, "voiceover", guidedPrompt.trim());
+                                  if (e.key === "Escape") { setGuidedEdit(null); setGuidedPrompt(""); }
+                                }}
+                                placeholder="Describe what to change..."
+                                className="flex-1 text-xs border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary/30"
+                              />
+                              <button
+                                type="button"
+                                className="text-xs px-2 py-1 bg-zinc-900 text-white rounded hover:bg-zinc-800 cursor-pointer"
+                                onClick={() => { if (guidedPrompt.trim()) handleRegenerateField(beat.id, "voiceover", guidedPrompt.trim()); }}
+                              >
+                                Go
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Voiceover controls — right side */}
+                        <div className="flex flex-col items-center justify-start gap-1 pl-2 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {regenerating?.beatId === beat.id && regenerating.field === "voiceover" ? (
+                            <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                title="Regenerate voiceover"
+                                className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent"
+                                onClick={() => handleRegenerateField(beat.id, "voiceover")}
+                              >
+                                <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                              </button>
+                              <button
+                                type="button"
+                                title="Edit voiceover with prompt"
+                                className="h-5 w-5 flex items-center justify-center rounded cursor-pointer hover:bg-accent"
+                                onClick={() => {
+                                  setGuidedEdit({ beatId: beat.id, field: "voiceover" });
+                                  setGuidedPrompt("");
+                                }}
+                              >
+                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-                {regeneratingBeatId === beat.id ? (
-                  <span className="absolute -right-9 top-3 h-7 w-7 flex items-center justify-center">
-                    <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-                  </span>
-                ) : regeneratingBeatId === null ? (
-                  <button
-                    type="button"
-                    className="absolute -right-9 top-3 h-7 w-7 flex items-center justify-center rounded-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleRegenerateBeat(beat.id)}
-                  >
-                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                ) : null}
               </div>
             ))}
           </div>

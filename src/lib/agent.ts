@@ -393,6 +393,76 @@ Respond with ONLY a JSON object: { "visual": "описание на русско
 }
 
 /**
+ * Regenerate a single field (visual or voiceover) of a beat, optionally guided by a user prompt.
+ */
+export async function regenerateBeatFieldText(
+  format: string,
+  devContext: string,
+  allBeats: { order: number; visual: string; voiceover: string }[],
+  hooks: { variant: string; visual: string; voiceover: string }[],
+  targetBeatOrder: number,
+  field: "visual" | "voiceover",
+  userPrompt?: string
+): Promise<string> {
+  const brandVoice = loadRef("brand-voice.md");
+  const antiSlop = loadRef("anti-slop-rules.md");
+
+  const beatsContext = allBeats
+    .map((b) => `Beat #${b.order}:\n  Visual: ${b.visual}\n  Voiceover: ${b.voiceover}`)
+    .join("\n\n");
+
+  const hooksContext = hooks
+    .map((h) => `Hook ${h.variant}:\n  Visual: ${h.visual}\n  Voiceover: ${h.voiceover}`)
+    .join("\n\n");
+
+  const fieldLang = field === "visual" ? "RUSSIAN (описание что на экране)" : "ENGLISH";
+  const guidedInstruction = userPrompt
+    ? `\nUSER REQUEST: "${userPrompt}"\nApply this specific change to the ${field} while keeping it natural and consistent with the script.`
+    : `\nRegenerate with a fresh angle and phrasing. Keep the same topic/moment but find a different way to express it.`;
+
+  const prompt = `You are the devlog-scriptwriter for Pavlo's YouTube Shorts game devlog.
+
+Your task: regenerate ONLY the ${field} of beat #${targetBeatOrder}. Leave the other field unchanged.
+${guidedInstruction}
+
+=== FORMAT ===
+${format}
+
+=== DEV CONTEXT ===
+${devContext}
+
+=== HOOK VARIANTS ===
+${hooksContext}
+
+=== ALL SCRIPT BEATS (for context) ===
+${beatsContext}
+
+=== BRAND VOICE PROFILE ===
+${brandVoice}
+
+=== ANTI-SLOP RULES ===
+${antiSlop}
+
+=== INSTRUCTIONS ===
+- Regenerate ONLY the ${field} of beat #${targetBeatOrder}
+- Keep it consistent with surrounding beats
+- Follow all brand voice rules
+- The ${field} MUST be in ${fieldLang}
+${field === "visual" ? "- Visual must describe concrete on-screen action" : "- Voiceover comments on what viewer SEES"}
+
+Respond with ONLY a JSON object: { "${field}": "the new text" }`;
+
+  const result = await queryForJson<Record<string, string>>(prompt);
+
+  if (!result[field]) {
+    throw new Error(`Regeneration result missing ${field}`);
+  }
+
+  console.log(`[agent] Regenerated ${field} of beat #${targetBeatOrder}${userPrompt ? ` (guided: "${userPrompt}")` : ""}`);
+  return result[field];
+}
+
+/**
  * Regenerate a single hook variant with fresh phrasing.
  */
 export async function regenerateHookText(
