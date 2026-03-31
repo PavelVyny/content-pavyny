@@ -123,6 +123,8 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
       prevViews: prev.reduce((sum, d) => sum + d.views, 0),
       currentVideos: current.length,
       prevVideos: prev.length,
+      currentSubs: current.reduce((sum, d) => sum + (d.netSubs ?? 0), 0),
+      prevSubs: prev.reduce((sum, d) => sum + (d.netSubs ?? 0), 0),
     };
   })();
 
@@ -135,6 +137,7 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
   }
 
   const viewsDelta = getDelta(comparison.currentViews, comparison.prevViews);
+  const subsDelta = getDelta(comparison.currentSubs, comparison.prevSubs);
   const videosDelta = getDelta(comparison.currentVideos, comparison.prevVideos);
 
   return (
@@ -142,7 +145,7 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
       {/* Hero Stats */}
       <div className="grid grid-cols-3 gap-4">
         <HeroStat value={formatBig(displayStats.totalViews)} label="Total Views" delta={viewsDelta} />
-        <HeroStat value={String(displayStats.subscriberCount)} label="Subscribers" />
+        <HeroStat value={String(displayStats.subscriberCount)} label="Subscribers" delta={subsDelta} />
         <HeroStat value={String(displayStats.videoCount)} label="Videos" delta={videosDelta} />
       </div>
 

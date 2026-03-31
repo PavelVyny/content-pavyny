@@ -384,6 +384,7 @@ export interface GrowthPoint {
   views: number;
   cumulativeViews: number;
   thumbnailUrl: string | null;
+  netSubs: number; // subscribersGained - subscribersLost for this video
 }
 
 export interface TopVideo {
@@ -424,6 +425,8 @@ export async function getGrowthTimeline(): Promise<GrowthPoint[]> {
       publishedAt: videos.publishedAt,
       thumbnailUrl: videos.thumbnailUrl,
       views: videoMetrics.views,
+      subsGained: videoMetrics.subscribersGained,
+      subsLost: videoMetrics.subscribersLost,
     })
     .from(videos)
     .leftJoin(videoMetrics, eq(videoMetrics.videoId, videos.id))
@@ -440,6 +443,7 @@ export async function getGrowthTimeline(): Promise<GrowthPoint[]> {
       views: r.views ?? 0,
       cumulativeViews: cumulative,
       thumbnailUrl: r.thumbnailUrl ?? null,
+      netSubs: (r.subsGained ?? 0) - (r.subsLost ?? 0),
     };
   });
 }
