@@ -113,13 +113,12 @@ export function GrowthChart({ data }: GrowthChartProps) {
 
         {/* Thumbnails above points — skip overlapping, prefer newer (rightmost) */}
         {(() => {
-          const thumbW = 56; // thumbnail box width with margins
-          // Build visible list from right to left (newer wins)
+          const thumbW = 56;
           const visible = new Set<number>();
           for (let i = data.length - 1; i >= 0; i--) {
             if (!data[i].thumbnailUrl) continue;
             const cx = x(i);
-            const cy = y(data[i].cumulativeViews) - 40; // thumbnail center Y
+            const cy = y(data[i].cumulativeViews) - 40;
             let overlaps = false;
             for (const vi of visible) {
               const dx = Math.abs(cx - x(vi));
@@ -128,14 +127,11 @@ export function GrowthChart({ data }: GrowthChartProps) {
             }
             if (!overlaps) visible.add(i);
           }
-          return Array.from(visible);
-        })().map((i) => {
-          const d = data[i];
-          return d.thumbnailUrl ? (
+          return Array.from(visible).map((i) => (
             <g key={`thumb-${i}`}>
               <rect
                 x={x(i) - 26}
-                y={y(d.cumulativeViews) - 60}
+                y={y(data[i].cumulativeViews) - 60}
                 width={52}
                 height={40}
                 rx={6}
@@ -144,17 +140,17 @@ export function GrowthChart({ data }: GrowthChartProps) {
                 strokeWidth={1}
               />
               <image
-                href={d.thumbnailUrl}
+                href={data[i].thumbnailUrl!}
                 x={x(i) - 24}
-                y={y(d.cumulativeViews) - 58}
+                y={y(data[i].cumulativeViews) - 58}
                 width={48}
                 height={36}
                 clipPath={`url(#thumb-clip-${i})`}
                 preserveAspectRatio="xMidYMid slice"
               />
             </g>
-          ) : null
-        )}
+          ));
+        })()}
 
         {/* Dots */}
         {data.map((d, i) => (
