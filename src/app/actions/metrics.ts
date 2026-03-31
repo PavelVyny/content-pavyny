@@ -85,38 +85,35 @@ export async function syncSingleVideo(
 
     const now = new Date();
 
-    await db
-      .insert(videoMetrics)
-      .values({
-        videoId: videoRow.id,
-        views: row ? Number(row[1]) : 0,
-        likes: row ? Number(row[2]) : 0,
-        comments: row ? Number(row[3]) : 0,
-        shares: row ? Number(row[4]) : 0,
-        subscribersGained: row ? Number(row[5]) : 0,
-        subscribersLost: row ? Number(row[6]) : 0,
-        averageViewPercentage: row ? Number(row[7]) : 0,
-        averageViewDuration: row ? Number(row[8]) : 0,
-        engagedViews: row ? Number(row[9]) : 0,
-        retentionCurve: retentionCurve.length > 0 ? retentionCurve : null,
-        lastSyncedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: videoMetrics.videoId,
-        set: {
-          views: sql`excluded.views`,
-          likes: sql`excluded.likes`,
-          comments: sql`excluded.comments`,
-          shares: sql`excluded.shares`,
-          subscribersGained: sql`excluded.subscribers_gained`,
-          subscribersLost: sql`excluded.subscribers_lost`,
-          averageViewPercentage: sql`excluded.average_view_percentage`,
-          averageViewDuration: sql`excluded.average_view_duration`,
-          engagedViews: sql`excluded.engaged_views`,
-          retentionCurve: sql`excluded.retention_curve`,
-          lastSyncedAt: sql`excluded.last_synced_at`,
-        },
-      });
+    const metricsData = {
+      views: row ? Number(row[1]) : 0,
+      likes: row ? Number(row[2]) : 0,
+      comments: row ? Number(row[3]) : 0,
+      shares: row ? Number(row[4]) : 0,
+      subscribersGained: row ? Number(row[5]) : 0,
+      subscribersLost: row ? Number(row[6]) : 0,
+      averageViewPercentage: row ? Number(row[7]) : 0,
+      averageViewDuration: row ? Number(row[8]) : 0,
+      engagedViews: row ? Number(row[9]) : 0,
+      retentionCurve: retentionCurve.length > 0 ? retentionCurve : null,
+      lastSyncedAt: now,
+    };
+
+    const [existing] = await db
+      .select({ id: videoMetrics.id })
+      .from(videoMetrics)
+      .where(eq(videoMetrics.videoId, videoRow.id));
+
+    if (existing) {
+      await db
+        .update(videoMetrics)
+        .set(metricsData)
+        .where(eq(videoMetrics.videoId, videoRow.id));
+    } else {
+      await db
+        .insert(videoMetrics)
+        .values({ videoId: videoRow.id, ...metricsData });
+    }
 
     revalidatePath("/");
 
