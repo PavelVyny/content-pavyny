@@ -106,7 +106,7 @@ export function GrowthChart({ data }: GrowthChartProps) {
         <defs>
           {data.map((_, i) => (
             <clipPath key={i} id={`thumb-clip-${i}`}>
-              <rect x={x(i) - 24} y={y(data[i].cumulativeViews) - 58} width={48} height={36} rx={4} />
+              <rect x={x(i) - 24} y={y(data[i].cumulativeViews) - 30} width={48} height={36} rx={4} />
             </clipPath>
           ))}
         </defs>
@@ -118,11 +118,11 @@ export function GrowthChart({ data }: GrowthChartProps) {
           for (let i = data.length - 1; i >= 0; i--) {
             if (!data[i].thumbnailUrl) continue;
             const cx = x(i);
-            const cy = y(data[i].cumulativeViews) - 40;
+            const cy = y(data[i].cumulativeViews) - 20;
             let overlaps = false;
             for (const vi of visible) {
               const dx = Math.abs(cx - x(vi));
-              const dy = Math.abs(cy - (y(data[vi].cumulativeViews) - 40));
+              const dy = Math.abs(cy - (y(data[vi].cumulativeViews) - 20));
               if (dx < thumbW && dy < 44) { overlaps = true; break; }
             }
             if (!overlaps) visible.add(i);
@@ -131,7 +131,7 @@ export function GrowthChart({ data }: GrowthChartProps) {
             <g key={`thumb-${i}`}>
               <rect
                 x={x(i) - 26}
-                y={y(data[i].cumulativeViews) - 60}
+                y={y(data[i].cumulativeViews) - 32}
                 width={52}
                 height={40}
                 rx={6}
@@ -142,7 +142,7 @@ export function GrowthChart({ data }: GrowthChartProps) {
               <image
                 href={data[i].thumbnailUrl!}
                 x={x(i) - 24}
-                y={y(data[i].cumulativeViews) - 58}
+                y={y(data[i].cumulativeViews) - 30}
                 width={48}
                 height={36}
                 clipPath={`url(#thumb-clip-${i})`}

@@ -69,6 +69,14 @@ function formatBig(n: number): string {
 export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageProps) {
   const [period, setPeriod] = useState("all");
 
+  // Precompute which periods have data
+  const periodHasData = Object.fromEntries(
+    PERIODS.map((p) => {
+      const c = getPeriodCutoff(p.value);
+      return [p.value, timeline.some((d) => d.timestamp >= c)];
+    })
+  );
+
   const cutoff = getPeriodCutoff(period);
   const filtered = timeline.filter((d) => d.timestamp >= cutoff);
 
@@ -110,7 +118,11 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
             </SelectTrigger>
             <SelectContent>
               {PERIODS.map((p) => (
-                <SelectItem key={p.value} value={p.value}>
+                <SelectItem
+                  key={p.value}
+                  value={p.value}
+                  disabled={!periodHasData[p.value]}
+                >
                   {p.label}
                 </SelectItem>
               ))}
