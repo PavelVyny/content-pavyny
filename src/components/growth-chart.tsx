@@ -142,7 +142,7 @@ export function GrowthChart({ data }: GrowthChartProps) {
               <image
                 href={data[i].thumbnailUrl!}
                 x={x(i) - 24}
-                y={y(data[i].cumulativeViews) - 30}
+                y={y(data[i].cumulativeViews) - 47}
                 width={48}
                 height={36}
                 clipPath={`url(#thumb-clip-${i})`}
