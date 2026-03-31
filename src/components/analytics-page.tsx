@@ -107,24 +107,9 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
     let prevCutoff: number;
 
     if (period === "all") {
-      // Find the most recent period that has data
-      // Try 30d, 60d, 90d, 180d — use the first with at least 1 video in both halves
-      for (const days of [30, 60, 90, 180]) {
-        const cc = now - days * day;
-        const pc = now - days * 2 * day;
-        const cur = timeline.filter((d) => d.timestamp >= cc);
-        const pre = timeline.filter((d) => d.timestamp >= pc && d.timestamp < cc);
-        if (cur.length > 0 && pre.length > 0) {
-          return {
-            currentViews: cur.reduce((s, d) => s + d.views, 0),
-            prevViews: pre.reduce((s, d) => s + d.views, 0),
-            currentVideos: cur.length,
-            prevVideos: pre.length,
-          };
-        }
-      }
-      // No meaningful comparison found
-      return { currentViews: 0, prevViews: 0, currentVideos: 0, prevVideos: 0 };
+      // Show growth over last 3 months vs 3 months before that
+      currentCutoff = now - 90 * day;
+      prevCutoff = now - 180 * day;
     } else {
       currentCutoff = cutoff;
       const duration = now - cutoff;
