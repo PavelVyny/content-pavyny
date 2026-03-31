@@ -97,26 +97,44 @@ export function AnalyticsPage({ stats, timeline, topPerformers }: AnalyticsPageP
     videoCount: filtered.length,
   };
 
-  // Previous period comparison (same duration, shifted back)
-  const prevPeriod = (() => {
-    if (period === "all") return null;
-    const duration = Date.now() - cutoff;
-    const prevCutoff = cutoff - duration;
-    const prev = timeline.filter((d) => d.timestamp >= prevCutoff && d.timestamp < cutoff);
-    const prevViews = prev.reduce((sum, d) => sum + d.views, 0);
-    return { views: prevViews, videoCount: prev.length };
+  // Previous period comparison
+  // "all" → compare last 30 days vs 30 days before that
+  // other → same duration shifted back
+  const comparison = (() => {
+    const day = 86400000;
+    const now = Date.now();
+    let currentCutoff: number;
+    let prevCutoff: number;
+
+    if (period === "all") {
+      currentCutoff = now - 30 * day;
+      prevCutoff = now - 60 * day;
+    } else {
+      currentCutoff = cutoff;
+      const duration = now - cutoff;
+      prevCutoff = cutoff - duration;
+    }
+
+    const current = timeline.filter((d) => d.timestamp >= currentCutoff);
+    const prev = timeline.filter((d) => d.timestamp >= prevCutoff && d.timestamp < currentCutoff);
+    return {
+      currentViews: current.reduce((sum, d) => sum + d.views, 0),
+      prevViews: prev.reduce((sum, d) => sum + d.views, 0),
+      currentVideos: current.length,
+      prevVideos: prev.length,
+    };
   })();
 
-  function getDelta(current: number, previous: number | null): { value: string; positive: boolean } | null {
-    if (previous === null || previous === 0) return current > 0 ? { value: `+${formatBig(current)}`, positive: true } : null;
+  function getDelta(current: number, previous: number): { value: string; positive: boolean } | null {
+    if (previous === 0) return current > 0 ? { value: `+${formatBig(current)}`, positive: true } : null;
     const diff = current - previous;
     const pct = Math.round((diff / previous) * 100);
     if (pct === 0) return null;
     return { value: `${pct > 0 ? "+" : ""}${pct}%`, positive: pct > 0 };
   }
 
-  const viewsDelta = prevPeriod ? getDelta(filteredViews, prevPeriod.views) : null;
-  const videosDelta = prevPeriod ? getDelta(filtered.length, prevPeriod.videoCount) : null;
+  const viewsDelta = getDelta(comparison.currentViews, comparison.prevViews);
+  const videosDelta = getDelta(comparison.currentVideos, comparison.prevVideos);
 
   return (
     <div className="space-y-8">
