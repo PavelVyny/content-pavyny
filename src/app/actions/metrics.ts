@@ -114,7 +114,7 @@ export async function syncSingleVideo(
           averageViewDuration: sql`excluded.average_view_duration`,
           engagedViews: sql`excluded.engaged_views`,
           retentionCurve: sql`excluded.retention_curve`,
-          lastSyncedAt: sql`NOW()`,
+          lastSyncedAt: new Date(),
         },
       });
 
