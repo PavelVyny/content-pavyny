@@ -131,19 +131,35 @@ export function GrowthChart({ data }: GrowthChartProps) {
           </text>
         ))}
 
-        {/* X axis labels */}
-        {data.map((d, i) => (
-          <text
-            key={i}
-            x={x(i)}
-            y={H - 6}
-            textAnchor="middle"
-            fontSize={11}
-            fill="#a1a1aa"
-          >
-            {d.date}
-          </text>
-        ))}
+        {/* X axis labels — skip overlapping */}
+        {(() => {
+          const minGap = 55; // min pixels between labels
+          const visible: number[] = [0]; // always show first
+          for (let i = 1; i < data.length; i++) {
+            const lastX = x(visible[visible.length - 1]);
+            if (x(i) - lastX >= minGap) visible.push(i);
+          }
+          // always show last
+          if (visible[visible.length - 1] !== data.length - 1) {
+            // replace last visible if too close to end
+            if (x(data.length - 1) - x(visible[visible.length - 1]) < minGap) {
+              visible.pop();
+            }
+            visible.push(data.length - 1);
+          }
+          return visible.map((i) => (
+            <text
+              key={i}
+              x={x(i)}
+              y={H - 6}
+              textAnchor="middle"
+              fontSize={11}
+              fill="#a1a1aa"
+            >
+              {data[i].date}
+            </text>
+          ));
+        })()}
       </svg>
 
       {/* Tooltip */}
