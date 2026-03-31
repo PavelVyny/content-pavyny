@@ -49,7 +49,7 @@ export function EditableField({
   return (
     <p
       onClick={() => { setEditing(true); onEditingChange?.(true); }}
-      className={`cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors ${className}`}
+      className={`cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors whitespace-pre-wrap ${className}`}
     >
       {value || placeholder}
     </p>
