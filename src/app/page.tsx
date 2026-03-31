@@ -1,48 +1,40 @@
-import { getFormatList } from "@/lib/references";
-import { getDb } from "@/lib/db";
-import { scripts } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
-import { GenerationPage } from "@/components/generation-page";
-import type { Script } from "@/lib/types";
+import {
+  getScriptsWithMetrics,
+  getLastSyncTime,
+  getAllVideosWithMetrics,
+} from "@/app/actions/metrics";
+import { ScriptsTable } from "@/components/scripts-table";
+import { SyncButton } from "@/components/sync-button";
+import { VideoGrid } from "@/components/video-grid";
 
-export default async function Home() {
-  const formats = getFormatList();
-  const db = getDb();
-
-  // Check if a failed generation exists (to show error banner)
-  const [latestScript] = await db
-    .select()
-    .from(scripts)
-    .orderBy(desc(scripts.createdAt))
-    .limit(1);
-
-  let failedScript: (Script & { beats: never[] }) | null = null;
-
-  if (latestScript?.title === "Generation failed") {
-    failedScript = {
-      ...latestScript,
-      hooks: latestScript.hooks as Script["hooks"],
-      titles: latestScript.titles as Script["titles"],
-      antiSlopScore: latestScript.antiSlopScore as Script["antiSlopScore"],
-      status: latestScript.status as Script["status"],
-      createdAt: new Date(latestScript.createdAt),
-      updatedAt: new Date(latestScript.updatedAt),
-      beats: [],
-    };
-  }
+export default async function ScriptsPage() {
+  const scripts = await getScriptsWithMetrics();
+  const lastSyncedAt = await getLastSyncTime();
+  const allVideos = await getAllVideosWithMetrics();
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold text-zinc-900 mb-1">
-          Generate Script
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Select a format and describe your dev progress.
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-zinc-900 mb-1">Scripts</h2>
+          <p className="text-sm text-muted-foreground">
+            Browse and manage your scripts.
+          </p>
+        </div>
+        <SyncButton
+          lastSyncedAt={lastSyncedAt ? lastSyncedAt.toISOString() : null}
+        />
       </div>
 
-      <GenerationPage formats={formats} latestScript={failedScript} />
+      <ScriptsTable scripts={scripts} />
+
+      <div>
+        <h2 className="text-xl font-semibold text-zinc-900 mb-1">Videos</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          All YouTube videos from your channel.
+        </p>
+        <VideoGrid videos={allVideos} />
+      </div>
     </div>
   );
 }

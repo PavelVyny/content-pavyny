@@ -12,7 +12,7 @@ export function DeleteScriptButton({ scriptId }: { scriptId: number }) {
       onClick={async () => {
         if (confirm("Delete this script?")) {
           await deleteScript(scriptId);
-          router.push("/scripts");
+          router.push("/");
         }
       }}
       className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"

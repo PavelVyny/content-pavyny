@@ -42,7 +42,7 @@ export function ScriptsTable({ scripts: initialScripts }: ScriptsTableProps) {
           No scripts yet. Generate your first script to get started.
         </p>
         <Link
-          href="/"
+          href="/new"
           className="inline-flex items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
         >
           Generate Script
