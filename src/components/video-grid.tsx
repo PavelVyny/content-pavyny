@@ -120,7 +120,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
         return (
           <div
             key={video.id}
-            className={`relative border overflow-visible hover:border-zinc-400 transition-colors ${isExpanded ? "rounded-t-lg z-20" : "rounded-lg"}`}
+            className={`relative border overflow-visible transition-colors ${isExpanded ? "rounded-t-lg z-20 border-zinc-400" : "rounded-lg hover:border-zinc-400"}`}
           >
             <div
               onClick={() => setExpandedId(isExpanded ? null : video.id)}
@@ -167,7 +167,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
             </div>
 
             {isExpanded && metrics && (
-              <div className="absolute -left-px -right-px top-full z-20 px-3 pb-3 border border-t-0 rounded-b-lg bg-white shadow-lg">
+              <div className="absolute -left-px -right-px top-full z-20 px-3 pb-3 border border-zinc-400 border-t-0 rounded-b-lg bg-white shadow-lg">
                 <div className="flex flex-wrap gap-4 py-3 text-xs">
                   <div>
                     <span className="font-semibold">{formatCompact(metrics.views)}</span>
