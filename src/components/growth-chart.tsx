@@ -32,8 +32,8 @@ export function GrowthChart({ data }: GrowthChartProps) {
   }
 
   const W = 600;
-  const H = 270;
-  const PAD = { top: 65, right: 20, bottom: 30, left: 50 };
+  const H = 220;
+  const PAD = { top: 20, right: 20, bottom: 30, left: 50 };
   const cw = W - PAD.left - PAD.right;
   const ch = H - PAD.top - PAD.bottom;
 
@@ -75,8 +75,8 @@ export function GrowthChart({ data }: GrowthChartProps) {
   );
 
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+    <div className="relative" style={{ overflow: "visible", paddingTop: 50 }}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" style={{ overflow: "visible" }}>
         {/* Grid lines */}
         {yTicks.map((tick) => (
           <line
