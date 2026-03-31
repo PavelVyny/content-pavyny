@@ -41,10 +41,27 @@ export function GrowthChart({ data }: GrowthChartProps) {
   const x = (i: number) => PAD.left + (i / (data.length - 1 || 1)) * cw;
   const y = (v: number) => PAD.top + ch - (v / niceMax) * ch;
 
-  // Build path
-  const points = data.map((d, i) => `${x(i)},${y(d.cumulativeViews)}`);
-  const linePath = `M${points.join("L")}`;
-  const areaPath = `${linePath}L${x(data.length - 1)},${y(0)}L${x(0)},${y(0)}Z`;
+  // Build smooth cubic Bézier path
+  const pts = data.map((d, i) => ({ x: x(i), y: y(d.cumulativeViews) }));
+  function smoothPath(points: { x: number; y: number }[]): string {
+    if (points.length < 2) return `M${points[0].x},${points[0].y}`;
+    let d = `M${points[0].x},${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(0, i - 1)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(points.length - 1, i + 2)];
+      const tension = 0.3;
+      const cp1x = p1.x + (p2.x - p0.x) * tension;
+      const cp1y = p1.y + (p2.y - p0.y) * tension;
+      const cp2x = p2.x - (p3.x - p1.x) * tension;
+      const cp2y = p2.y - (p3.y - p1.y) * tension;
+      d += `C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+    }
+    return d;
+  }
+  const linePath = smoothPath(pts);
+  const areaPath = `${linePath}L${pts[pts.length - 1].x},${y(0)}L${pts[0].x},${y(0)}Z`;
 
   // Y ticks
   const tickCount = 4;
