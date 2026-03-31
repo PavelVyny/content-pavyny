@@ -32,8 +32,8 @@ export function GrowthChart({ data }: GrowthChartProps) {
   }
 
   const W = 600;
-  const H = 220;
-  const PAD = { top: 20, right: 20, bottom: 30, left: 50 };
+  const H = 270;
+  const PAD = { top: 65, right: 20, bottom: 30, left: 50 };
   const cw = W - PAD.left - PAD.right;
   const ch = H - PAD.top - PAD.bottom;
 
@@ -111,29 +111,31 @@ export function GrowthChart({ data }: GrowthChartProps) {
           ))}
         </defs>
 
-        {/* Thumbnails above hovered point */}
-        {hovered !== null && data[hovered].thumbnailUrl && (
-          <g>
-            <rect
-              x={x(hovered) - 26}
-              y={y(data[hovered].cumulativeViews) - 60}
-              width={52}
-              height={40}
-              rx={6}
-              fill="#fff"
-              stroke="#e4e4e7"
-              strokeWidth={1}
-            />
-            <image
-              href={data[hovered].thumbnailUrl}
-              x={x(hovered) - 24}
-              y={y(data[hovered].cumulativeViews) - 58}
-              width={48}
-              height={36}
-              clipPath={`url(#thumb-clip-${hovered})`}
-              preserveAspectRatio="xMidYMid slice"
-            />
-          </g>
+        {/* Thumbnails above every point */}
+        {data.map((d, i) =>
+          d.thumbnailUrl ? (
+            <g key={`thumb-${i}`}>
+              <rect
+                x={x(i) - 26}
+                y={y(d.cumulativeViews) - 60}
+                width={52}
+                height={40}
+                rx={6}
+                fill="#fff"
+                stroke="#e4e4e7"
+                strokeWidth={1}
+              />
+              <image
+                href={d.thumbnailUrl}
+                x={x(i) - 24}
+                y={y(d.cumulativeViews) - 58}
+                width={48}
+                height={36}
+                clipPath={`url(#thumb-clip-${i})`}
+                preserveAspectRatio="xMidYMid slice"
+              />
+            </g>
+          ) : null
         )}
 
         {/* Dots */}
@@ -197,14 +199,14 @@ export function GrowthChart({ data }: GrowthChartProps) {
         })()}
       </svg>
 
-      {/* Tooltip */}
+      {/* Tooltip — positioned below the dot */}
       {hovered !== null && (
         <div
           className="absolute bg-white border rounded-lg shadow-md px-3 py-2 text-sm pointer-events-none z-10"
           style={{
             left: `${(x(hovered) / W) * 100}%`,
-            top: `${(y(data[hovered].cumulativeViews) / H) * 100 - 12}%`,
-            transform: "translate(-50%, -100%)",
+            top: `${(y(data[hovered].cumulativeViews) / H) * 100 + 5}%`,
+            transform: "translate(-50%, 0)",
           }}
         >
           <p className="font-medium text-zinc-900">{data[hovered].title}</p>
