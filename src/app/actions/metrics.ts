@@ -121,15 +121,20 @@ export async function syncSingleVideo(
       .from(videoMetrics)
       .where(eq(videoMetrics.videoId, videoRow.id));
 
-    // Use raw SQL for video_metrics — Drizzle ORM writes to this table don't persist
-    const raw = getRawClient();
-    if (existing) {
-      await raw`DELETE FROM video_metrics WHERE id = ${existing.id}`;
+    // Use a fresh postgres connection per write — shared singleton from Next.js server actions
+    // silently drops writes to video_metrics (but not other tables — cause unknown)
+    const freshSql = (await import("postgres")).default(process.env.DATABASE_URL!, { prepare: false });
+    try {
+      if (existing) {
+        await freshSql`DELETE FROM video_metrics WHERE id = ${existing.id}`;
+      }
+      await freshSql`
+        INSERT INTO video_metrics (video_id, views, engaged_views, likes, comments, shares, subscribers_gained, subscribers_lost, average_view_percentage, average_view_duration, retention_curve, last_synced_at)
+        VALUES (${videoRow.id}, ${metricsData.views}, ${metricsData.engagedViews ?? 0}, ${metricsData.likes}, ${metricsData.comments}, ${metricsData.shares}, ${metricsData.subscribersGained}, ${metricsData.subscribersLost}, ${metricsData.averageViewPercentage}, ${metricsData.averageViewDuration}, ${metricsData.retentionCurve ? JSON.stringify(metricsData.retentionCurve) : null}::jsonb, ${now})
+      `;
+    } finally {
+      await freshSql.end();
     }
-    await raw`
-      INSERT INTO video_metrics (video_id, views, engaged_views, likes, comments, shares, subscribers_gained, subscribers_lost, average_view_percentage, average_view_duration, retention_curve, last_synced_at)
-      VALUES (${videoRow.id}, ${metricsData.views}, ${metricsData.engagedViews ?? 0}, ${metricsData.likes}, ${metricsData.comments}, ${metricsData.shares}, ${metricsData.subscribersGained}, ${metricsData.subscribersLost}, ${metricsData.averageViewPercentage}, ${metricsData.averageViewDuration}, ${metricsData.retentionCurve ? JSON.stringify(metricsData.retentionCurve) : null}::jsonb, ${now})
-    `;
 
     revalidatePath("/");
 
