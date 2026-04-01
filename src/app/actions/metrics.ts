@@ -233,10 +233,7 @@ export async function getScriptsWithMetrics(): Promise<ScriptWithVideo[]> {
 }
 
 export async function getLastSyncTime(): Promise<Date | null> {
-  const db = getDb();
-
   // Read sync time from youtube_tokens.updated_at — reliably persists via saveTokens()
-  // (video_metrics.last_synced_at has Drizzle+Supabase pooler persistence issues)
   const { loadTokens } = await import("@/lib/youtube-client");
   const tokens = await loadTokens();
   if (!tokens) return null;
