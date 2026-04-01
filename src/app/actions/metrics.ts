@@ -1,7 +1,7 @@
 "use server";
 
-import { getDb, getRawClient } from "@/lib/db";
-import { scripts, videos, videoMetrics } from "@/lib/db/schema";
+import { getDb } from "@/lib/db";
+import { scripts, videos, videoMetrics, youtubeTokens } from "@/lib/db/schema";
 import { eq, desc, ne, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
@@ -235,16 +235,19 @@ export async function getScriptsWithMetrics(): Promise<ScriptWithVideo[]> {
 export async function getLastSyncTime(): Promise<Date | null> {
   const db = getDb();
 
-  const [result] = await db
-    .select({
-      maxSync: sql<string>`MAX(${videoMetrics.lastSyncedAt})`,
-    })
-    .from(videoMetrics);
+  // Read sync time from youtube_tokens.updated_at — reliably persists via saveTokens()
+  // (video_metrics.last_synced_at has Drizzle+Supabase pooler persistence issues)
+  const { loadTokens } = await import("@/lib/youtube-client");
+  const tokens = await loadTokens();
+  if (!tokens) return null;
 
-  if (!result?.maxSync) return null;
+  const db = getDb();
+  const [row] = await db
+    .select({ updatedAt: youtubeTokens.updatedAt })
+    .from(youtubeTokens)
+    .where(eq(youtubeTokens.id, 1));
 
-  // PostgreSQL returns timestamp as string/Date — Drizzle handles conversion
-  return new Date(result.maxSync);
+  return row?.updatedAt ?? null;
 }
 
 export async function linkVideo(
