@@ -19,3 +19,8 @@ const db = drizzle(client, { schema, logger: true });
 export function getDb() {
   return db;
 }
+
+// Raw SQL client for cases where Drizzle ORM doesn't persist correctly through Supabase pooler
+export function getRawClient() {
+  return client;
+}

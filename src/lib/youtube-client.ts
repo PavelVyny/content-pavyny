@@ -287,12 +287,11 @@ export async function getRetentionData(
 }
 
 // Fetch channel info after OAuth (stored in DB alongside tokens)
-export async function getChannelInfo(): Promise<
+export async function getChannelInfo(forceRefresh = false): Promise<
   StoredTokens["channel"] | null
 > {
-  // First check cached channel info
   const tokens = await loadTokens();
-  if (tokens?.channel) return tokens.channel;
+  if (tokens?.channel && !forceRefresh) return tokens.channel;
 
   // Fetch from API
   try {

@@ -1,6 +1,6 @@
 "use server";
 
-import { getDb } from "@/lib/db";
+import { getDb, getRawClient } from "@/lib/db";
 import { scripts, videos, videoMetrics } from "@/lib/db/schema";
 import { eq, desc, ne, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -21,10 +21,10 @@ export async function discoverVideos(): Promise<{
     const channelVideos = await listChannelVideos();
     const db = getDb();
 
-    // Update channel info (subscriber count, etc.) on every sync
+    // Update channel info (subscriber count, etc.) on every sync — force refresh from API
     try {
       const { getChannelInfo } = await import("@/lib/youtube-client");
-      await getChannelInfo();
+      await getChannelInfo(true);
     } catch {
       // Non-blocking — channel info update is best-effort
     }
@@ -122,10 +122,23 @@ export async function syncSingleVideo(
       .where(eq(videoMetrics.videoId, videoRow.id));
 
     if (existing) {
-      await db
-        .update(videoMetrics)
-        .set(metricsData)
-        .where(eq(videoMetrics.videoId, videoRow.id));
+      // Use raw SQL — Drizzle ORM updates don't persist through Supabase transaction pooler
+      const raw = getRawClient();
+      await raw`
+        UPDATE video_metrics SET
+          views = ${metricsData.views},
+          likes = ${metricsData.likes},
+          comments = ${metricsData.comments},
+          shares = ${metricsData.shares},
+          subscribers_gained = ${metricsData.subscribersGained},
+          subscribers_lost = ${metricsData.subscribersLost},
+          average_view_percentage = ${metricsData.averageViewPercentage},
+          average_view_duration = ${metricsData.averageViewDuration},
+          engaged_views = ${metricsData.engagedViews},
+          retention_curve = ${metricsData.retentionCurve ? JSON.stringify(metricsData.retentionCurve) : null}::jsonb,
+          last_synced_at = ${now}
+        WHERE video_id = ${videoRow.id}
+      `;
     } else {
       await db
         .insert(videoMetrics)
