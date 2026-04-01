@@ -20,14 +20,6 @@ export function getDb() {
   return db;
 }
 
-// Direct connection (port 5432, no pooler) for writes that don't persist through transaction pooler
-let directDb: ReturnType<typeof drizzle> | null = null;
-export function getDirectDb() {
-  if (!directDb) {
-    const directUrl = process.env.DATABASE_URL_DIRECT;
-    if (!directUrl) return db; // fallback to pooler if direct URL not set
-    const directClient = postgres(directUrl, { prepare: false });
-    directDb = drizzle(directClient, { schema });
-  }
-  return directDb;
+export function getRawClient() {
+  return client;
 }

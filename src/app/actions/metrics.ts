@@ -1,6 +1,6 @@
 "use server";
 
-import { getDb } from "@/lib/db";
+import { getDb, getRawClient } from "@/lib/db";
 import { scripts, videos, videoMetrics, youtubeTokens } from "@/lib/db/schema";
 import { eq, desc, ne, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -121,13 +121,15 @@ export async function syncSingleVideo(
       .from(videoMetrics)
       .where(eq(videoMetrics.videoId, videoRow.id));
 
+    // Use raw SQL for video_metrics — Drizzle ORM writes to this table don't persist
+    const raw = getRawClient();
     if (existing) {
-      // DELETE + INSERT instead of UPDATE — Drizzle UPDATE on video_metrics doesn't persist
-      await db.delete(videoMetrics).where(eq(videoMetrics.id, existing.id));
+      await raw`DELETE FROM video_metrics WHERE id = ${existing.id}`;
     }
-    await db
-      .insert(videoMetrics)
-      .values({ videoId: videoRow.id, ...metricsData });
+    await raw`
+      INSERT INTO video_metrics (video_id, views, engaged_views, likes, comments, shares, subscribers_gained, subscribers_lost, average_view_percentage, average_view_duration, retention_curve, last_synced_at)
+      VALUES (${videoRow.id}, ${metricsData.views}, ${metricsData.engagedViews ?? 0}, ${metricsData.likes}, ${metricsData.comments}, ${metricsData.shares}, ${metricsData.subscribersGained}, ${metricsData.subscribersLost}, ${metricsData.averageViewPercentage}, ${metricsData.averageViewDuration}, ${metricsData.retentionCurve ? JSON.stringify(metricsData.retentionCurve) : null}::jsonb, ${now})
+    `;
 
     revalidatePath("/");
 
