@@ -122,7 +122,10 @@ export async function syncSingleVideo(
       .where(eq(videoMetrics.videoId, videoRow.id));
 
     if (existing) {
-      await db
+      // Use direct connection — pooler (port 6543) silently drops video_metrics UPDATEs
+      const { getDirectDb } = await import("@/lib/db");
+      const directDb = getDirectDb();
+      await directDb
         .update(videoMetrics)
         .set(metricsData)
         .where(eq(videoMetrics.id, existing.id));
