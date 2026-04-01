@@ -122,23 +122,10 @@ export async function syncSingleVideo(
       .where(eq(videoMetrics.videoId, videoRow.id));
 
     if (existing) {
-      // Use raw SQL — Drizzle ORM updates don't persist through Supabase transaction pooler
-      const raw = getRawClient();
-      await raw`
-        UPDATE video_metrics SET
-          views = ${metricsData.views},
-          likes = ${metricsData.likes},
-          comments = ${metricsData.comments},
-          shares = ${metricsData.shares},
-          subscribers_gained = ${metricsData.subscribersGained},
-          subscribers_lost = ${metricsData.subscribersLost},
-          average_view_percentage = ${metricsData.averageViewPercentage},
-          average_view_duration = ${metricsData.averageViewDuration},
-          engaged_views = ${metricsData.engagedViews},
-          retention_curve = ${metricsData.retentionCurve ? JSON.stringify(metricsData.retentionCurve) : null}::jsonb,
-          last_synced_at = ${now}
-        WHERE video_id = ${videoRow.id}
-      `;
+      await db
+        .update(videoMetrics)
+        .set(metricsData)
+        .where(eq(videoMetrics.id, existing.id));
     } else {
       await db
         .insert(videoMetrics)
