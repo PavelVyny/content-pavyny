@@ -14,7 +14,7 @@ if (!DATABASE_URL) {
 const client = postgres(DATABASE_URL, { prepare: false });
 
 // Module-level singleton -- survives hot reload in dev
-const db = drizzle(client, { schema });
+const db = drizzle(client, { schema, logger: true });
 
 export function getDb() {
   return db;

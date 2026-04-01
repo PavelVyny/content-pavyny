@@ -21,27 +21,44 @@ export async function discoverVideos(): Promise<{
     const channelVideos = await listChannelVideos();
     const db = getDb();
 
+    // Update channel info (subscriber count, etc.) on every sync
+    try {
+      const { getChannelInfo } = await import("@/lib/youtube-client");
+      await getChannelInfo();
+    } catch {
+      // Non-blocking — channel info update is best-effort
+    }
+
     for (const v of channelVideos) {
-      await db
-        .insert(videos)
-        .values({
-          youtubeId: v.youtubeId,
-          title: v.title,
-          description: v.description,
-          thumbnailUrl: v.thumbnailUrl,
-          publishedAt: v.publishedAt ? new Date(v.publishedAt) : null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: videos.youtubeId,
-          set: {
-            title: sql`excluded.title`,
-            description: sql`excluded.description`,
-            thumbnailUrl: sql`excluded.thumbnail_url`,
+      // Check if video exists, then insert or update (Drizzle upsert has bugs with mixed sql/JS values)
+      const [existingVideo] = await db
+        .select({ id: videos.id })
+        .from(videos)
+        .where(eq(videos.youtubeId, v.youtubeId));
+
+      if (existingVideo) {
+        await db
+          .update(videos)
+          .set({
+            title: v.title,
+            description: v.description,
+            thumbnailUrl: v.thumbnailUrl,
             updatedAt: new Date(),
-          },
-        });
+          })
+          .where(eq(videos.youtubeId, v.youtubeId));
+      } else {
+        await db
+          .insert(videos)
+          .values({
+            youtubeId: v.youtubeId,
+            title: v.title,
+            description: v.description,
+            thumbnailUrl: v.thumbnailUrl,
+            publishedAt: v.publishedAt ? new Date(v.publishedAt) : null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+      }
     }
 
     return {
